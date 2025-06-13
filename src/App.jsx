@@ -1,0 +1,559 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
+import { events as initialEvents } from './events';
+
+// Event List Component
+function EventList({ events }) {
+  return (
+    <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
+      <h1>WWE Event Results</h1>
+      <Link to="/add-event" style={{ display: 'inline-block', marginBottom: 16 }}>+ Add Event</Link>
+      <ul>
+        {events.map(event => (
+          <li key={event.id} style={{ marginBottom: 16 }}>
+            <Link to={`/event/${event.id}`}>
+              <strong>{event.name}</strong>
+            </Link>
+            <br />
+            {event.date} — {event.location}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Event Box Score Component (with discreet Edit/Delete below the match card)
+function EventBoxScore({ events, onDelete }) {
+  const { eventId } = useParams();
+  const event = events.find(e => e.id === eventId);
+  const navigate = useNavigate();
+
+  if (!event) {
+    return <div style={{ padding: 24 }}>Event not found.</div>;
+  }
+
+  const matchesWithCardType = event.matches.map((match, idx, arr) => ({
+    ...match,
+    cardType: idx === arr.length - 1 ? "Main Event" : "Undercard"
+  }));
+
+  return (
+    <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
+      <Link to="/">← Back to Events</Link>
+      <h2>{event.name}</h2>
+      <div>
+        <strong>{event.date}</strong> — {event.location}
+      </div>
+      <h3 style={{ marginTop: 24 }}>Match Results</h3>
+      <table border="1" cellPadding="8" cellSpacing="0" style={{ borderCollapse: 'collapse', width: '100%', marginTop: 12 }}>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Card</th>
+            <th>Match</th>
+            <th>Result</th>
+            <th>Method</th>
+            <th>Time</th>
+            <th>Stipulation</th>
+            <th>Title Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          {matchesWithCardType.map((match) => (
+            <tr key={match.order}>
+              <td>{match.order}</td>
+              <td>{match.cardType}</td>
+              <td>{match.participants}</td>
+              <td>{match.result}</td>
+              <td>{match.method}</td>
+              <td>{match.time}</td>
+              <td>{match.stipulation}</td>
+              <td>{match.titleOutcome || ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* Discreet Edit/Delete buttons below the match card */}
+      <div style={{
+        display: 'flex',
+        gap: 12,
+        marginTop: 24,
+        justifyContent: 'flex-end'
+      }}>
+        <Link
+          to={`/edit-event/${event.id}`}
+          style={{
+            fontSize: 14,
+            padding: '4px 12px',
+            border: '1px solid #bbb',
+            borderRadius: 4,
+            background: '#f8f8f8',
+            color: '#333',
+            textDecoration: 'none',
+            transition: 'background 0.2s',
+          }}
+          onMouseOver={e => e.currentTarget.style.background = '#eee'}
+          onMouseOut={e => e.currentTarget.style.background = '#f8f8f8'}
+        >
+          Edit
+        </Link>
+        <button
+          onClick={() => {
+            if (window.confirm('Are you sure you want to delete this event?')) {
+              onDelete(event.id);
+              navigate('/');
+            }
+          }}
+          style={{
+            fontSize: 14,
+            padding: '4px 12px',
+            border: '1px solid #f5c2c7',
+            borderRadius: 4,
+            background: '#fff',
+            color: '#b02a37',
+            cursor: 'pointer',
+            transition: 'background 0.2s',
+          }}
+          onMouseOver={e => e.currentTarget.style.background = '#f8d7da'}
+          onMouseOut={e => e.currentTarget.style.background = '#fff'}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Add Event Form Component (separate forms for event and match)
+function AddEvent({ addEvent }) {
+  const STIPULATION_OPTIONS = [
+    "Undisputed WWE Championship",
+    "World Heavyweight Championship",
+    "Men's IC Championship",
+    "Men's U.S. Championship",
+    "Raw Tag Team Championship",
+    "SmackDown Tag Team Championship",
+    "Men's Speed Championship",
+    "WWE Women's Championship",
+    "World Women's Championship",
+    "Women's IC Championship",
+    "Women's U.S. Championship",
+    "Women's Tag Team Championship",
+    "Women's Speed Championship",
+    "Custom/Other"
+  ];
+
+  const SPECIAL_WINNER_OPTIONS = [
+    "None",
+    "Women's Money in the Bank winner",
+    "Men's Money in the Bank winner",
+    "Men's Royal Rumble winner",
+    "Women's Royal Rumble winner",
+    "Men's Elimination Chamber winner",
+    "Women's Elimination Chamber winner",
+    "King of the Ring winner",
+    "Queen of the Ring winner",
+    "Men's Ultimate Survivor",
+    "Women's Ultimate Survivor"
+  ];
+
+  const [name, setName] = useState('');
+  const [date, setDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [matches, setMatches] = useState([]);
+  const [match, setMatch] = useState({
+    participants: '',
+    result: '',
+    method: '',
+    time: '',
+    stipulation: STIPULATION_OPTIONS[0],
+    customStipulation: '',
+    titleOutcome: ''
+  });
+  const [specialWinnerType, setSpecialWinnerType] = useState("None");
+  const [specialWinnerName, setSpecialWinnerName] = useState('');
+  const navigate = useNavigate();
+
+  // Add a match to the matches list
+  const handleAddMatch = (e) => {
+    e.preventDefault();
+    let finalStipulation = match.stipulation === "Custom/Other" ? match.customStipulation : match.stipulation;
+    setMatches([
+      ...matches,
+      { ...match, stipulation: finalStipulation, order: matches.length + 1 }
+    ]);
+    setMatch({
+      participants: '',
+      result: '',
+      method: '',
+      time: '',
+      stipulation: STIPULATION_OPTIONS[0],
+      customStipulation: '',
+      titleOutcome: ''
+    });
+  };
+
+  // Save the event
+  const handleSaveEvent = (e) => {
+    e.preventDefault();
+    if (!name || !date || !location || matches.length === 0) {
+      alert('Please fill out all event fields and add at least one match.');
+      return;
+    }
+    const id = name.toLowerCase().replace(/\s+/g, '-') + '-' + date.replace(/[^0-9]/g, '');
+    const eventData = {
+      id,
+      name,
+      date,
+      location,
+      matches
+    };
+    if (specialWinnerType !== "None" && specialWinnerName.trim() !== "") {
+      eventData.specialWinner = {
+        type: specialWinnerType,
+        name: specialWinnerName
+      };
+    }
+    addEvent(eventData);
+    navigate('/');
+  };
+
+  return (
+    <div style={{ padding: 24, fontFamily: 'Arial, sans-serif', maxWidth: 600 }}>
+      <Link to="/">← Back to Events</Link>
+      <h2>Add New Event</h2>
+      {/* Event fields form */}
+      <form>
+        <div>
+          <label>
+            Event Name:<br />
+            <input value={name} onChange={e => setName(e.target.value)} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Date:<br />
+            <input value={date} onChange={e => setDate(e.target.value)} required placeholder="e.g. June 9, 2025" style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Location:<br />
+            <input value={location} onChange={e => setLocation(e.target.value)} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <h3 style={{ marginTop: 24 }}>Add Matches</h3>
+        {matches.length > 0 && (
+          <ol>
+            {matches.map((m, idx) => (
+              <li key={idx}>
+                <strong>{m.participants}</strong> — {m.result} ({m.stipulation})
+              </li>
+            ))}
+          </ol>
+        )}
+      </form>
+      {/* Match fields form */}
+      <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+        <div>
+          <label>
+            Participants:<br />
+            <input value={match.participants} onChange={e => setMatch({ ...match, participants: e.target.value })} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Result:<br />
+            <input value={match.result} onChange={e => setMatch({ ...match, result: e.target.value })} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Method:<br />
+            <input value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Time:<br />
+            <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Stipulation:<br />
+            <select
+              value={match.stipulation}
+              onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
+              required
+              style={{ width: '100%' }}
+            >
+              {STIPULATION_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {match.stipulation === "Custom/Other" && (
+          <div>
+            <label>
+              Custom Stipulation:<br />
+              <input
+                value={match.customStipulation}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                required
+                style={{ width: '100%' }}
+              />
+            </label>
+          </div>
+        )}
+        <div>
+          <label>
+            Title Outcome:<br />
+            <select value={match.titleOutcome} onChange={e => setMatch({ ...match, titleOutcome: e.target.value })} style={{ width: '100%' }}>
+              <option value="">None</option>
+              <option value="Successful Defense">Successful Defense</option>
+              <option value="New Champion">New Champion</option>
+            </select>
+          </label>
+        </div>
+        <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
+      </form>
+      {/* Special Match Winner section */}
+      <div style={{ border: '1px solid #ccc', padding: 12, marginTop: 24 }}>
+        <label>
+          Special Match Winner:<br />
+          <select
+            value={specialWinnerType}
+            onChange={e => setSpecialWinnerType(e.target.value)}
+            style={{ width: '100%' }}
+          >
+            {SPECIAL_WINNER_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </label>
+        {specialWinnerType !== "None" && (
+          <div style={{ marginTop: 8 }}>
+            <label>
+              Winner Name:<br />
+              <input
+                value={specialWinnerName}
+                onChange={e => setSpecialWinnerName(e.target.value)}
+                required
+                style={{ width: '100%' }}
+              />
+            </label>
+          </div>
+        )}
+      </div>
+      {/* Save Event button */}
+      <button
+        type="button"
+        style={{ marginTop: 24 }}
+        disabled={matches.length === 0}
+        onClick={handleSaveEvent}
+      >
+        Save Event
+      </button>
+    </div>
+  );
+}
+
+// Edit Event Form Component
+function EditEvent({ events, updateEvent }) {
+  const { eventId } = useParams();
+  const event = events.find(e => e.id === eventId);
+  const navigate = useNavigate();
+
+  if (!event) {
+    return <div style={{ padding: 24 }}>Event not found.</div>;
+  }
+
+  const [name, setName] = useState(event.name);
+  const [date, setDate] = useState(event.date);
+  const [location, setLocation] = useState(event.location);
+  const [matches, setMatches] = useState(event.matches);
+  const [match, setMatch] = useState({
+    participants: '',
+    result: '',
+    method: '',
+    time: '',
+    stipulation: '',
+    titleOutcome: ''
+  });
+
+  // Add a match to the matches list
+  const handleAddMatch = (e) => {
+    e.preventDefault();
+    setMatches([
+      ...matches,
+      { ...match, order: matches.length + 1 }
+    ]);
+    setMatch({
+      participants: '',
+      result: '',
+      method: '',
+      time: '',
+      stipulation: '',
+      titleOutcome: ''
+    });
+  };
+
+  // Remove a match from the matches list
+  const handleDeleteMatch = (order) => {
+    setMatches(matches.filter(m => m.order !== order).map((m, idx) => ({ ...m, order: idx + 1 })));
+  };
+
+  // Save the edited event
+  const handleSaveEvent = (e) => {
+    e.preventDefault();
+    if (!name || !date || !location || matches.length === 0) {
+      alert('Please fill out all event fields and add at least one match.');
+      return;
+    }
+    updateEvent({
+      id: event.id,
+      name,
+      date,
+      location,
+      matches
+    });
+    navigate('/');
+  };
+
+  return (
+    <div style={{ padding: 24, fontFamily: 'Arial, sans-serif', maxWidth: 600 }}>
+      <Link to="/">← Back to Events</Link>
+      <h2>Edit Event</h2>
+      {/* Event fields form */}
+      <form>
+        <div>
+          <label>
+            Event Name:<br />
+            <input value={name} onChange={e => setName(e.target.value)} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Date:<br />
+            <input value={date} onChange={e => setDate(e.target.value)} required placeholder="e.g. June 9, 2025" style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Location:<br />
+            <input value={location} onChange={e => setLocation(e.target.value)} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <h3 style={{ marginTop: 24 }}>Matches</h3>
+        {matches.length > 0 && (
+          <ol>
+            {matches.map((m, idx) => (
+              <li key={idx}>
+                <strong>{m.participants}</strong> — {m.result} ({m.stipulation})
+                <button type="button" onClick={() => handleDeleteMatch(m.order)} style={{ color: 'red', marginLeft: 8 }}>Delete</button>
+              </li>
+            ))}
+          </ol>
+        )}
+      </form>
+      {/* Match fields form */}
+      <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+        <div>
+          <label>
+            Participants:<br />
+            <input value={match.participants} onChange={e => setMatch({ ...match, participants: e.target.value })} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Result:<br />
+            <input value={match.result} onChange={e => setMatch({ ...match, result: e.target.value })} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Method:<br />
+            <input value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Time:<br />
+            <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Stipulation:<br />
+            <input value={match.stipulation} onChange={e => setMatch({ ...match, stipulation: e.target.value })} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Title Outcome:<br />
+            <select value={match.titleOutcome} onChange={e => setMatch({ ...match, titleOutcome: e.target.value })} style={{ width: '100%' }}>
+              <option value="">None</option>
+              <option value="Successful Defense">Successful Defense</option>
+              <option value="New Champion">New Champion</option>
+            </select>
+          </label>
+        </div>
+        <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
+      </form>
+      {/* Save Event button */}
+      <button
+        type="button"
+        style={{ marginTop: 24 }}
+        disabled={matches.length === 0}
+        onClick={handleSaveEvent}
+      >
+        Save Changes
+      </button>
+    </div>
+  );
+}
+
+// Main App with Routing and Editable Events, with localStorage persistence
+function App() {
+  // Load from localStorage if available, otherwise use initialEvents
+  const [events, setEvents] = useState(() => {
+    const saved = localStorage.getItem('wwe-events');
+    return saved ? JSON.parse(saved) : initialEvents;
+  });
+
+  // Save to localStorage whenever events change
+  useEffect(() => {
+    localStorage.setItem('wwe-events', JSON.stringify(events));
+  }, [events]);
+
+  // Add new events to the top of the list
+  const addEvent = (event) => {
+    setEvents([event, ...events]);
+  };
+
+  // Delete event by id
+  const deleteEvent = (id) => {
+    setEvents(events.filter(e => e.id !== id));
+  };
+
+  // Update event by id
+  const updateEvent = (updatedEvent) => {
+    setEvents(events.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+  };
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<EventList events={events} />} />
+        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} />} />
+        <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
+        <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
