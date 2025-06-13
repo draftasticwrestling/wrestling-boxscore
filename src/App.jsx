@@ -527,7 +527,66 @@ function App() {
   useEffect(() => {
     console.log('Fetching events...');
     fetchEvents();
+    // Add test event
+    addRawEvent();
   }, []);
+
+  const addRawEvent = async () => {
+    const rawEvent = {
+      id: "raw-2025-06-02",
+      name: "WWE Monday Night RAW",
+      date: "June 2, 2025",
+      location: "BOK Center, Tulsa, OK",
+      matches: [
+        {
+          order: 1,
+          participants: "Cody Rhodes vs. Damian Priest",
+          result: "Cody Rhodes def. Damian Priest",
+          method: "Pinfall",
+          time: "18:45",
+          stipulation: "World Heavyweight Championship",
+          titleOutcome: "Successful Defense"
+        },
+        {
+          order: 2,
+          participants: "Becky Lynch vs. Rhea Ripley",
+          result: "Rhea Ripley def. Becky Lynch",
+          method: "Submission",
+          time: "15:20",
+          stipulation: "Non-title Match",
+          titleOutcome: ""
+        },
+        {
+          order: 3,
+          participants: "The Judgment Day vs. The New Day",
+          result: "The Judgment Day def. The New Day",
+          method: "Pinfall",
+          time: "12:30",
+          stipulation: "Tag Team Match",
+          titleOutcome: ""
+        }
+      ]
+    };
+
+    try {
+      console.log('Attempting to add RAW event to Supabase:', rawEvent);
+      const { data, error } = await supabase
+        .from('events')
+        .insert([rawEvent])
+        .select();
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+
+      console.log('Successfully added RAW event:', data);
+      setEvents(prevEvents => [data[0], ...prevEvents]);
+    } catch (error) {
+      console.error('Error adding RAW event:', error);
+      alert('Failed to add RAW event. Please try again.');
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -542,11 +601,16 @@ function App() {
       }
       
       console.log('Fetched data:', data);
-      setEvents(data || []);
+      if (!data || data.length === 0) {
+        console.log('No data returned from Supabase, using initial events');
+        setEvents(initialEvents);
+      } else {
+        setEvents(data);
+      }
     } catch (error) {
       console.error('Error fetching events:', error);
       setError(error.message);
-      // Fallback to initial events if there's an error
+      console.log('Falling back to initial events');
       setEvents(initialEvents);
     } finally {
       setLoading(false);
@@ -556,16 +620,24 @@ function App() {
   // Add new event to Supabase
   const addEvent = async (event) => {
     try {
+      console.log('Attempting to add event to Supabase:', event);
       const { data, error } = await supabase
         .from('events')
         .insert([event])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+
+      console.log('Successfully added event:', data);
       setEvents([data[0], ...events]);
     } catch (error) {
       console.error('Error adding event:', error);
       alert('Failed to add event. Please try again.');
+      // Fallback to local state update if Supabase fails
+      setEvents([event, ...events]);
     }
   };
 
