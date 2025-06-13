@@ -129,6 +129,7 @@ function EventBoxScore({ events, onDelete }) {
 // Add Event Form Component (separate forms for event and match)
 function AddEvent({ addEvent }) {
   const STIPULATION_OPTIONS = [
+    "None",
     "Undisputed WWE Championship",
     "World Heavyweight Championship",
     "Men's IC Championship",
@@ -168,7 +169,7 @@ function AddEvent({ addEvent }) {
     result: '',
     method: '',
     time: '',
-    stipulation: STIPULATION_OPTIONS[0],
+    stipulation: '',
     customStipulation: '',
     titleOutcome: ''
   });
@@ -179,7 +180,8 @@ function AddEvent({ addEvent }) {
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
-    let finalStipulation = match.stipulation === "Custom/Other" ? match.customStipulation : match.stipulation;
+    let finalStipulation = match.stipulation === "Custom/Other" ? match.customStipulation : 
+                          match.stipulation === "None" ? "" : match.stipulation;
     setMatches([
       ...matches,
       { ...match, stipulation: finalStipulation, order: matches.length + 1 }
@@ -189,7 +191,7 @@ function AddEvent({ addEvent }) {
       result: '',
       method: '',
       time: '',
-      stipulation: STIPULATION_OPTIONS[0],
+      stipulation: '',
       customStipulation: '',
       titleOutcome: ''
     });
@@ -287,7 +289,6 @@ function AddEvent({ addEvent }) {
             <select
               value={match.stipulation}
               onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
-              required
               style={{ width: '100%' }}
             >
               {STIPULATION_OPTIONS.map(opt => (
