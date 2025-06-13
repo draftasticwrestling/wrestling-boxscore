@@ -526,68 +526,9 @@ function App() {
 
   // Load events from Supabase
   useEffect(() => {
-    console.log('Fetching events...');
+    console.log('App mounted, fetching events...');
     fetchEvents();
-    // Add test event
-    addRawEvent();
   }, []);
-
-  const addRawEvent = async () => {
-    const rawEvent = {
-      id: "raw-2025-06-02",
-      name: "WWE Monday Night RAW",
-      date: "June 2, 2025",
-      location: "BOK Center, Tulsa, OK",
-      matches: [
-        {
-          order: 1,
-          participants: "Cody Rhodes vs. Damian Priest",
-          result: "Cody Rhodes def. Damian Priest",
-          method: "Pinfall",
-          time: "18:45",
-          stipulation: "World Heavyweight Championship",
-          titleOutcome: "Successful Defense"
-        },
-        {
-          order: 2,
-          participants: "Becky Lynch vs. Rhea Ripley",
-          result: "Rhea Ripley def. Becky Lynch",
-          method: "Submission",
-          time: "15:20",
-          stipulation: "Non-title Match",
-          titleOutcome: ""
-        },
-        {
-          order: 3,
-          participants: "The Judgment Day vs. The New Day",
-          result: "The Judgment Day def. The New Day",
-          method: "Pinfall",
-          time: "12:30",
-          stipulation: "Tag Team Match",
-          titleOutcome: ""
-        }
-      ]
-    };
-
-    try {
-      console.log('Attempting to add RAW event to Supabase:', rawEvent);
-      const { data, error } = await supabase
-        .from('events')
-        .insert([rawEvent])
-        .select();
-
-      if (error) {
-        console.error('Supabase insert error:', error);
-        throw error;
-      }
-
-      console.log('Successfully added RAW event:', data);
-      setEvents(prevEvents => [data[0], ...prevEvents]);
-    } catch (error) {
-      console.error('Error adding RAW event:', error);
-      alert('Failed to add RAW event. Please try again.');
-    }
-  };
 
   const fetchEvents = async () => {
     try {
@@ -676,15 +617,32 @@ function App() {
   };
 
   if (loading) {
-    return <div style={{ padding: 24 }}>Loading events...</div>;
+    return (
+      <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
+        <h2>Loading events...</h2>
+        <p>Please wait while we fetch the latest events.</p>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div style={{ padding: 24, color: 'red' }}>
+      <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
         <h2>Error loading events</h2>
         <p>{error}</p>
-        <button onClick={fetchEvents}>Retry</button>
+        <button 
+          onClick={fetchEvents}
+          style={{
+            padding: '8px 16px',
+            background: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
