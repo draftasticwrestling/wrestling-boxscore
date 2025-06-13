@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { events as initialEvents } from './events';
+import { supabase } from './supabaseClient';
 
 // Event List Component
 function EventList({ events }) {
@@ -516,33 +517,104 @@ function EditEvent({ events, updateEvent }) {
   );
 }
 
-// Main App with Routing and Editable Events, with localStorage persistence
+// Main App with Routing and Supabase persistence
 function App() {
-  // Load from localStorage if available, otherwise use initialEvents
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem('wwe-events');
-    return saved ? JSON.parse(saved) : initialEvents;
-  });
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Save to localStorage whenever events change
+  // Load events from Supabase
   useEffect(() => {
-    localStorage.setItem('wwe-events', JSON.stringify(events));
-  }, [events]);
+    console.log('Fetching events...');
+    fetchEvents();
+  }, []);
 
-  // Add new events to the top of the list
-  const addEvent = (event) => {
-    setEvents([event, ...events]);
+  const fetchEvents = async () => {
+    try {
+      console.log('Attempting to fetch from Supabase...');
+      const { data, error } = await supabase
+        .from('events')
+        .select('*');
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Fetched data:', data);
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setError(error.message);
+      // Fallback to initial events if there's an error
+      setEvents(initialEvents);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Delete event by id
-  const deleteEvent = (id) => {
-    setEvents(events.filter(e => e.id !== id));
+  // Add new event to Supabase
+  const addEvent = async (event) => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .insert([event])
+        .select();
+
+      if (error) throw error;
+      setEvents([data[0], ...events]);
+    } catch (error) {
+      console.error('Error adding event:', error);
+      alert('Failed to add event. Please try again.');
+    }
   };
 
-  // Update event by id
-  const updateEvent = (updatedEvent) => {
-    setEvents(events.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+  // Delete event from Supabase
+  const deleteEvent = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setEvents(events.filter(e => e.id !== id));
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      alert('Failed to delete event. Please try again.');
+    }
   };
+
+  // Update event in Supabase
+  const updateEvent = async (updatedEvent) => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .update(updatedEvent)
+        .eq('id', updatedEvent.id)
+        .select();
+
+      if (error) throw error;
+      setEvents(events.map(e => e.id === updatedEvent.id ? data[0] : e));
+    } catch (error) {
+      console.error('Error updating event:', error);
+      alert('Failed to update event. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: 24 }}>Loading events...</div>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: 24, color: 'red' }}>
+        <h2>Error loading events</h2>
+        <p>{error}</p>
+        <button onClick={fetchEvents}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <Router>
