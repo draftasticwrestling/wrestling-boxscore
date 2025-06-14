@@ -83,19 +83,19 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
 
   if (isEditingMatch) {
     return (
-      <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
-        <Link to="/">← Back to Events</Link>
-        <h2>Edit Match</h2>
+      <div style={{ padding: 24, fontFamily: 'Arial, sans-serif', background: '#232323', minHeight: '100vh' }}>
+        <Link to="/" style={{ color: '#6fa1ff' }}>← Back to Events</Link>
+        <h2 style={{ color: 'white', marginTop: 24 }}>Edit Match</h2>
         <div style={{ 
           marginTop: 16, 
-          padding: 24, 
-          border: '1px solid #ccc', 
-          borderRadius: 8,
-          backgroundColor: '#f8f8f8',
-          maxWidth: 800
+          padding: 0, 
+          border: '1px solid #888', 
+          borderRadius: 4,
+          backgroundColor: 'transparent',
+          maxWidth: 400
         }}>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
               Participants:
             </label>
             <input 
@@ -103,16 +103,18 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, participants: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 12, 
-                fontSize: '16px',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                backgroundColor: '#fff'
+                padding: 10, 
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 8
               }}
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
               Result:
             </label>
             <input 
@@ -120,16 +122,18 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, result: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 12, 
-                fontSize: '16px',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                backgroundColor: '#fff'
+                padding: 10, 
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 8
               }}
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
               Method:
             </label>
             <input 
@@ -137,16 +141,18 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, method: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 12, 
-                fontSize: '16px',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                backgroundColor: '#fff'
+                padding: 10, 
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 8
               }}
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
               Time:
             </label>
             <input 
@@ -154,16 +160,18 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, time: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 12, 
-                fontSize: '16px',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                backgroundColor: '#fff'
+                padding: 10, 
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 8
               }}
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
               Stipulation:
             </label>
             <input 
@@ -171,16 +179,18 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, stipulation: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 12, 
-                fontSize: '16px',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                backgroundColor: '#fff'
+                padding: 10, 
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 8
               }}
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
               Title Outcome:
             </label>
             <input 
@@ -188,16 +198,18 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, titleOutcome: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 12, 
-                fontSize: '16px',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                backgroundColor: '#fff'
+                padding: 10, 
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 8
               }}
             />
           </div>
           <div style={{ 
-            marginTop: 32,
+            marginTop: 24,
             display: 'flex',
             gap: 12,
             justifyContent: 'flex-end'
@@ -205,33 +217,34 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             <button 
               onClick={handleCancelEditMatch}
               style={{ 
-                padding: '12px 24px',
-                fontSize: '16px',
-                backgroundColor: '#f8f8f8',
-                border: '1px solid #ccc',
-                borderRadius: 4,
+                padding: '10px 20px',
+                fontSize: '15px',
+                backgroundColor: '#232323',
+                color: '#bbb',
+                border: '1px solid #888',
+                borderRadius: 3,
                 cursor: 'pointer',
                 transition: 'background-color 0.2s'
               }}
-              onMouseOver={e => e.currentTarget.style.backgroundColor = '#eee'}
-              onMouseOut={e => e.currentTarget.style.backgroundColor = '#f8f8f8'}
+              onMouseOver={e => e.currentTarget.style.backgroundColor = '#333'}
+              onMouseOut={e => e.currentTarget.style.backgroundColor = '#232323'}
             >
               Cancel
             </button>
             <button 
               onClick={handleSaveMatch} 
               style={{ 
-                padding: '12px 24px',
-                fontSize: '16px',
-                backgroundColor: '#4CAF50',
+                padding: '10px 20px',
+                fontSize: '15px',
+                backgroundColor: '#2ecc40',
                 color: 'white',
                 border: 'none',
-                borderRadius: 4,
+                borderRadius: 3,
                 cursor: 'pointer',
                 transition: 'background-color 0.2s'
               }}
-              onMouseOver={e => e.currentTarget.style.backgroundColor = '#45a049'}
-              onMouseOut={e => e.currentTarget.style.backgroundColor = '#4CAF50'}
+              onMouseOver={e => e.currentTarget.style.backgroundColor = '#27ae38'}
+              onMouseOut={e => e.currentTarget.style.backgroundColor = '#2ecc40'}
             >
               Save Changes
             </button>
