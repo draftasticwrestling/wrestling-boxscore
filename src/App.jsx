@@ -3,6 +3,44 @@ import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } 
 import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
 
+// Place these at the top level, after imports
+const STIPULATION_OPTIONS = [
+  "None",
+  "Undisputed WWE Championship",
+  "World Heavyweight Championship",
+  "Men's IC Championship",
+  "Men's U.S. Championship",
+  "Raw Tag Team Championship",
+  "SmackDown Tag Team Championship",
+  "Men's Speed Championship",
+  "WWE Women's Championship",
+  "World Women's Championship",
+  "Women's IC Championship",
+  "Women's U.S. Championship",
+  "Women's Tag Team Championship",
+  "Women's Speed Championship",
+  "Custom/Other"
+];
+const METHOD_OPTIONS = [
+  "Pinfall",
+  "Submission",
+  "DQ",
+  "Count out",
+  "No Contest",
+  "Draw",
+  "Unhook the prize",
+  "Escape",
+  "Elimination",
+  "KO / Last Man Standing",
+  "Enclosure win",
+  "Points / Decision"
+];
+const TITLE_OUTCOME_OPTIONS = [
+  "None",
+  "Successful Defense",
+  "New Champion"
+];
+
 // Event List Component
 function EventList({ events }) {
   return (
@@ -80,44 +118,6 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     ...match,
     cardType: idx === arr.length - 1 ? "Main Event" : "Undercard"
   }));
-
-  // Stipulation, Method, and Title Outcome options (reuse from AddEvent)
-  const STIPULATION_OPTIONS = [
-    "None",
-    "Undisputed WWE Championship",
-    "World Heavyweight Championship",
-    "Men's IC Championship",
-    "Men's U.S. Championship",
-    "Raw Tag Team Championship",
-    "SmackDown Tag Team Championship",
-    "Men's Speed Championship",
-    "WWE Women's Championship",
-    "World Women's Championship",
-    "Women's IC Championship",
-    "Women's U.S. Championship",
-    "Women's Tag Team Championship",
-    "Women's Speed Championship",
-    "Custom/Other"
-  ];
-  const METHOD_OPTIONS = [
-    "Pinfall",
-    "Submission",
-    "DQ",
-    "Count out",
-    "No Contest",
-    "Draw",
-    "Unhook the prize",
-    "Escape",
-    "Elimination",
-    "KO / Last Man Standing",
-    "Enclosure win",
-    "Points / Decision"
-  ];
-  const TITLE_OUTCOME_OPTIONS = [
-    "None",
-    "Successful Defense",
-    "New Champion"
-  ];
 
   if (isEditingMatch) {
     return (
@@ -514,24 +514,6 @@ function AddEvent({ addEvent }) {
     "Saturday Night's Main Event",
     "Summer Slam",
     "Survivor Series"
-  ];
-
-  const STIPULATION_OPTIONS = [
-    "None",
-    "Undisputed WWE Championship",
-    "World Heavyweight Championship",
-    "Men's IC Championship",
-    "Men's U.S. Championship",
-    "Raw Tag Team Championship",
-    "SmackDown Tag Team Championship",
-    "Men's Speed Championship",
-    "WWE Women's Championship",
-    "World Women's Championship",
-    "Women's IC Championship",
-    "Women's U.S. Championship",
-    "Women's Tag Team Championship",
-    "Women's Speed Championship",
-    "Custom/Other"
   ];
 
   const SPECIAL_WINNER_OPTIONS = [
