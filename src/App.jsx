@@ -220,7 +220,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             </label>
             <select
               value={editedMatch.stipulation}
-              onChange={e => setEditedMatch({ ...editedMatch, stipulation: e.target.value })}
+              onChange={e => setEditedMatch({ ...editedMatch, stipulation: e.target.value, customStipulation: '', specialWinnerType: 'None' })}
               style={{
                 width: '100%',
                 padding: 8,
@@ -237,29 +237,53 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               ))}
             </select>
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
-              Title Outcome:
-            </label>
-            <select
-              value={editedMatch.titleOutcome || "None"}
-              onChange={e => setEditedMatch({ ...editedMatch, titleOutcome: e.target.value === "None" ? "" : e.target.value })}
-              style={{
-                width: '100%',
-                padding: 8,
-                fontSize: '15px',
-                border: '1px solid #888',
-                borderRadius: 3,
-                backgroundColor: '#232323',
-                color: 'white',
-                marginBottom: 4
-              }}
-            >
-              {TITLE_OUTCOME_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
+          {editedMatch.stipulation === "Custom/Other" && (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
+                  Custom Stipulation:
+                </label>
+                <input
+                  value={editedMatch.customStipulation || ''}
+                  onChange={e => setEditedMatch({ ...editedMatch, customStipulation: e.target.value })}
+                  required={(!editedMatch.specialWinnerType || editedMatch.specialWinnerType === "None")}
+                  style={{
+                    width: '100%',
+                    padding: 8,
+                    fontSize: '15px',
+                    border: '1px solid #888',
+                    borderRadius: 3,
+                    backgroundColor: '#232323',
+                    color: 'white',
+                    marginBottom: 4
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
+                  Special Match Winner:
+                </label>
+                <select
+                  value={editedMatch.specialWinnerType || "None"}
+                  onChange={e => setEditedMatch({ ...editedMatch, specialWinnerType: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: 8,
+                    fontSize: '15px',
+                    border: '1px solid #888',
+                    borderRadius: 3,
+                    backgroundColor: '#232323',
+                    color: 'white',
+                    marginBottom: 4
+                  }}
+                >
+                  {SPECIAL_WINNER_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
           <div style={{ 
             marginTop: 24,
             display: 'flex',
@@ -691,7 +715,7 @@ function AddEvent({ addEvent }) {
                 <input
                   value={match.customStipulation}
                   onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                  required
+                  required={(!match.specialWinnerType || match.specialWinnerType === "None")}
                   style={{ width: '100%' }}
                 />
               </label>
@@ -710,19 +734,6 @@ function AddEvent({ addEvent }) {
                 </select>
               </label>
             </div>
-            {match.specialWinnerType && match.specialWinnerType !== "None" && (
-              <div style={{ marginTop: 8 }}>
-                <label>
-                  Winner Name:<br />
-                  <input
-                    value={match.specialWinnerName || ''}
-                    onChange={e => setMatch({ ...match, specialWinnerName: e.target.value })}
-                    required
-                    style={{ width: '100%' }}
-                  />
-                </label>
-              </div>
-            )}
           </>
         )}
         <div>
@@ -882,9 +893,73 @@ function EditEvent({ events, updateEvent }) {
         <div>
           <label>
             Stipulation:<br />
-            <input value={match.stipulation} onChange={e => setMatch({ ...match, stipulation: e.target.value })} required style={{ width: '100%' }} />
+            <select
+              value={match.stipulation}
+              onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '', specialWinnerType: 'None' })}
+              style={{
+                width: '100%',
+                padding: 8,
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 4
+              }}
+            >
+              {STIPULATION_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </label>
         </div>
+        {match.stipulation === "Custom/Other" && (
+          <>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
+                Custom Stipulation:
+              </label>
+              <input
+                value={match.customStipulation || ''}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                required={(!match.specialWinnerType || match.specialWinnerType === "None")}
+                style={{
+                  width: '100%',
+                  padding: 8,
+                  fontSize: '15px',
+                  border: '1px solid #888',
+                  borderRadius: 3,
+                  backgroundColor: '#232323',
+                  color: 'white',
+                  marginBottom: 4
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
+                Special Match Winner:
+              </label>
+              <select
+                value={match.specialWinnerType || "None"}
+                onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: 8,
+                  fontSize: '15px',
+                  border: '1px solid #888',
+                  borderRadius: 3,
+                  backgroundColor: '#232323',
+                  color: 'white',
+                  marginBottom: 4
+                }}
+              >
+                {SPECIAL_WINNER_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
         <div>
           <label>
             Title Outcome:<br />
