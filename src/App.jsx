@@ -25,7 +25,7 @@ function EventList({ events }) {
 }
 
 // Event Box Score Component (with discreet Edit/Delete below the match card)
-function EventBoxScore({ events, onDelete }) {
+function EventBoxScore({ events, onDelete, onEditMatch }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
@@ -33,6 +33,24 @@ function EventBoxScore({ events, onDelete }) {
   if (!event) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
+
+  const handleMoveMatch = (index, direction) => {
+    const updatedMatches = [...event.matches];
+    const newIndex = index + direction;
+    
+    if (newIndex >= 0 && newIndex < updatedMatches.length) {
+      // Swap the matches
+      [updatedMatches[index], updatedMatches[newIndex]] = 
+      [updatedMatches[newIndex], updatedMatches[index]];
+      
+      // Update the order numbers
+      updatedMatches.forEach((match, idx) => {
+        match.order = idx + 1;
+      });
+      
+      onEditMatch(event.id, updatedMatches);
+    }
+  };
 
   const matchesWithCardType = event.matches.map((match, idx, arr) => ({
     ...match,
@@ -46,6 +64,13 @@ function EventBoxScore({ events, onDelete }) {
       <div>
         <strong>{event.date}</strong> — {event.location}
       </div>
+      {event.specialWinner && (
+        <div style={{ marginBottom: 16, padding: 8, backgroundColor: '#f0f0f0', borderRadius: 4 }}>
+          <p style={{ margin: 0 }}>
+            <strong>{event.specialWinner.type}:</strong> {event.specialWinner.name}
+          </p>
+        </div>
+      )}
       <h3 style={{ marginTop: 24 }}>Match Results</h3>
       <table border="1" cellPadding="8" cellSpacing="0" style={{ borderCollapse: 'collapse', width: '100%', marginTop: 12 }}>
         <thead>
@@ -58,10 +83,11 @@ function EventBoxScore({ events, onDelete }) {
             <th>Time</th>
             <th>Stipulation</th>
             <th>Title Outcome</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {matchesWithCardType.map((match) => (
+          {matchesWithCardType.map((match, index) => (
             <tr key={match.order}>
               <td>{match.order}</td>
               <td>{match.cardType}</td>
@@ -71,6 +97,42 @@ function EventBoxScore({ events, onDelete }) {
               <td>{match.time}</td>
               <td>{match.stipulation}</td>
               <td>{match.titleOutcome || ""}</td>
+              <td>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button 
+                    onClick={() => handleMoveMatch(index, -1)}
+                    disabled={index === 0}
+                    style={{ 
+                      padding: '2px 6px',
+                      fontSize: '12px',
+                      backgroundColor: index === 0 ? '#ccc' : '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: index === 0 ? 'not-allowed' : 'pointer',
+                      opacity: index === 0 ? 0.5 : 1
+                    }}
+                  >
+                    ↑
+                  </button>
+                  <button 
+                    onClick={() => handleMoveMatch(index, 1)}
+                    disabled={index === event.matches.length - 1}
+                    style={{ 
+                      padding: '2px 6px',
+                      fontSize: '12px',
+                      backgroundColor: index === event.matches.length - 1 ? '#ccc' : '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: index === event.matches.length - 1 ? 'not-allowed' : 'pointer',
+                      opacity: index === event.matches.length - 1 ? 0.5 : 1
+                    }}
+                  >
+                    ↓
+                  </button>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -694,7 +756,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
-        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} />} />
+        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
       </Routes>
