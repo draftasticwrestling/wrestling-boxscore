@@ -651,6 +651,14 @@ function App() {
     }
   };
 
+  const handleEditMatch = (eventId, updatedMatches) => {
+    setEvents(events.map(event => 
+      event.id === eventId 
+        ? { ...event, matches: updatedMatches }
+        : event
+    ));
+  };
+
   if (loading) {
     return (
       <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
