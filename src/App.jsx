@@ -298,6 +298,29 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               </div>
             </>
           )}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
+              Title Outcome:
+            </label>
+            <select
+              value={editedMatch.titleOutcome || "None"}
+              onChange={e => setEditedMatch({ ...editedMatch, titleOutcome: e.target.value === "None" ? "" : e.target.value })}
+              style={{
+                width: '100%',
+                padding: 8,
+                fontSize: '15px',
+                border: '1px solid #888',
+                borderRadius: 3,
+                backgroundColor: '#232323',
+                color: 'white',
+                marginBottom: 8
+              }}
+            >
+              {TITLE_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
           <div style={{ 
             marginTop: 24,
             display: 'flex',
