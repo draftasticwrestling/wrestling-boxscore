@@ -88,97 +88,152 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
         <h2>Edit Match</h2>
         <div style={{ 
           marginTop: 16, 
-          padding: 16, 
+          padding: 24, 
           border: '1px solid #ccc', 
           borderRadius: 8,
-          backgroundColor: '#fff'
+          backgroundColor: '#f8f8f8',
+          maxWidth: 800
         }}>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Participants:<br />
-              <input 
-                value={editedMatch.participants} 
-                onChange={e => setEditedMatch({...editedMatch, participants: e.target.value})} 
-                style={{ width: '100%', padding: 8, marginTop: 4 }}
-              />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Participants:
             </label>
+            <input 
+              value={editedMatch.participants} 
+              onChange={e => setEditedMatch({...editedMatch, participants: e.target.value})} 
+              style={{ 
+                width: '100%', 
+                padding: 12, 
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                backgroundColor: '#fff'
+              }}
+            />
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Result:<br />
-              <input 
-                value={editedMatch.result} 
-                onChange={e => setEditedMatch({...editedMatch, result: e.target.value})} 
-                style={{ width: '100%', padding: 8, marginTop: 4 }}
-              />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Result:
             </label>
+            <input 
+              value={editedMatch.result} 
+              onChange={e => setEditedMatch({...editedMatch, result: e.target.value})} 
+              style={{ 
+                width: '100%', 
+                padding: 12, 
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                backgroundColor: '#fff'
+              }}
+            />
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Method:<br />
-              <input 
-                value={editedMatch.method} 
-                onChange={e => setEditedMatch({...editedMatch, method: e.target.value})} 
-                style={{ width: '100%', padding: 8, marginTop: 4 }}
-              />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Method:
             </label>
+            <input 
+              value={editedMatch.method} 
+              onChange={e => setEditedMatch({...editedMatch, method: e.target.value})} 
+              style={{ 
+                width: '100%', 
+                padding: 12, 
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                backgroundColor: '#fff'
+              }}
+            />
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Time:<br />
-              <input 
-                value={editedMatch.time} 
-                onChange={e => setEditedMatch({...editedMatch, time: e.target.value})} 
-                style={{ width: '100%', padding: 8, marginTop: 4 }}
-              />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Time:
             </label>
+            <input 
+              value={editedMatch.time} 
+              onChange={e => setEditedMatch({...editedMatch, time: e.target.value})} 
+              style={{ 
+                width: '100%', 
+                padding: 12, 
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                backgroundColor: '#fff'
+              }}
+            />
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Stipulation:<br />
-              <input 
-                value={editedMatch.stipulation} 
-                onChange={e => setEditedMatch({...editedMatch, stipulation: e.target.value})} 
-                style={{ width: '100%', padding: 8, marginTop: 4 }}
-              />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Stipulation:
             </label>
+            <input 
+              value={editedMatch.stipulation} 
+              onChange={e => setEditedMatch({...editedMatch, stipulation: e.target.value})} 
+              style={{ 
+                width: '100%', 
+                padding: 12, 
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                backgroundColor: '#fff'
+              }}
+            />
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Title Outcome:<br />
-              <input 
-                value={editedMatch.titleOutcome} 
-                onChange={e => setEditedMatch({...editedMatch, titleOutcome: e.target.value})} 
-                style={{ width: '100%', padding: 8, marginTop: 4 }}
-              />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Title Outcome:
             </label>
+            <input 
+              value={editedMatch.titleOutcome} 
+              onChange={e => setEditedMatch({...editedMatch, titleOutcome: e.target.value})} 
+              style={{ 
+                width: '100%', 
+                padding: 12, 
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                backgroundColor: '#fff'
+              }}
+            />
           </div>
-          <div style={{ marginTop: 24 }}>
+          <div style={{ 
+            marginTop: 32,
+            display: 'flex',
+            gap: 12,
+            justifyContent: 'flex-end'
+          }}>
+            <button 
+              onClick={handleCancelEditMatch}
+              style={{ 
+                padding: '12px 24px',
+                fontSize: '16px',
+                backgroundColor: '#f8f8f8',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={e => e.currentTarget.style.backgroundColor = '#eee'}
+              onMouseOut={e => e.currentTarget.style.backgroundColor = '#f8f8f8'}
+            >
+              Cancel
+            </button>
             <button 
               onClick={handleSaveMatch} 
               style={{ 
-                marginRight: 8,
-                padding: '8px 16px',
+                padding: '12px 24px',
+                fontSize: '16px',
                 backgroundColor: '#4CAF50',
                 color: 'white',
                 border: 'none',
                 borderRadius: 4,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
               }}
+              onMouseOver={e => e.currentTarget.style.backgroundColor = '#45a049'}
+              onMouseOut={e => e.currentTarget.style.backgroundColor = '#4CAF50'}
             >
-              Save
-            </button>
-            <button 
-              onClick={handleCancelEditMatch}
-              style={{ 
-                padding: '8px 16px',
-                backgroundColor: '#f8f8f8',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
+              Save Changes
             </button>
           </div>
         </div>
