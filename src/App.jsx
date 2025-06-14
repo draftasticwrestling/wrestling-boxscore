@@ -29,6 +29,9 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
+  const [isEditingMatch, setIsEditingMatch] = useState(false);
+  const [editingMatchIndex, setEditingMatchIndex] = useState(null);
+  const [editedMatch, setEditedMatch] = useState(null);
 
   if (!event) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
@@ -52,10 +55,136 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     }
   };
 
+  const handleEditMatch = (match, index) => {
+    setEditingMatchIndex(index);
+    setEditedMatch(match);
+    setIsEditingMatch(true);
+  };
+
+  const handleSaveMatch = () => {
+    const updatedMatches = [...event.matches];
+    updatedMatches[editingMatchIndex] = editedMatch;
+    onEditMatch(event.id, updatedMatches);
+    setIsEditingMatch(false);
+    setEditingMatchIndex(null);
+    setEditedMatch(null);
+  };
+
+  const handleCancelEditMatch = () => {
+    setIsEditingMatch(false);
+    setEditingMatchIndex(null);
+    setEditedMatch(null);
+  };
+
   const matchesWithCardType = event.matches.map((match, idx, arr) => ({
     ...match,
     cardType: idx === arr.length - 1 ? "Main Event" : "Undercard"
   }));
+
+  if (isEditingMatch) {
+    return (
+      <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
+        <Link to="/">← Back to Events</Link>
+        <h2>Edit Match</h2>
+        <div style={{ 
+          marginTop: 16, 
+          padding: 16, 
+          border: '1px solid #ccc', 
+          borderRadius: 8,
+          backgroundColor: '#fff'
+        }}>
+          <div style={{ marginBottom: 16 }}>
+            <label>
+              Participants:<br />
+              <input 
+                value={editedMatch.participants} 
+                onChange={e => setEditedMatch({...editedMatch, participants: e.target.value})} 
+                style={{ width: '100%', padding: 8, marginTop: 4 }}
+              />
+            </label>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label>
+              Result:<br />
+              <input 
+                value={editedMatch.result} 
+                onChange={e => setEditedMatch({...editedMatch, result: e.target.value})} 
+                style={{ width: '100%', padding: 8, marginTop: 4 }}
+              />
+            </label>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label>
+              Method:<br />
+              <input 
+                value={editedMatch.method} 
+                onChange={e => setEditedMatch({...editedMatch, method: e.target.value})} 
+                style={{ width: '100%', padding: 8, marginTop: 4 }}
+              />
+            </label>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label>
+              Time:<br />
+              <input 
+                value={editedMatch.time} 
+                onChange={e => setEditedMatch({...editedMatch, time: e.target.value})} 
+                style={{ width: '100%', padding: 8, marginTop: 4 }}
+              />
+            </label>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label>
+              Stipulation:<br />
+              <input 
+                value={editedMatch.stipulation} 
+                onChange={e => setEditedMatch({...editedMatch, stipulation: e.target.value})} 
+                style={{ width: '100%', padding: 8, marginTop: 4 }}
+              />
+            </label>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label>
+              Title Outcome:<br />
+              <input 
+                value={editedMatch.titleOutcome} 
+                onChange={e => setEditedMatch({...editedMatch, titleOutcome: e.target.value})} 
+                style={{ width: '100%', padding: 8, marginTop: 4 }}
+              />
+            </label>
+          </div>
+          <div style={{ marginTop: 24 }}>
+            <button 
+              onClick={handleSaveMatch} 
+              style={{ 
+                marginRight: 8,
+                padding: '8px 16px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer'
+              }}
+            >
+              Save
+            </button>
+            <button 
+              onClick={handleCancelEditMatch}
+              style={{ 
+                padding: '8px 16px',
+                backgroundColor: '#f8f8f8',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>
@@ -100,6 +229,24 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               <td>
                 <div style={{ display: 'flex', gap: '4px' }}>
                   <button 
+                    onClick={() => handleEditMatch(match, index)}
+                    style={{ 
+                      padding: '2px 6px',
+                      fontSize: '12px',
+                      backgroundColor: '#4a90e2',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      opacity: 0.7,
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                    onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
+                  >
+                    Edit
+                  </button>
+                  <button 
                     onClick={() => handleMoveMatch(index, -1)}
                     disabled={index === 0}
                     style={{ 
@@ -110,8 +257,11 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       border: 'none',
                       borderRadius: '3px',
                       cursor: index === 0 ? 'not-allowed' : 'pointer',
-                      opacity: index === 0 ? 0.5 : 1
+                      opacity: index === 0 ? 0.5 : 0.7,
+                      transition: 'opacity 0.2s'
                     }}
+                    onMouseOver={e => e.currentTarget.style.opacity = index === 0 ? '0.5' : '1'}
+                    onMouseOut={e => e.currentTarget.style.opacity = index === 0 ? '0.5' : '0.7'}
                   >
                     ↑
                   </button>
@@ -126,10 +276,40 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       border: 'none',
                       borderRadius: '3px',
                       cursor: index === event.matches.length - 1 ? 'not-allowed' : 'pointer',
-                      opacity: index === event.matches.length - 1 ? 0.5 : 1
+                      opacity: index === event.matches.length - 1 ? 0.5 : 0.7,
+                      transition: 'opacity 0.2s'
                     }}
+                    onMouseOver={e => e.currentTarget.style.opacity = index === event.matches.length - 1 ? '0.5' : '1'}
+                    onMouseOut={e => e.currentTarget.style.opacity = index === event.matches.length - 1 ? '0.5' : '0.7'}
                   >
                     ↓
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this match?')) {
+                        const updatedMatches = [...event.matches];
+                        updatedMatches.splice(index, 1);
+                        updatedMatches.forEach((match, idx) => {
+                          match.order = idx + 1;
+                        });
+                        onEditMatch(event.id, updatedMatches);
+                      }
+                    }}
+                    style={{ 
+                      padding: '2px 6px',
+                      fontSize: '12px',
+                      backgroundColor: '#e24a4a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      opacity: 0.7,
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                    onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
+                  >
+                    ×
                   </button>
                 </div>
               </td>
@@ -177,9 +357,16 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             color: '#b02a37',
             cursor: 'pointer',
             transition: 'background 0.2s',
+            opacity: 0.7
           }}
-          onMouseOver={e => e.currentTarget.style.background = '#f8d7da'}
-          onMouseOut={e => e.currentTarget.style.background = '#fff'}
+          onMouseOver={e => {
+            e.currentTarget.style.background = '#f8d7da';
+            e.currentTarget.style.opacity = '1';
+          }}
+          onMouseOut={e => {
+            e.currentTarget.style.background = '#fff';
+            e.currentTarget.style.opacity = '0.7';
+          }}
         >
           Delete
         </button>
