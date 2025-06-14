@@ -384,7 +384,11 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               <td>{match.result}</td>
               <td>{match.method}</td>
               <td>{match.time}</td>
-              <td>{match.stipulation}</td>
+              <td>{
+                match.stipulation === "Custom/Other" && match.customStipulation
+                  ? match.customStipulation
+                  : match.stipulation
+              }</td>
               <td>{match.titleOutcome || ""}</td>
               <td>
                 <div style={{ display: 'flex', gap: '4px' }}>
