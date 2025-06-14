@@ -1100,6 +1100,11 @@ function App() {
         ? { ...event, matches: updatedMatches }
         : event
     ));
+    // Persist the updated matches to Supabase
+    const eventToUpdate = events.find(event => event.id === eventId);
+    if (eventToUpdate) {
+      updateEvent({ ...eventToUpdate, matches: updatedMatches });
+    }
   };
 
   if (loading) {
