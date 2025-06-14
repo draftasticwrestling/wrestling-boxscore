@@ -81,12 +81,50 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     cardType: idx === arr.length - 1 ? "Main Event" : "Undercard"
   }));
 
+  // Stipulation, Method, and Title Outcome options (reuse from AddEvent)
+  const STIPULATION_OPTIONS = [
+    "None",
+    "Undisputed WWE Championship",
+    "World Heavyweight Championship",
+    "Men's IC Championship",
+    "Men's U.S. Championship",
+    "Raw Tag Team Championship",
+    "SmackDown Tag Team Championship",
+    "Men's Speed Championship",
+    "WWE Women's Championship",
+    "World Women's Championship",
+    "Women's IC Championship",
+    "Women's U.S. Championship",
+    "Women's Tag Team Championship",
+    "Women's Speed Championship",
+    "Custom/Other"
+  ];
+  const METHOD_OPTIONS = [
+    "Pinfall",
+    "Submission",
+    "DQ",
+    "Count out",
+    "No Contest",
+    "Draw",
+    "Unhook the prize",
+    "Escape",
+    "Elimination",
+    "KO / Last Man Standing",
+    "Enclosure win",
+    "Points / Decision"
+  ];
+  const TITLE_OUTCOME_OPTIONS = [
+    "None",
+    "Successful Defense",
+    "New Champion"
+  ];
+
   if (isEditingMatch) {
     return (
       <div style={{ padding: 24, fontFamily: 'Arial, sans-serif', background: '#232323', minHeight: '100vh' }}>
         <Link to="/" style={{ color: '#6fa1ff' }}>← Back to Events</Link>
         <h2 style={{ color: 'white', marginTop: 24 }}>Edit Match</h2>
-        <div style={{ 
+        <form style={{ 
           marginTop: 16, 
           padding: 0, 
           border: '1px solid #888', 
@@ -94,8 +132,8 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
           backgroundColor: 'transparent',
           maxWidth: 400
         }}>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
               Participants:
             </label>
             <input 
@@ -103,18 +141,18 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, participants: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 10, 
+                padding: 8, 
                 fontSize: '15px',
                 border: '1px solid #888',
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 8
+                marginBottom: 4
               }}
             />
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
               Result:
             </label>
             <input 
@@ -122,37 +160,43 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, result: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 10, 
+                padding: 8, 
                 fontSize: '15px',
                 border: '1px solid #888',
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 8
+                marginBottom: 4
               }}
             />
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
               Method:
             </label>
-            <input 
-              value={editedMatch.method} 
-              onChange={e => setEditedMatch({...editedMatch, method: e.target.value})} 
-              style={{ 
-                width: '100%', 
-                padding: 10, 
+            <select
+              value={editedMatch.method}
+              onChange={e => setEditedMatch({ ...editedMatch, method: e.target.value })}
+              style={{
+                width: '100%',
+                padding: 8,
                 fontSize: '15px',
                 border: '1px solid #888',
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 8
+                marginBottom: 4
               }}
-            />
+              required
+            >
+              <option value="">Select method</option>
+              {METHOD_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
               Time:
             </label>
             <input 
@@ -160,53 +204,61 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               onChange={e => setEditedMatch({...editedMatch, time: e.target.value})} 
               style={{ 
                 width: '100%', 
-                padding: 10, 
+                padding: 8, 
                 fontSize: '15px',
                 border: '1px solid #888',
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 8
+                marginBottom: 4
               }}
             />
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
               Stipulation:
             </label>
-            <input 
-              value={editedMatch.stipulation} 
-              onChange={e => setEditedMatch({...editedMatch, stipulation: e.target.value})} 
-              style={{ 
-                width: '100%', 
-                padding: 10, 
+            <select
+              value={editedMatch.stipulation}
+              onChange={e => setEditedMatch({ ...editedMatch, stipulation: e.target.value })}
+              style={{
+                width: '100%',
+                padding: 8,
                 fontSize: '15px',
                 border: '1px solid #888',
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 8
+                marginBottom: 4
               }}
-            />
+            >
+              {STIPULATION_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
               Title Outcome:
             </label>
-            <input 
-              value={editedMatch.titleOutcome} 
-              onChange={e => setEditedMatch({...editedMatch, titleOutcome: e.target.value})} 
-              style={{ 
-                width: '100%', 
-                padding: 10, 
+            <select
+              value={editedMatch.titleOutcome || "None"}
+              onChange={e => setEditedMatch({ ...editedMatch, titleOutcome: e.target.value === "None" ? "" : e.target.value })}
+              style={{
+                width: '100%',
+                padding: 8,
                 fontSize: '15px',
                 border: '1px solid #888',
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 8
+                marginBottom: 4
               }}
-            />
+            >
+              {TITLE_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
           <div style={{ 
             marginTop: 24,
@@ -215,6 +267,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             justifyContent: 'flex-end'
           }}>
             <button 
+              type="button"
               onClick={handleCancelEditMatch}
               style={{ 
                 padding: '10px 20px',
@@ -232,6 +285,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               Cancel
             </button>
             <button 
+              type="button"
               onClick={handleSaveMatch} 
               style={{ 
                 padding: '10px 20px',
@@ -249,7 +303,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               Save Changes
             </button>
           </div>
-        </div>
+        </form>
       </div>
     );
   }
@@ -619,7 +673,12 @@ function AddEvent({ addEvent }) {
         <div>
           <label>
             Method:<br />
-            <input value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }} />
+            <select value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }}>
+              <option value="">Select method</option>
+              {METHOD_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </label>
         </div>
         <div>
@@ -823,7 +882,12 @@ function EditEvent({ events, updateEvent }) {
         <div>
           <label>
             Method:<br />
-            <input value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }} />
+            <select value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }}>
+              <option value="">Select method</option>
+              {METHOD_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </label>
         </div>
         <div>
