@@ -128,6 +128,23 @@ function EventBoxScore({ events, onDelete }) {
 
 // Add Event Form Component (separate forms for event and match)
 function AddEvent({ addEvent }) {
+  const EVENT_TYPES = [
+    "RAW",
+    "SmackDown",
+    "Backlash",
+    "Bad Blood",
+    "Clash in Paris",
+    "Crown Jewel",
+    "Elimination Chamber",
+    "Evolution",
+    "Money in the Bank",
+    "Night of Champions",
+    "Royal Rumble",
+    "Saturday Night's Main Event",
+    "Summer Slam",
+    "Survivor Series"
+  ];
+
   const STIPULATION_OPTIONS = [
     "None",
     "Undisputed WWE Championship",
@@ -161,6 +178,7 @@ function AddEvent({ addEvent }) {
   ];
 
   const [name, setName] = useState('');
+  const [eventType, setEventType] = useState('');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
   const [matches, setMatches] = useState([]);
@@ -200,14 +218,14 @@ function AddEvent({ addEvent }) {
   // Save the event
   const handleSaveEvent = (e) => {
     e.preventDefault();
-    if (!name || !date || !location || matches.length === 0) {
+    if (!eventType || !date || !location || matches.length === 0) {
       alert('Please fill out all event fields and add at least one match.');
       return;
     }
-    const id = name.toLowerCase().replace(/\s+/g, '-') + '-' + date.replace(/[^0-9]/g, '');
+    const id = eventType.toLowerCase().replace(/\s+/g, '-') + '-' + date.replace(/[^0-9]/g, '');
     const eventData = {
       id,
-      name,
+      name: eventType,
       date,
       location,
       matches
@@ -230,8 +248,18 @@ function AddEvent({ addEvent }) {
       <form>
         <div>
           <label>
-            Event Name:<br />
-            <input value={name} onChange={e => setName(e.target.value)} required style={{ width: '100%' }} />
+            Event Type:<br />
+            <select 
+              value={eventType} 
+              onChange={e => setEventType(e.target.value)} 
+              required 
+              style={{ width: '100%', marginBottom: 16 }}
+            >
+              <option value="">Select an event type</option>
+              {EVENT_TYPES.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
           </label>
         </div>
         <div>
