@@ -684,17 +684,46 @@ function AddEvent({ addEvent }) {
           </label>
         </div>
         {match.stipulation === "Custom/Other" && (
-          <div>
-            <label>
-              Custom Stipulation:<br />
-              <input
-                value={match.customStipulation}
-                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                required
-                style={{ width: '100%' }}
-              />
-            </label>
-          </div>
+          <>
+            <div>
+              <label>
+                Custom Stipulation:<br />
+                <input
+                  value={match.customStipulation}
+                  onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </label>
+            </div>
+            <div>
+              <label>
+                Special Match Winner:<br />
+                <select
+                  value={match.specialWinnerType || "None"}
+                  onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+                  style={{ width: '100%' }}
+                >
+                  {SPECIAL_WINNER_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {match.specialWinnerType && match.specialWinnerType !== "None" && (
+              <div style={{ marginTop: 8 }}>
+                <label>
+                  Winner Name:<br />
+                  <input
+                    value={match.specialWinnerName || ''}
+                    onChange={e => setMatch({ ...match, specialWinnerName: e.target.value })}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </label>
+              </div>
+            )}
+          </>
         )}
         <div>
           <label>
@@ -708,34 +737,6 @@ function AddEvent({ addEvent }) {
         </div>
         <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
       </form>
-      {/* Special Match Winner section */}
-      <div style={{ border: '1px solid #ccc', padding: 12, marginTop: 24 }}>
-        <label>
-          Special Match Winner:<br />
-          <select
-            value={specialWinnerType}
-            onChange={e => setSpecialWinnerType(e.target.value)}
-            style={{ width: '100%' }}
-          >
-            {SPECIAL_WINNER_OPTIONS.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </label>
-        {specialWinnerType !== "None" && (
-          <div style={{ marginTop: 8 }}>
-            <label>
-              Winner Name:<br />
-              <input
-                value={specialWinnerName}
-                onChange={e => setSpecialWinnerName(e.target.value)}
-                required
-                style={{ width: '100%' }}
-              />
-            </label>
-          </div>
-        )}
-      </div>
       {/* Save Event button */}
       <button
         type="button"
