@@ -535,7 +535,8 @@ function App() {
       console.log('Attempting to fetch from Supabase...');
       const { data, error } = await supabase
         .from('events')
-        .select('*');
+        .select('*')
+        .order('date', { ascending: false });
 
       if (error) {
         console.error('Supabase error:', error);
@@ -547,7 +548,13 @@ function App() {
         console.log('No data returned from Supabase, using initial events');
         setEvents(initialEvents);
       } else {
-        setEvents(data);
+        // Sort events by date (newest first)
+        const sortedEvents = data.sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateB - dateA;
+        });
+        setEvents(sortedEvents);
       }
     } catch (error) {
       console.error('Error fetching events:', error);
