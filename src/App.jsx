@@ -40,6 +40,19 @@ const TITLE_OUTCOME_OPTIONS = [
   "Successful Defense",
   "New Champion"
 ];
+const SPECIAL_WINNER_OPTIONS = [
+  "None",
+  "Women's Money in the Bank winner",
+  "Men's Money in the Bank winner",
+  "Men's Royal Rumble winner",
+  "Women's Royal Rumble winner",
+  "Men's Elimination Chamber winner",
+  "Women's Elimination Chamber winner",
+  "King of the Ring winner",
+  "Queen of the Ring winner",
+  "Men's Ultimate Survivor",
+  "Women's Ultimate Survivor"
+];
 
 // Event List Component
 function EventList({ events }) {
@@ -130,7 +143,8 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
           border: '1px solid #888', 
           borderRadius: 4,
           backgroundColor: 'transparent',
-          maxWidth: 400
+          maxWidth: 400,
+          margin: '0 auto'
         }}>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
@@ -147,7 +161,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 4
+                marginBottom: 8
               }}
             />
           </div>
@@ -166,7 +180,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 4
+                marginBottom: 8
               }}
             />
           </div>
@@ -185,7 +199,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 4
+                marginBottom: 8
               }}
               required
             >
@@ -210,7 +224,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 4
+                marginBottom: 8
               }}
             />
           </div>
@@ -229,7 +243,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 4
+                marginBottom: 8
               }}
             >
               {STIPULATION_OPTIONS.map(opt => (
@@ -255,7 +269,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     borderRadius: 3,
                     backgroundColor: '#232323',
                     color: 'white',
-                    marginBottom: 4
+                    marginBottom: 8
                   }}
                 />
               </div>
@@ -274,7 +288,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     borderRadius: 3,
                     backgroundColor: '#232323',
                     color: 'white',
-                    marginBottom: 4
+                    marginBottom: 8
                   }}
                 >
                   {SPECIAL_WINNER_OPTIONS.map(opt => (
@@ -538,20 +552,6 @@ function AddEvent({ addEvent }) {
     "Saturday Night's Main Event",
     "Summer Slam",
     "Survivor Series"
-  ];
-
-  const SPECIAL_WINNER_OPTIONS = [
-    "None",
-    "Women's Money in the Bank winner",
-    "Men's Money in the Bank winner",
-    "Men's Royal Rumble winner",
-    "Women's Royal Rumble winner",
-    "Men's Elimination Chamber winner",
-    "Women's Elimination Chamber winner",
-    "King of the Ring winner",
-    "Queen of the Ring winner",
-    "Men's Ultimate Survivor",
-    "Women's Ultimate Survivor"
   ];
 
   const [name, setName] = useState('');
@@ -904,7 +904,7 @@ function EditEvent({ events, updateEvent }) {
                 borderRadius: 3,
                 backgroundColor: '#232323',
                 color: 'white',
-                marginBottom: 4
+                marginBottom: 8
               }}
             >
               {STIPULATION_OPTIONS.map(opt => (
@@ -931,7 +931,7 @@ function EditEvent({ events, updateEvent }) {
                   borderRadius: 3,
                   backgroundColor: '#232323',
                   color: 'white',
-                  marginBottom: 4
+                  marginBottom: 8
                 }}
               />
             </div>
@@ -950,7 +950,7 @@ function EditEvent({ events, updateEvent }) {
                   borderRadius: 3,
                   backgroundColor: '#232323',
                   color: 'white',
-                  marginBottom: 4
+                  marginBottom: 8
                 }}
               >
                 {SPECIAL_WINNER_OPTIONS.map(opt => (
