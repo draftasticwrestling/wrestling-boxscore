@@ -758,9 +758,22 @@ function AddEvent({ addEvent }) {
         )}
       </form>
       {/* Match fields form */}
-      {eventStatus === 'completed' && (
-        <>
-          <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+      <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+        <div>
+          <label>
+            Participants:<br />
+            <input value={match.participants} onChange={e => {
+              const newParticipants = e.target.value;
+              const newOptions = newParticipants.includes(' vs ')
+                ? newParticipants.split(' vs ').map(side => side.trim())
+                : [];
+              if (!newOptions.includes(winner)) setWinner('');
+              setMatch({ ...match, participants: newParticipants });
+            }} required style={{ width: '100%' }} />
+          </label>
+        </div>
+        {eventStatus === 'completed' && (
+          <>
             <div>
               <label>
                 Result Type:<br />
@@ -809,9 +822,37 @@ function AddEvent({ addEvent }) {
                 <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
               </label>
             </div>
-          </form>
-        </>
-      )}
+          </>
+        )}
+        <div>
+          <label>
+            Stipulation:<br />
+            <select
+              value={match.stipulation}
+              onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
+              style={{ width: '100%' }}
+            >
+              {STIPULATION_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {match.stipulation === "Custom/Other" && (
+          <div>
+            <label>
+              Custom Stipulation:<br />
+              <input
+                value={match.customStipulation}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                required={(!match.specialWinnerType || match.specialWinnerType === "None")}
+                style={{ width: '100%' }}
+              />
+            </label>
+          </div>
+        )}
+        <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
+      </form>
       {/* Save Event button */}
       <button
         type="button"
