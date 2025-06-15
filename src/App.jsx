@@ -85,9 +85,9 @@ const sectionStyle = {
   background: 'rgba(20, 20, 20, 0.98)',
   borderRadius: 12,
   boxShadow: '0 0 24px #FFD70022',
-  padding: 24,
+  padding: '24px 40px',
   margin: '24px auto',
-  maxWidth: 900,
+  maxWidth: 1200,
 };
 const tableStyle = {
   width: '100%',
