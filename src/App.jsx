@@ -64,7 +64,7 @@ function EventList({ events }) {
         {events.map(event => (
           <li key={event.id} style={{ marginBottom: 16 }}>
             <Link to={`/event/${event.id}`}>
-              <strong>{event.name}</strong>
+              <strong>{event.name}{event.status === 'upcoming' ? ' (upcoming)' : ''}</strong>
             </Link>
             <br />
             {event.date} — {event.location}
@@ -390,7 +390,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             <th>#</th>
             <th>Card</th>
             <th>Match</th>
-            <th>Result</th>
+            <th>Winner</th>
             <th>Method</th>
             <th>Time</th>
             <th>Stipulation</th>
@@ -404,7 +404,11 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               <td>{match.order}</td>
               <td>{match.cardType}</td>
               <td>{match.participants}</td>
-              <td>{match.result}</td>
+              <td>{
+                match.result && match.result.includes(' def. ')
+                  ? match.result.split(' def. ')[0]
+                  : (match.result ? match.result : 'None')
+              }</td>
               <td>{match.method}</td>
               <td>{match.time}</td>
               <td>{
@@ -577,8 +581,11 @@ function AddEvent({ addEvent }) {
     "Night of Champions",
     "Royal Rumble",
     "Saturday Night's Main Event",
-    "Summer Slam",
-    "Survivor Series"
+    "Summer Slam night 1",
+    "Summer Slam night 2",
+    "Survivor Series",
+    "WrestleMania night 1",
+    "WrestleMania night 2"
   ];
 
   const [name, setName] = useState('');
@@ -889,15 +896,43 @@ function EditEvent({ events, updateEvent }) {
     method: '',
     time: '',
     stipulation: '',
+    customStipulation: '',
     titleOutcome: ''
   });
+  const [resultType, setResultType] = useState('');
+  const [winner, setWinner] = useState('');
+  const eventStatus = event.status || 'completed';
+
+  // Winner options based on participants
+  const winnerOptions = match.participants.includes(' vs ')
+    ? match.participants.split(' vs ').map(side => side.trim())
+    : [];
 
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
+    if (eventStatus === 'upcoming') {
+      if (!match.participants) {
+        alert('Please enter participants.');
+        return;
+      }
+    } else {
+      if (!match.participants || !resultType || (resultType === 'Winner' && !winner) || !match.method) {
+        alert('Please fill out all required match fields.');
+        return;
+      }
+    }
+    let finalStipulation = match.stipulation === "Custom/Other" ? match.customStipulation : 
+                          match.stipulation === "None" ? "" : match.stipulation;
+    let result = '';
+    if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length === 2) {
+      const [sideA, sideB] = winnerOptions;
+      const loser = winner === sideA ? sideB : sideA;
+      result = `${winner} def. ${loser}`;
+    }
     setMatches([
       ...matches,
-      { ...match, order: matches.length + 1 }
+      { ...match, result, stipulation: finalStipulation, order: matches.length + 1 }
     ]);
     setMatch({
       participants: '',
@@ -905,13 +940,11 @@ function EditEvent({ events, updateEvent }) {
       method: '',
       time: '',
       stipulation: '',
+      customStipulation: '',
       titleOutcome: ''
     });
-  };
-
-  // Remove a match from the matches list
-  const handleDeleteMatch = (order) => {
-    setMatches(matches.filter(m => m.order !== order).map((m, idx) => ({ ...m, order: idx + 1 })));
+    setResultType('');
+    setWinner('');
   };
 
   // Save the edited event
@@ -961,7 +994,13 @@ function EditEvent({ events, updateEvent }) {
             {matches.map((m, idx) => (
               <li key={idx}>
                 <strong>{m.participants}</strong> — {m.result} ({m.stipulation})
-                <button type="button" onClick={() => handleDeleteMatch(m.order)} style={{ color: 'red', marginLeft: 8 }}>Delete</button>
+                <button type="button" onClick={() => {
+                  const updatedMatches = matches.filter(match => match.order !== m.order);
+                  updatedMatches.forEach((match, idx) => {
+                    match.order = idx + 1;
+                  });
+                  setMatches(updatedMatches);
+                }} style={{ color: 'red', marginLeft: 8 }}>Delete</button>
               </li>
             ))}
           </ol>
@@ -974,7 +1013,6 @@ function EditEvent({ events, updateEvent }) {
             Participants:<br />
             <input value={match.participants} onChange={e => {
               const newParticipants = e.target.value;
-              // If winner is not in new options, reset winner
               const newOptions = newParticipants.includes(' vs ')
                 ? newParticipants.split(' vs ').map(side => side.trim())
                 : [];
@@ -983,22 +1021,65 @@ function EditEvent({ events, updateEvent }) {
             }} required style={{ width: '100%' }} />
           </label>
         </div>
+        {eventStatus === 'completed' && (
+          <>
+            <div>
+              <label>
+                Result Type:<br />
+                <select value={resultType} onChange={e => {
+                  setResultType(e.target.value);
+                  setWinner('');
+                }} style={{ width: '100%' }} required>
+                  <option value="">Select result type...</option>
+                  <option value="Winner">Winner</option>
+                  <option value="No Winner">No Winner</option>
+                </select>
+              </label>
+            </div>
+            {resultType === 'Winner' && winnerOptions.length === 2 && (
+              <div>
+                <label>
+                  Winner:<br />
+                  <select
+                    value={winner}
+                    onChange={e => setWinner(e.target.value)}
+                    style={{ width: '100%' }}
+                    required
+                  >
+                    <option value="">Select winner</option>
+                    {winnerOptions.map(side => (
+                      <option key={side} value={side}>{side}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+            <div>
+              <label>
+                Method:<br />
+                <select value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }}>
+                  <option value="">Select method</option>
+                  {METHOD_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div>
+              <label>
+                Time:<br />
+                <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
+              </label>
+            </div>
+          </>
+        )}
         <div>
           <label>
             Stipulation:<br />
             <select
               value={match.stipulation}
-              onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '', specialWinnerType: 'None' })}
-              style={{
-                width: '100%',
-                padding: 8,
-                fontSize: '15px',
-                border: '1px solid #888',
-                borderRadius: 3,
-                backgroundColor: '#232323',
-                color: 'white',
-                marginBottom: 8
-              }}
+              onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
+              style={{ width: '100%' }}
             >
               {STIPULATION_OPTIONS.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
@@ -1007,62 +1088,18 @@ function EditEvent({ events, updateEvent }) {
           </label>
         </div>
         {match.stipulation === "Custom/Other" && (
-          <>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
-                Custom Stipulation:
-              </label>
+          <div>
+            <label>
+              Custom Stipulation:<br />
               <input
-                value={match.customStipulation || ''}
+                value={match.customStipulation}
                 onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
                 required={(!match.specialWinnerType || match.specialWinnerType === "None")}
-                style={{
-                  width: '100%',
-                  padding: 8,
-                  fontSize: '15px',
-                  border: '1px solid #888',
-                  borderRadius: 3,
-                  backgroundColor: '#232323',
-                  color: 'white',
-                  marginBottom: 8
-                }}
+                style={{ width: '100%' }}
               />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
-                Special Match Winner:
-              </label>
-              <select
-                value={match.specialWinnerType || "None"}
-                onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: 8,
-                  fontSize: '15px',
-                  border: '1px solid #888',
-                  borderRadius: 3,
-                  backgroundColor: '#232323',
-                  color: 'white',
-                  marginBottom: 8
-                }}
-              >
-                {SPECIAL_WINNER_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-          </>
+            </label>
+          </div>
         )}
-        <div>
-          <label>
-            Title Outcome:<br />
-            <select value={match.titleOutcome} onChange={e => setMatch({ ...match, titleOutcome: e.target.value })} style={{ width: '100%' }}>
-              <option value="">None</option>
-              <option value="Successful Defense">Successful Defense</option>
-              <option value="New Champion">New Champion</option>
-            </select>
-          </label>
-        </div>
         <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
       </form>
       {/* Save Event button */}
