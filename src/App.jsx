@@ -601,14 +601,19 @@ function AddEvent({ addEvent }) {
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
 
+  // Add a derived value for winner options
+  const winnerOptions = match.participants.includes(' vs ')
+    ? match.participants.split(' vs ').map(side => side.trim())
+    : [];
+
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
     let finalStipulation = match.stipulation === "Custom/Other" ? match.customStipulation : 
                           match.stipulation === "None" ? "" : match.stipulation;
     let result = '';
-    if (resultType === 'Winner' && winner) {
-      const [sideA, sideB] = match.participants.split(' vs ');
+    if (resultType === 'Winner' && winner && winnerOptions.length === 2) {
+      const [sideA, sideB] = winnerOptions;
       const loser = winner === sideA ? sideB : sideA;
       result = `${winner} def. ${loser}`;
     }
@@ -704,7 +709,15 @@ function AddEvent({ addEvent }) {
         <div>
           <label>
             Participants:<br />
-            <input value={match.participants} onChange={e => setMatch({ ...match, participants: e.target.value })} required style={{ width: '100%' }} />
+            <input value={match.participants} onChange={e => {
+              const newParticipants = e.target.value;
+              // If winner is not in new options, reset winner
+              const newOptions = newParticipants.includes(' vs ')
+                ? newParticipants.split(' vs ').map(side => side.trim())
+                : [];
+              if (!newOptions.includes(winner)) setWinner('');
+              setMatch({ ...match, participants: newParticipants });
+            }} required style={{ width: '100%' }} />
           </label>
         </div>
         <div>
@@ -720,7 +733,7 @@ function AddEvent({ addEvent }) {
             </select>
           </label>
         </div>
-        {resultType === 'Winner' && match.participants.includes(' vs ') && (
+        {resultType === 'Winner' && winnerOptions.length === 2 && (
           <div>
             <label>
               Winner:<br />
@@ -731,7 +744,7 @@ function AddEvent({ addEvent }) {
                 required
               >
                 <option value="">Select winner</option>
-                {match.participants.split(' vs ').map(side => (
+                {winnerOptions.map(side => (
                   <option key={side} value={side}>{side}</option>
                 ))}
               </select>
@@ -926,7 +939,15 @@ function EditEvent({ events, updateEvent }) {
         <div>
           <label>
             Participants:<br />
-            <input value={match.participants} onChange={e => setMatch({ ...match, participants: e.target.value })} required style={{ width: '100%' }} />
+            <input value={match.participants} onChange={e => {
+              const newParticipants = e.target.value;
+              // If winner is not in new options, reset winner
+              const newOptions = newParticipants.includes(' vs ')
+                ? newParticipants.split(' vs ').map(side => side.trim())
+                : [];
+              if (!newOptions.includes(winner)) setWinner('');
+              setMatch({ ...match, participants: newParticipants });
+            }} required style={{ width: '100%' }} />
           </label>
         </div>
         <div>
@@ -942,7 +963,7 @@ function EditEvent({ events, updateEvent }) {
             </select>
           </label>
         </div>
-        {resultType === 'Winner' && match.participants.includes(' vs ') && (
+        {resultType === 'Winner' && winnerOptions.length === 2 && (
           <div>
             <label>
               Winner:<br />
@@ -953,7 +974,7 @@ function EditEvent({ events, updateEvent }) {
                 required
               >
                 <option value="">Select winner</option>
-                {match.participants.split(' vs ').map(side => (
+                {winnerOptions.map(side => (
                   <option key={side} value={side}>{side}</option>
                 ))}
               </select>
