@@ -822,7 +822,7 @@ function AddEvent({ addEvent }) {
           <div>
             <label>
               Date:<br />
-              <input value={date} onChange={e => setDate(e.target.value)} required placeholder="e.g. June 9, 2025" style={{ width: '100%' }} />
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} required style={{ width: '100%' }} />
             </label>
           </div>
           <div>
@@ -1124,7 +1124,7 @@ function EditEvent({ events, updateEvent }) {
           <div>
             <label>
               Date:<br />
-              <input value={date} onChange={e => setDate(e.target.value)} required placeholder="e.g. June 9, 2025" style={{ width: '100%' }} />
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} required style={{ width: '100%' }} />
             </label>
           </div>
           <div>
