@@ -141,6 +141,14 @@ const buttonStyle = {
   transition: 'background 0.2s, color 0.2s',
 };
 
+const participantsTdStyle = {
+  ...tdStyle,
+  minWidth: 220,
+  maxWidth: 400,
+  wordBreak: 'break-word',
+  fontSize: '1.08em',
+};
+
 // Event List Component
 function EventList({ events }) {
   return (
@@ -528,7 +536,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               <tr key={match.order}>
                 <td style={tdStyle}>{match.order}</td>
                 <td style={tdStyle}>{match.cardType}</td>
-                <td style={tdStyle}>{match.participants}</td>
+                <td style={participantsTdStyle}>{match.participants}</td>
                 <td style={tdStyle}>{
                   match.result && match.result.includes(' def. ')
                     ? match.result.split(' def. ')[0]
