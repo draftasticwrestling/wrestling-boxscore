@@ -598,7 +598,7 @@ function AddEvent({ addEvent }) {
   const [specialWinnerType, setSpecialWinnerType] = useState("None");
   const [specialWinnerName, setSpecialWinnerName] = useState('');
   const navigate = useNavigate();
-  const [resultType, setResultType] = useState('Winner');
+  const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
 
   // Add a match to the matches list
@@ -606,9 +606,15 @@ function AddEvent({ addEvent }) {
     e.preventDefault();
     let finalStipulation = match.stipulation === "Custom/Other" ? match.customStipulation : 
                           match.stipulation === "None" ? "" : match.stipulation;
+    let result = '';
+    if (resultType === 'Winner' && winner) {
+      const [sideA, sideB] = match.participants.split(' vs ');
+      const loser = winner === sideA ? sideB : sideA;
+      result = `${winner} def. ${loser}`;
+    }
     setMatches([
       ...matches,
-      { ...match, stipulation: finalStipulation, order: matches.length + 1 }
+      { ...match, result, stipulation: finalStipulation, order: matches.length + 1 }
     ]);
     setMatch({
       participants: '',
@@ -619,6 +625,8 @@ function AddEvent({ addEvent }) {
       customStipulation: '',
       titleOutcome: ''
     });
+    setResultType('');
+    setWinner('');
   };
 
   // Save the event
@@ -705,10 +713,8 @@ function AddEvent({ addEvent }) {
             <select value={resultType} onChange={e => {
               setResultType(e.target.value);
               setWinner('');
-              if (e.target.value === 'No Winner') {
-                setMatch({ ...match, result: '' });
-              }
-            }} style={{ width: '100%' }}>
+            }} style={{ width: '100%' }} required>
+              <option value="">Select result type...</option>
               <option value="Winner">Winner</option>
               <option value="No Winner">No Winner</option>
             </select>
@@ -720,14 +726,9 @@ function AddEvent({ addEvent }) {
               Winner:<br />
               <select
                 value={winner}
-                onChange={e => {
-                  setWinner(e.target.value);
-                  // Parse participants
-                  const [sideA, sideB] = match.participants.split(' vs ');
-                  const loser = e.target.value === sideA ? sideB : sideA;
-                  setMatch({ ...match, result: `${e.target.value} def. ${loser}` });
-                }}
+                onChange={e => setWinner(e.target.value)}
                 style={{ width: '100%' }}
+                required
               >
                 <option value="">Select winner</option>
                 {match.participants.split(' vs ').map(side => (
@@ -737,12 +738,6 @@ function AddEvent({ addEvent }) {
             </label>
           </div>
         )}
-        <div>
-          <label>
-            Result:<br />
-            <input value={match.result} onChange={e => setMatch({ ...match, result: e.target.value })} required style={{ width: '100%' }} />
-          </label>
-        </div>
         <div>
           <label>
             Method:<br />
@@ -936,10 +931,35 @@ function EditEvent({ events, updateEvent }) {
         </div>
         <div>
           <label>
-            Result:<br />
-            <input value={match.result} onChange={e => setMatch({ ...match, result: e.target.value })} required style={{ width: '100%' }} />
+            Result Type:<br />
+            <select value={resultType} onChange={e => {
+              setResultType(e.target.value);
+              setWinner('');
+            }} style={{ width: '100%' }} required>
+              <option value="">Select result type...</option>
+              <option value="Winner">Winner</option>
+              <option value="No Winner">No Winner</option>
+            </select>
           </label>
         </div>
+        {resultType === 'Winner' && match.participants.includes(' vs ') && (
+          <div>
+            <label>
+              Winner:<br />
+              <select
+                value={winner}
+                onChange={e => setWinner(e.target.value)}
+                style={{ width: '100%' }}
+                required
+              >
+                <option value="">Select winner</option>
+                {match.participants.split(' vs ').map(side => (
+                  <option key={side} value={side}>{side}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
         <div>
           <label>
             Method:<br />
