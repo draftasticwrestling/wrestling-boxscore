@@ -598,6 +598,8 @@ function AddEvent({ addEvent }) {
   const [specialWinnerType, setSpecialWinnerType] = useState("None");
   const [specialWinnerName, setSpecialWinnerName] = useState('');
   const navigate = useNavigate();
+  const [resultType, setResultType] = useState('Winner');
+  const [winner, setWinner] = useState('');
 
   // Add a match to the matches list
   const handleAddMatch = (e) => {
@@ -697,6 +699,44 @@ function AddEvent({ addEvent }) {
             <input value={match.participants} onChange={e => setMatch({ ...match, participants: e.target.value })} required style={{ width: '100%' }} />
           </label>
         </div>
+        <div>
+          <label>
+            Result Type:<br />
+            <select value={resultType} onChange={e => {
+              setResultType(e.target.value);
+              setWinner('');
+              if (e.target.value === 'No Winner') {
+                setMatch({ ...match, result: '' });
+              }
+            }} style={{ width: '100%' }}>
+              <option value="Winner">Winner</option>
+              <option value="No Winner">No Winner</option>
+            </select>
+          </label>
+        </div>
+        {resultType === 'Winner' && match.participants.includes(' vs ') && (
+          <div>
+            <label>
+              Winner:<br />
+              <select
+                value={winner}
+                onChange={e => {
+                  setWinner(e.target.value);
+                  // Parse participants
+                  const [sideA, sideB] = match.participants.split(' vs ');
+                  const loser = e.target.value === sideA ? sideB : sideA;
+                  setMatch({ ...match, result: `${e.target.value} def. ${loser}` });
+                }}
+                style={{ width: '100%' }}
+              >
+                <option value="">Select winner</option>
+                {match.participants.split(' vs ').map(side => (
+                  <option key={side} value={side}>{side}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
         <div>
           <label>
             Result:<br />
