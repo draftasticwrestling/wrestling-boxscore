@@ -610,6 +610,17 @@ function AddEvent({ addEvent }) {
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
+    if (eventStatus === 'upcoming') {
+      if (!match.participants) {
+        alert('Please enter participants.');
+        return;
+      }
+    } else {
+      if (!match.participants || !resultType || (resultType === 'Winner' && !winner) || !match.method) {
+        alert('Please fill out all required match fields.');
+        return;
+      }
+    }
     let finalStipulation = match.stipulation === "Custom/Other" ? match.customStipulation : 
                           match.stipulation === "None" ? "" : match.stipulation;
     let result = '';
@@ -642,6 +653,14 @@ function AddEvent({ addEvent }) {
       alert('Please fill out all event fields and add at least one match.');
       return;
     }
+    // For completed events, require at least one match with all required fields
+    if (eventStatus === 'completed') {
+      const invalidMatch = matches.some(m => !m.participants || !m.method || !m.resultType || (m.resultType === 'Winner' && !m.winner));
+      if (invalidMatch) {
+        alert('Please fill out all required match fields for completed events.');
+        return;
+      }
+    }
     const id = eventType.toLowerCase().replace(/\s+/g, '-') + '-' + date.replace(/[^0-9]/g, '');
     const eventData = {
       id,
@@ -665,6 +684,38 @@ function AddEvent({ addEvent }) {
     <div style={{ padding: 24, fontFamily: 'Arial, sans-serif', maxWidth: 600 }}>
       <Link to="/">← Back to Events</Link>
       <h2>Add New Event</h2>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <button
+          type="button"
+          onClick={() => setEventStatus('upcoming')}
+          style={{
+            padding: '8px 16px',
+            background: eventStatus === 'upcoming' ? '#4a90e2' : '#232323',
+            color: eventStatus === 'upcoming' ? 'white' : '#bbb',
+            border: '1px solid #888',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: eventStatus === 'upcoming' ? 'bold' : 'normal'
+          }}
+        >
+          Upcoming Event
+        </button>
+        <button
+          type="button"
+          onClick={() => setEventStatus('completed')}
+          style={{
+            padding: '8px 16px',
+            background: eventStatus === 'completed' ? '#4a90e2' : '#232323',
+            color: eventStatus === 'completed' ? 'white' : '#bbb',
+            border: '1px solid #888',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: eventStatus === 'completed' ? 'bold' : 'normal'
+          }}
+        >
+          Completed Event
+        </button>
+      </div>
       {/* Event fields form */}
       <form>
         <div>
@@ -694,38 +745,6 @@ function AddEvent({ addEvent }) {
             Location:<br />
             <input value={location} onChange={e => setLocation(e.target.value)} required style={{ width: '100%' }} />
           </label>
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-          <button
-            type="button"
-            onClick={() => setEventStatus('upcoming')}
-            style={{
-              padding: '8px 16px',
-              background: eventStatus === 'upcoming' ? '#4a90e2' : '#232323',
-              color: eventStatus === 'upcoming' ? 'white' : '#bbb',
-              border: '1px solid #888',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontWeight: eventStatus === 'upcoming' ? 'bold' : 'normal'
-            }}
-          >
-            Upcoming Event
-          </button>
-          <button
-            type="button"
-            onClick={() => setEventStatus('completed')}
-            style={{
-              padding: '8px 16px',
-              background: eventStatus === 'completed' ? '#4a90e2' : '#232323',
-              color: eventStatus === 'completed' ? 'white' : '#bbb',
-              border: '1px solid #888',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontWeight: eventStatus === 'completed' ? 'bold' : 'normal'
-            }}
-          >
-            Completed Event
-          </button>
         </div>
         <h3 style={{ marginTop: 24 }}>Add Matches</h3>
         {matches.length > 0 && (
@@ -797,7 +816,10 @@ function AddEvent({ addEvent }) {
       <button
         type="button"
         style={{ marginTop: 24 }}
-        disabled={matches.length === 0}
+        disabled={
+          !eventType || !date || !location || matches.length === 0 ||
+          (eventStatus === 'completed' && matches.some(m => !m.participants || !m.method || !m.resultType || (m.resultType === 'Winner' && !m.winner)))
+        }
         onClick={handleSaveEvent}
       >
         Save Event
