@@ -150,6 +150,21 @@ const participantsTdStyle = {
 };
 
 // Event List Component
+function isUpcomingEST(event) {
+  if (event.status !== 'upcoming') return false;
+  // Parse event date and set to 11:59 PM EST
+  const [year, month, day] = event.date.split('-');
+  // Create a Date object in UTC for 11:59:59 PM EST (which is 04:59:59 UTC next day)
+  const eventEndUTC = new Date(Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day) + 1, // next day
+    4, 59, 59 // 11:59:59 PM EST is 04:59:59 UTC next day
+  ));
+  const nowUTC = new Date();
+  return nowUTC < eventEndUTC;
+}
+
 function EventList({ events }) {
   return (
     <div style={appBackground}>
@@ -183,7 +198,7 @@ function EventList({ events }) {
       }}>+ Add Event</Link>
       <ul style={{ marginTop: 24 }}>
         {events.map(event => {
-          const isUpcoming = event.status === 'upcoming' && new Date(event.date) > new Date();
+          const isUpcoming = isUpcomingEST(event);
           return (
             <li key={event.id} style={{ marginBottom: 16 }}>
               <Link to={`/event/${event.id}`} style={{ color: gold, textShadow: goldTextShadow }}>
