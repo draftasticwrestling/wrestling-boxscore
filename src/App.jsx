@@ -70,21 +70,43 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Custom/Other"
 ];
 
+// Update color variables to match new banner
+const gold = '#C6A04F'; // new gold from banner
+const red = '#D32F2F'; // red from banner
+const cream = '#F5E7D0'; // cream from banner
+
+// Date formatting function
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  // Accepts 'YYYY-MM-DD' or 'Month Day, Year' and returns 'Month Day, Year'
+  let dateObj;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    // Parse as YYYY-MM-DD
+    const [year, month, day] = dateStr.split('-');
+    dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+  } else {
+    dateObj = new Date(dateStr);
+  }
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
 // Add a gold/black theme style at the top level
 const appBackground = {
   minHeight: '100vh',
-  background: 'radial-gradient(ellipse at center, #222 60%, #000 100%)',
-  color: '#f5e7b4',
+  background: '#181511',
+  color: cream,
   fontFamily: 'Arial, sans-serif',
 };
-const gold = '#FFD700';
-const goldTextShadow = '0 0 16px #FFD700, 0 0 32px #FFD70044';
 
 // Add theme styles for reuse
 const sectionStyle = {
   background: 'rgba(20, 20, 20, 0.98)',
   borderRadius: 12,
-  boxShadow: '0 0 24px #FFD70022',
+  boxShadow: '0 0 24px #C6A04F22',
   padding: '24px 40px',
   margin: '24px auto',
   maxWidth: 1200,
@@ -92,21 +114,20 @@ const sectionStyle = {
 const tableStyle = {
   width: '100%',
   background: 'rgba(34, 34, 34, 0.98)',
-  color: '#ffe082',
+  color: gold,
   borderCollapse: 'collapse',
-  boxShadow: '0 0 12px #FFD70022',
+  boxShadow: '0 0 12px #C6A04F22',
 };
 const thStyle = {
   background: '#222',
   color: gold,
   fontWeight: 700,
-  textShadow: goldTextShadow,
-  borderBottom: '2px solid #FFD700',
+  borderBottom: '2px solid #C6A04F',
   padding: 10,
 };
 const tdStyle = {
   background: 'rgba(34, 34, 34, 0.98)',
-  color: '#f5e7b4',
+  color: cream,
   borderBottom: '1px solid #444',
   padding: 10,
 };
@@ -114,10 +135,10 @@ const inputStyle = {
   width: '100%',
   padding: 10,
   fontSize: '15px',
-  border: '1px solid #FFD700',
+  border: `1px solid ${gold}`,
   borderRadius: 4,
   backgroundColor: '#232323',
-  color: '#ffe082',
+  color: gold,
   marginBottom: 12,
 };
 const labelStyle = {
@@ -135,7 +156,7 @@ const buttonStyle = {
   borderRadius: 4,
   fontWeight: 700,
   cursor: 'pointer',
-  boxShadow: '0 0 8px #FFD70044',
+  boxShadow: '0 0 8px #C6A04F22',
   marginRight: 8,
   marginTop: 8,
   transition: 'background 0.2s, color 0.2s',
@@ -146,7 +167,6 @@ const participantsTdStyle = {
   minWidth: 220,
   maxWidth: 400,
   wordBreak: 'break-word',
-  fontSize: '1.08em',
 };
 
 // Event List Component
@@ -178,7 +198,6 @@ function EventList({ events }) {
       <h1 style={{
         textAlign: 'center',
         color: gold,
-        textShadow: goldTextShadow,
         fontSize: 40,
         marginBottom: 8,
         marginTop: 0
@@ -201,11 +220,11 @@ function EventList({ events }) {
           const isUpcoming = isUpcomingEST(event);
           return (
             <li key={event.id} style={{ marginBottom: 16 }}>
-              <Link to={`/event/${event.id}`} style={{ color: gold, textShadow: goldTextShadow }}>
+              <Link to={`/event/${event.id}`} style={{ color: gold }}>
                 <strong>{event.name}{isUpcoming ? ' (upcoming)' : ''}</strong>
               </Link>
               <br />
-              <span style={{ color: '#ffe082' }}>{event.date}</span> — <span style={{ color: '#ffe082' }}>{event.location}</span>
+              <span style={{ color: gold }}>{formatDate(event.date)}</span> — <span style={{ color: gold }}>{event.location}</span>
             </li>
           );
         })}
@@ -345,8 +364,8 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     return (
       <div style={appBackground}>
         <div style={sectionStyle}>
-          <Link to="/" style={{ color: gold, textShadow: goldTextShadow }}>← Back to Events</Link>
-          <h2 style={{ color: gold, textShadow: goldTextShadow, marginTop: 24 }}>Edit Match</h2>
+          <Link to="/" style={{ color: gold }}>← Back to Events</Link>
+          <h2 style={{ color: gold, marginTop: 24 }}>Edit Match</h2>
           <form style={{ 
             marginTop: 16, 
             padding: 0, 
@@ -538,10 +557,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
   return (
     <div style={appBackground}>
       <div style={sectionStyle}>
-        <Link to="/" style={{ color: gold, textShadow: goldTextShadow }}>← Back to Events</Link>
-        <h2 style={{ color: gold, textShadow: goldTextShadow, marginTop: 24 }}>{event.name}</h2>
-        <div style={{ color: '#ffe082', marginBottom: 8 }}>
-          <strong>{event.date}</strong> — {event.location}
+        <Link to="/" style={{ color: gold }}>← Back to Events</Link>
+        <h2 style={{ color: gold, marginTop: 24 }}>{event.name}</h2>
+        <div style={{ color: gold, marginBottom: 8 }}>
+          <strong>{formatDate(event.date)}</strong> — {event.location}
         </div>
         {event.specialWinner && (
           <div style={{ marginBottom: 16, padding: 8, backgroundColor: '#f0f0f0', borderRadius: 4 }}>
@@ -550,7 +569,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             </p>
           </div>
         )}
-        <h3 style={{ marginTop: 24, color: gold, textShadow: goldTextShadow }}>Match Results</h3>
+        <h3 style={{ marginTop: 24, color: gold }}>Match Results</h3>
         <table style={tableStyle}>
           <thead>
             <tr>
