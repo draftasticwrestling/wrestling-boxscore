@@ -182,15 +182,18 @@ function EventList({ events }) {
         transition: 'background 0.2s, color 0.2s',
       }}>+ Add Event</Link>
       <ul style={{ marginTop: 24 }}>
-        {events.map(event => (
-          <li key={event.id} style={{ marginBottom: 16 }}>
-            <Link to={`/event/${event.id}`} style={{ color: gold, textShadow: goldTextShadow }}>
-              <strong>{event.name}{event.status === 'upcoming' ? ' (upcoming)' : ''}</strong>
-            </Link>
-            <br />
-            <span style={{ color: '#ffe082' }}>{event.date}</span> — <span style={{ color: '#ffe082' }}>{event.location}</span>
-          </li>
-        ))}
+        {events.map(event => {
+          const isUpcoming = event.status === 'upcoming' && new Date(event.date) > new Date();
+          return (
+            <li key={event.id} style={{ marginBottom: 16 }}>
+              <Link to={`/event/${event.id}`} style={{ color: gold, textShadow: goldTextShadow }}>
+                <strong>{event.name}{isUpcoming ? ' (upcoming)' : ''}</strong>
+              </Link>
+              <br />
+              <span style={{ color: '#ffe082' }}>{event.date}</span> — <span style={{ color: '#ffe082' }}>{event.location}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -267,23 +270,39 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
   };
 
   const handleSaveMatch = () => {
+    // Validation
+    if (!editedMatch.participants) {
+      alert('Please enter participants.');
+      return;
+    }
+    if (event.status !== 'upcoming') {
+      if (!resultType) {
+        alert('Please select a result type.');
+        return;
+      }
+      if (resultType === 'Winner' && !winner) {
+        alert('Please select a winner.');
+        return;
+      }
+      if (!editedMatch.method) {
+        alert('Please select a method.');
+        return;
+      }
+    }
     let result = '';
     if (resultType === 'Winner' && winner && winnerOptions.length === 2) {
       const [sideA, sideB] = winnerOptions;
       const loser = winner === sideA ? sideB : sideA;
       result = `${winner} def. ${loser}`;
     }
-    
     let finalStipulation = editedMatch.stipulation === "Custom/Other"
       ? (editedMatch.customStipulationType === "Custom/Other" ? editedMatch.customStipulation : editedMatch.customStipulationType)
       : editedMatch.stipulation === "None" ? "" : editedMatch.stipulation;
-    
     const updatedMatch = {
       ...editedMatch,
       result,
       stipulation: finalStipulation
     };
-
     const updatedMatches = [...event.matches];
     updatedMatches[editingMatchIndex] = updatedMatch;
     onEditMatch(event.id, updatedMatches);
