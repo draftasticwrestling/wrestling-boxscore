@@ -185,11 +185,24 @@ function isUpcomingEST(event) {
   return nowUTC < eventCutoffUTC;
 }
 
-// Helper to get logo src for RAW/SmackDown
+// Improved helper to get logo src for any event
 function getEventLogo(name) {
-  if (name.toLowerCase() === 'raw') return '/images/raw_logo.png';
-  if (name.toLowerCase() === 'smackdown') return '/images/smackdown_logo.png';
-  return null;
+  if (!name) return null;
+  // Lowercase, replace non-alphanum with _, remove trailing _, add .png
+  let key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '');
+  return `/images/${key}.png`;
+}
+
+// Logo fallback component
+function EventLogoOrText({ name, alt, style, textStyle }) {
+  const logoSrc = getEventLogo(name);
+  const [imgError, setImgError] = React.useState(false);
+  if (!imgError) {
+    return (
+      <img src={logoSrc} alt={alt || name} style={style} onError={() => setImgError(true)} />
+    );
+  }
+  return <strong style={textStyle}>{name}</strong>;
 }
 
 function EventList({ events }) {
@@ -224,15 +237,10 @@ function EventList({ events }) {
       <ul style={{ marginTop: 24 }}>
         {events.map(event => {
           const isUpcoming = isUpcomingEST(event);
-          const logo = getEventLogo(event.name);
           return (
             <li key={event.id} style={{ marginBottom: 16 }}>
               <Link to={`/event/${event.id}`} style={{ color: gold, display: 'flex', alignItems: 'center', gap: 8 }}>
-                {logo ? (
-                  <img src={logo} alt={event.name} style={{ height: 32, verticalAlign: 'middle' }} />
-                ) : (
-                  <strong>{event.name}</strong>
-                )}
+                <EventLogoOrText name={event.name} style={{ height: 32, verticalAlign: 'middle' }} textStyle={{ color: gold }} />
                 {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
               </Link>
               <br />
@@ -571,11 +579,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     <div style={appBackground}>
       <div style={sectionStyle}>
         <Link to="/" style={{ color: gold }}>← Back to Events</Link>
-        {logo ? (
-          <img src={logo} alt={event.name} style={{ height: 48, display: 'block', margin: '24px auto 8px auto' }} />
-        ) : (
-          <h2 style={{ color: gold, marginTop: 24 }}>{event.name}</h2>
-        )}
+        <EventLogoOrText name={event.name} style={{ height: 48, display: 'block', margin: '24px auto 8px auto' }} textStyle={{ color: gold, fontSize: 32, marginTop: 24, textAlign: 'center' }} />
         <div style={{ color: gold, marginBottom: 8 }}>
           <strong>{formatDate(event.date)}</strong> — {event.location}
         </div>
