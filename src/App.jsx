@@ -185,12 +185,23 @@ function isUpcomingEST(event) {
   return nowUTC < eventCutoffUTC;
 }
 
-// Improved helper to get logo src for any event
+const EVENT_LOGO_MAP = {
+  raw: 'raw_logo.png',
+  smackdown: 'smackdown_logo.png',
+  'wrestlemania night 1': 'wrestlemania.png',
+  'wrestlemania night 2': 'wrestlemania.png',
+  'summer slam night 1': 'summer_slam.png',
+  'summer slam night 2': 'summer_slam.png',
+  // add more special cases as needed
+};
+
 function getEventLogo(name) {
   if (!name) return null;
-  // Lowercase, replace non-alphanum with _, remove trailing _, add .png
-  let key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '');
-  return `/images/${key}.png`;
+  const key = name.trim().toLowerCase();
+  if (EVENT_LOGO_MAP[key]) return `/images/${EVENT_LOGO_MAP[key]}`;
+  // fallback: auto-generate filename
+  let auto = key.replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '') + '.png';
+  return `/images/${auto}`;
 }
 
 // Logo fallback component
