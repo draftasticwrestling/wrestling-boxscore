@@ -264,6 +264,13 @@ function EventList({ events }) {
   );
 }
 
+// Add a function to format the result string
+function formatResult(winner, others) {
+  if (others.length === 1) return `${winner} def. ${others[0]}`;
+  if (others.length === 2) return `${winner} def. ${others[0]} and ${others[1]}`;
+  return `${winner} def. ${others.slice(0, -1).join(', ')} and ${others[others.length - 1]}`;
+}
+
 // Event Box Score Component (with discreet Edit/Delete below the match card)
 function EventBoxScore({ events, onDelete, onEditMatch }) {
   const { eventId } = useParams();
@@ -280,9 +287,9 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
 
-  // Add winner options based on participants
+  // Winner options based on participants
   const winnerOptions = editedMatch?.participants?.includes(' vs ')
-    ? editedMatch.participants.split(' vs ').map(side => side.trim())
+    ? editedMatch.participants.split(' vs ').map(side => side.trim()).filter(Boolean)
     : [];
 
   const handleMoveMatch = (index, direction) => {
@@ -356,10 +363,9 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
       }
     }
     let result = '';
-    if (resultType === 'Winner' && winner && winnerOptions.length === 2) {
-      const [sideA, sideB] = winnerOptions;
-      const loser = winner === sideA ? sideB : sideA;
-      result = `${winner} def. ${loser}`;
+    if (resultType === 'Winner' && winner && winnerOptions.length >= 2) {
+      const others = winnerOptions.filter(name => name !== winner);
+      result = formatResult(winner, others);
     }
     let finalStipulation = editedMatch.stipulation === "Custom/Other"
       ? (editedMatch.customStipulationType === "Custom/Other" ? editedMatch.customStipulation : editedMatch.customStipulationType)
@@ -444,7 +450,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     <option value="No Winner">No Winner</option>
                   </select>
                 </div>
-                {resultType === 'Winner' && winnerOptions.length === 2 && (
+                {resultType === 'Winner' && winnerOptions.length >= 2 && (
                   <div style={{ marginBottom: 16 }}>
                     <label style={labelStyle}>
                       Winner:
@@ -771,9 +777,9 @@ function AddEvent({ addEvent }) {
   const [winner, setWinner] = useState('');
   const [eventStatus, setEventStatus] = useState('completed'); // 'upcoming' or 'completed'
 
-  // Add a derived value for winner options
+  // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
-    ? match.participants.split(' vs ').map(side => side.trim())
+    ? match.participants.split(' vs ').map(side => side.trim()).filter(Boolean)
     : [];
 
   // Add a match to the matches list
@@ -794,10 +800,9 @@ function AddEvent({ addEvent }) {
       ? (match.customStipulationType === "Custom/Other" ? match.customStipulation : match.customStipulationType)
       : match.stipulation === "None" ? "" : match.stipulation;
     let result = '';
-    if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length === 2) {
-      const [sideA, sideB] = winnerOptions;
-      const loser = winner === sideA ? sideB : sideA;
-      result = `${winner} def. ${loser}`;
+    if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
+      const others = winnerOptions.filter(name => name !== winner);
+      result = formatResult(winner, others);
     }
     setMatches([
       ...matches,
@@ -956,7 +961,7 @@ function AddEvent({ addEvent }) {
                   </select>
                 </label>
               </div>
-              {resultType === 'Winner' && winnerOptions.length === 2 && (
+              {resultType === 'Winner' && winnerOptions.length >= 2 && (
                 <div>
                   <label>
                     Winner:<br />
@@ -1151,7 +1156,7 @@ function EditEvent({ events, updateEvent }) {
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
-    ? match.participants.split(' vs ').map(side => side.trim())
+    ? match.participants.split(' vs ').map(side => side.trim()).filter(Boolean)
     : [];
 
   // Add a match to the matches list
@@ -1265,7 +1270,7 @@ function EditEvent({ events, updateEvent }) {
                   </select>
                 </label>
               </div>
-              {resultType === 'Winner' && winnerOptions.length === 2 && (
+              {resultType === 'Winner' && winnerOptions.length >= 2 && (
                 <div>
                   <label>
                     Winner:<br />
