@@ -172,17 +172,17 @@ const participantsTdStyle = {
 // Event List Component
 function isUpcomingEST(event) {
   if (event.status !== 'upcoming') return false;
-  // Parse event date and set to 11:59 PM EST
+  // Parse event date and set to 8:00 PM EST (which is 1:00 AM UTC next day)
   const [year, month, day] = event.date.split('-');
-  // Create a Date object in UTC for 11:59:59 PM EST (which is 04:59:59 UTC next day)
-  const eventEndUTC = new Date(Date.UTC(
+  // 8:00 PM EST is 01:00 AM UTC the next day
+  const eventCutoffUTC = new Date(Date.UTC(
     Number(year),
     Number(month) - 1,
     Number(day) + 1, // next day
-    4, 59, 59 // 11:59:59 PM EST is 04:59:59 UTC next day
+    1, 0, 0 // 1:00:00 AM UTC
   ));
   const nowUTC = new Date();
-  return nowUTC < eventEndUTC;
+  return nowUTC < eventCutoffUTC;
 }
 
 function EventList({ events }) {
