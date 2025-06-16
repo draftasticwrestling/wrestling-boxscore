@@ -193,7 +193,6 @@ function EventList({ events }) {
         margin: '0 auto 32px auto',
         maxWidth: 480,
         width: '100%',
-        filter: 'drop-shadow(0 0 32px #FFD70088)',
       }} />
       <h1 style={{
         textAlign: 'center',
