@@ -185,6 +185,13 @@ function isUpcomingEST(event) {
   return nowUTC < eventCutoffUTC;
 }
 
+// Helper to get logo src for RAW/SmackDown
+function getEventLogo(name) {
+  if (name.toLowerCase() === 'raw') return '/images/raw_logo.png';
+  if (name.toLowerCase() === 'smackdown') return '/images/smackdown_logo.png';
+  return null;
+}
+
 function EventList({ events }) {
   return (
     <div style={appBackground}>
@@ -211,16 +218,22 @@ function EventList({ events }) {
         background: 'rgba(34,34,34,0.8)',
         textDecoration: 'none',
         fontWeight: 600,
-        boxShadow: '0 0 8px #FFD70044',
+        boxShadow: '0 0 8px #C6A04F22',
         transition: 'background 0.2s, color 0.2s',
       }}>+ Add Event</Link>
       <ul style={{ marginTop: 24 }}>
         {events.map(event => {
           const isUpcoming = isUpcomingEST(event);
+          const logo = getEventLogo(event.name);
           return (
             <li key={event.id} style={{ marginBottom: 16 }}>
-              <Link to={`/event/${event.id}`} style={{ color: gold }}>
-                <strong>{event.name}{isUpcoming ? ' (upcoming)' : ''}</strong>
+              <Link to={`/event/${event.id}`} style={{ color: gold, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {logo ? (
+                  <img src={logo} alt={event.name} style={{ height: 32, verticalAlign: 'middle' }} />
+                ) : (
+                  <strong>{event.name}</strong>
+                )}
+                {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
               </Link>
               <br />
               <span style={{ color: gold }}>{formatDate(event.date)}</span> — <span style={{ color: gold }}>{event.location}</span>
@@ -242,6 +255,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
   const [editedMatch, setEditedMatch] = useState(null);
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
+  const logo = getEventLogo(event.name);
 
   if (!event) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
@@ -557,7 +571,11 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     <div style={appBackground}>
       <div style={sectionStyle}>
         <Link to="/" style={{ color: gold }}>← Back to Events</Link>
-        <h2 style={{ color: gold, marginTop: 24 }}>{event.name}</h2>
+        {logo ? (
+          <img src={logo} alt={event.name} style={{ height: 48, display: 'block', margin: '24px auto 8px auto' }} />
+        ) : (
+          <h2 style={{ color: gold, marginTop: 24 }}>{event.name}</h2>
+        )}
         <div style={{ color: gold, marginBottom: 8 }}>
           <strong>{formatDate(event.date)}</strong> — {event.location}
         </div>
