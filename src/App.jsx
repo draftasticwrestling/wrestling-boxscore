@@ -67,6 +67,18 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Women's Money in the Bank qualifier",
   "Men's Survivor Series Qualifier",
   "Women's Survivor Series qualifier",
+  "King of the Ring finalist",
+  "Queen of the Ring finalist",
+  "King of the Ring winner",
+  "Queen of the Ring winner",
+  "Men's Money in the Bank winner",
+  "Women's Money in the Bank winner",
+  "Men's Royal Rumble winner",
+  "Women's Royal Rumble winner",
+  "Men's Elimination Chamber winner",
+  "Women's Elimination Chamber winner",
+  "Men's Ultimate Survivor",
+  "Women's Ultimate Survivor",
   "Custom/Other"
 ];
 
@@ -1152,7 +1164,7 @@ function EditEvent({ events, updateEvent }) {
   });
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
-  const eventStatus = event.status || 'completed';
+  const [eventStatus, setEventStatus] = useState(event.status || 'completed');
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -1165,10 +1177,14 @@ function EditEvent({ events, updateEvent }) {
     let finalStipulation = match.stipulation === "Custom/Other"
       ? (match.customStipulationType === "Custom/Other" ? match.customStipulation : match.customStipulationType)
       : match.stipulation === "None" ? "" : match.stipulation;
-    
+    let result = '';
+    if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
+      const others = winnerOptions.filter(name => name !== winner);
+      result = formatResult(winner, others);
+    }
     setMatches([
       ...matches,
-      { ...match, stipulation: finalStipulation, order: matches.length + 1 }
+      { ...match, result, stipulation: finalStipulation, order: matches.length + 1 }
     ]);
     setMatch({
       participants: '',
@@ -1180,6 +1196,8 @@ function EditEvent({ events, updateEvent }) {
       customStipulation: '',
       titleOutcome: ''
     });
+    setResultType('');
+    setWinner('');
   };
 
   // Save the edited event
@@ -1194,7 +1212,8 @@ function EditEvent({ events, updateEvent }) {
       name,
       date,
       location,
-      matches
+      matches,
+      status: eventStatus
     });
     navigate('/');
   };
@@ -1204,6 +1223,38 @@ function EditEvent({ events, updateEvent }) {
       <div style={sectionStyle}>
         <Link to="/">← Back to Events</Link>
         <h2>Edit Event</h2>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+          <button
+            type="button"
+            onClick={() => setEventStatus('upcoming')}
+            style={{
+              padding: '8px 16px',
+              background: eventStatus === 'upcoming' ? '#4a90e2' : '#232323',
+              color: eventStatus === 'upcoming' ? 'white' : '#bbb',
+              border: '1px solid #888',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: eventStatus === 'upcoming' ? 'bold' : 'normal'
+            }}
+          >
+            Upcoming Event
+          </button>
+          <button
+            type="button"
+            onClick={() => setEventStatus('completed')}
+            style={{
+              padding: '8px 16px',
+              background: eventStatus === 'completed' ? '#4a90e2' : '#232323',
+              color: eventStatus === 'completed' ? 'white' : '#bbb',
+              border: '1px solid #888',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: eventStatus === 'completed' ? 'bold' : 'normal'
+            }}
+          >
+            Completed Event
+          </button>
+        </div>
         <form>
           <div>
             <label>
@@ -1248,7 +1299,7 @@ function EditEvent({ events, updateEvent }) {
               <input value={match.participants} onChange={e => {
                 const newParticipants = e.target.value;
                 const newOptions = newParticipants.includes(' vs ')
-                  ? newParticipants.split(' vs ').map(side => side.trim())
+                  ? newParticipants.split(' vs ').map(side => side.trim()).filter(Boolean)
                   : [];
                 if (!newOptions.includes(winner)) setWinner('');
                 setMatch({ ...match, participants: newParticipants });
