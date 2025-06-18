@@ -267,7 +267,20 @@ function EventList({ events }) {
           return (
             <li key={event.id} style={{ marginBottom: 16 }}>
               <Link to={`/event/${event.id}`} style={{ color: gold, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <EventLogoOrText name={event.name} style={{ maxHeight: 48, maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96, display: 'block', margin: '24px auto 8px auto', height: 'auto', width: 'auto', objectFit: 'contain' }} textStyle={{ color: gold }} />
+                <EventLogoOrText 
+                  name={event.name} 
+                  style={{ 
+                    display: 'inline-block',
+                    verticalAlign: 'middle',
+                    marginRight: 8,
+                    maxHeight: 48,
+                    maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
+                    height: 'auto',
+                    width: 'auto',
+                    objectFit: 'contain',
+                  }} 
+                  textStyle={{ color: gold }} 
+                />
                 {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
               </Link>
               <br />
@@ -362,15 +375,16 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
         <EventLogoOrText 
           name={event.name} 
           style={{ 
-            maxHeight: 48, 
-            maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96, 
-            display: 'block', 
-            margin: '24px auto 8px auto',
+            display: 'inline-block',
+            verticalAlign: 'middle',
+            marginRight: 8,
+            maxHeight: 48,
+            maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
             height: 'auto',
             width: 'auto',
             objectFit: 'contain',
           }} 
-          textStyle={{ color: gold, fontSize: 32, marginTop: 24, textAlign: 'center' }} 
+          textStyle={{ color: gold }} 
         />
         <div style={{ color: gold, marginBottom: 8 }}>
           <strong>{formatDate(event.date)}</strong> — {event.location}
