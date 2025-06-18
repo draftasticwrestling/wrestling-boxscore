@@ -91,16 +91,37 @@ export default function MatchEdit({
 
   return (
     <form onSubmit={handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
-      <div>
-        <label style={labelStyle}>Match Status:</label>
-        <select
-          style={inputStyle}
-          value={status}
-          onChange={e => setStatus(e.target.value)}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => setStatus('upcoming')}
+          style={{
+            padding: '8px 16px',
+            background: status === 'upcoming' ? '#4a90e2' : '#232323',
+            color: status === 'upcoming' ? 'white' : '#bbb',
+            border: '1px solid #888',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: status === 'upcoming' ? 'bold' : 'normal'
+          }}
         >
-          <option value="upcoming">Upcoming</option>
-          <option value="completed">Completed</option>
-        </select>
+          Upcoming
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatus('completed')}
+          style={{
+            padding: '8px 16px',
+            background: status === 'completed' ? '#4a90e2' : '#232323',
+            color: status === 'completed' ? 'white' : '#bbb',
+            border: '1px solid #888',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: status === 'completed' ? 'bold' : 'normal'
+          }}
+        >
+          Completed
+        </button>
       </div>
       <div>
         <label style={labelStyle}>Participants:</label>
