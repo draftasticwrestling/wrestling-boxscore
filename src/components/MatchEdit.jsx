@@ -33,6 +33,7 @@ export default function MatchEdit({
   onSave,
   onCancel,
   eventStatus,
+  eventDate,
 }) {
   const [match, setMatch] = useState({
     participants: '',
@@ -73,6 +74,14 @@ export default function MatchEdit({
       }
     }
   }, [initialMatch, winnerOptions]);
+
+  // Helper to check if method is required
+  function isMethodRequired() {
+    if (!eventDate) return true;
+    const cutoff = new Date('2025-05-01');
+    const d = new Date(eventDate);
+    return d >= cutoff;
+  }
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -170,7 +179,7 @@ export default function MatchEdit({
               style={inputStyle}
               value={match.method}
               onChange={e => setMatch({ ...match, method: e.target.value })}
-              required
+              required={isMethodRequired()}
             >
               <option value="">Select method</option>
               {METHOD_OPTIONS.map(opt => (

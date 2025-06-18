@@ -362,6 +362,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             onSave={handleSaveMatch}
             onCancel={handleCancelEditMatch}
             eventStatus={event.status}
+            eventDate={event.date}
           />
         </div>
       </div>
