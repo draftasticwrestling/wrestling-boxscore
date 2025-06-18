@@ -201,10 +201,13 @@ function isUpcomingEST(event) {
 const EVENT_LOGO_MAP = {
   raw: 'raw_logo.png',
   smackdown: 'smackdown_logo.png',
-  'wrestlemania night 1': 'wrestlemania.png',
-  'wrestlemania night 2': 'wrestlemania.png',
+  'wrestlemania night 1': 'wrestlemania_logo.png',
+  'wrestlemania night 2': 'wrestlemania_logo.png',
   'summer slam night 1': 'summer_slam.png',
   'summer slam night 2': 'summer_slam.png',
+  'night of champions': 'night_of_champions.png',
+  'survivor series': 'survivor_series.png',
+  'saturday night\'s main event': 'saturday_nights_main_event.png',
   // add more special cases as needed
 };
 
@@ -459,7 +462,15 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     <div style={appBackground}>
       <div style={sectionStyle}>
         <Link to="/" style={{ color: gold }}>← Back to Events</Link>
-        <EventLogoOrText name={event.name} style={{ height: 48, display: 'block', margin: '24px auto 8px auto' }} textStyle={{ color: gold, fontSize: 32, marginTop: 24, textAlign: 'center' }} />
+        <EventLogoOrText 
+          name={event.name} 
+          style={{ 
+            height: ['night of champions', 'survivor series'].includes(event.name.trim().toLowerCase()) ? 64 : 48, 
+            display: 'block', 
+            margin: '24px auto 8px auto' 
+          }} 
+          textStyle={{ color: gold, fontSize: 32, marginTop: 24, textAlign: 'center' }} 
+        />
         <div style={{ color: gold, marginBottom: 8 }}>
           <strong>{formatDate(event.date)}</strong> — {event.location}
         </div>
