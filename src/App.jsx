@@ -361,7 +361,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             initialMatch={editedMatch}
             onSave={handleSaveMatch}
             onCancel={handleCancelEditMatch}
-            isCompleted={editedMatch?.status === 'completed' || event.status === 'completed'}
+            eventStatus={event.status}
           />
         </div>
       </div>

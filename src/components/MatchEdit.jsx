@@ -32,7 +32,7 @@ export default function MatchEdit({
   initialMatch = {},
   onSave,
   onCancel,
-  isCompleted = true,
+  eventStatus,
 }) {
   const [match, setMatch] = useState({
     participants: '',
@@ -44,11 +44,17 @@ export default function MatchEdit({
     customStipulation: '',
     specialWinnerType: '',
     titleOutcome: '',
+    status: initialMatch.status || eventStatus || 'completed',
     ...initialMatch,
   });
+  const [status, setStatus] = useState(initialMatch.status || eventStatus || 'completed');
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [winnerOptions, setWinnerOptions] = useState([]);
+
+  useEffect(() => {
+    setMatch(m => ({ ...m, status }));
+  }, [status]);
 
   useEffect(() => {
     if (match.participants.includes(' vs ')) {
@@ -74,17 +80,28 @@ export default function MatchEdit({
       ? (match.customStipulationType === 'Custom/Other' ? match.customStipulation : match.customStipulationType)
       : match.stipulation === 'None' ? '' : match.stipulation;
     let result = '';
-    if (isCompleted && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
+    if (status === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
       const others = winnerOptions.filter(name => name !== winner);
       result = `${winner} def. ${others.join(' & ')}`;
-    } else if (isCompleted && resultType === 'No Winner') {
+    } else if (status === 'completed' && resultType === 'No Winner') {
       result = 'No winner';
     }
-    onSave({ ...match, result, stipulation: finalStipulation });
+    onSave({ ...match, result, stipulation: finalStipulation, status });
   };
 
   return (
     <form onSubmit={handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
+      <div>
+        <label style={labelStyle}>Match Status:</label>
+        <select
+          style={inputStyle}
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+        >
+          <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
       <div>
         <label style={labelStyle}>Participants:</label>
         <input
@@ -92,10 +109,10 @@ export default function MatchEdit({
           value={match.participants}
           onChange={e => setMatch({ ...match, participants: e.target.value })}
           placeholder="Wrestler 1 vs Wrestler 2"
-          required={isCompleted}
+          required={status === 'completed'}
         />
       </div>
-      {isCompleted && (
+      {status === 'completed' && (
         <>
           <div>
             <label style={labelStyle}>Result Type:</label>
