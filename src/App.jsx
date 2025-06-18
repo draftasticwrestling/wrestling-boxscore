@@ -295,8 +295,6 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
   const [isEditingMatch, setIsEditingMatch] = useState(false);
   const [editingMatchIndex, setEditingMatchIndex] = useState(null);
   const [editedMatch, setEditedMatch] = useState(null);
-  const [resultType, setResultType] = useState('');
-  const [winner, setWinner] = useState('');
   const logo = getEventLogo(event.name);
   const [showCustomStipulation, setShowCustomStipulation] = useState(false);
 
@@ -304,121 +302,35 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
 
-  // Winner options based on participants
-  const winnerOptions = editedMatch?.participants?.includes(' vs ')
-    ? editedMatch.participants.split(' vs ').map(side => side.trim()).filter(Boolean)
-    : [];
-
   const handleMoveMatch = (index, direction) => {
     const updatedMatches = [...event.matches];
     const newIndex = index + direction;
-    
     if (newIndex >= 0 && newIndex < updatedMatches.length) {
-      // Swap the matches
-      [updatedMatches[index], updatedMatches[newIndex]] = 
-      [updatedMatches[newIndex], updatedMatches[index]];
-      
-      // Update the order numbers
-      updatedMatches.forEach((match, idx) => {
-        match.order = idx + 1;
-      });
-      
+      [updatedMatches[index], updatedMatches[newIndex]] = [updatedMatches[newIndex], updatedMatches[index]];
+      updatedMatches.forEach((match, idx) => { match.order = idx + 1; });
       onEditMatch(event.id, updatedMatches);
     }
   };
 
   const handleEditMatch = (match, index) => {
     setEditingMatchIndex(index);
-    // Parse the result to set initial resultType and winner
-    let initialResultType = 'No Winner';
-    let initialWinner = '';
-    if (match.result && match.result.includes(' def. ')) {
-      initialResultType = 'Winner';
-      initialWinner = match.result.split(' def. ')[0];
-    }
-    setResultType(initialResultType);
-    setWinner(initialWinner);
-    
-    // Parse the stipulation to set initial customStipulationType
-    let initialCustomStipulationType = '';
-    let initialCustomStipulation = '';
-    if (match.stipulation && !STIPULATION_OPTIONS.includes(match.stipulation)) {
-      if (CUSTOM_STIPULATION_OPTIONS.includes(match.stipulation)) {
-        initialCustomStipulationType = match.stipulation;
-      } else {
-        initialCustomStipulationType = "Custom/Other";
-        initialCustomStipulation = match.stipulation;
-      }
-    }
-    
-    setEditedMatch({
-      ...match,
-      customStipulationType: initialCustomStipulationType,
-      customStipulation: initialCustomStipulation
-    });
+    setEditedMatch(match);
     setIsEditingMatch(true);
   };
 
-  const handleSaveMatch = () => {
-    // Validation
-    if (!editedMatch.participants) {
-      alert('Please enter participants.');
-      return;
-    }
-    if (editedMatch.status === 'completed') {
-      if (!resultType) {
-        alert('Please select a result type.');
-        return;
-      }
-      if (resultType === 'Winner' && !winner) {
-        alert('Please select a winner.');
-        return;
-      }
-      if (!editedMatch.method) {
-        alert('Please select a method.');
-        return;
-      }
-    }
-
-    let result = '';
-    if (editedMatch.status === 'completed') {
-      if (resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-        const others = winnerOptions.filter(name => name !== winner);
-        result = formatResult(winner, others);
-      } else {
-        result = 'No Contest';
-      }
-    } else {
-      result = 'TBD';
-    }
-
-    let finalStipulation = editedMatch.stipulation === "Custom/Other"
-      ? (editedMatch.customStipulation || '')
-      : editedMatch.stipulation === "None" ? "" : editedMatch.stipulation;
-
-    const updatedMatch = {
-      ...editedMatch,
-      result,
-      stipulation: finalStipulation,
-      status: editedMatch.status
-    };
-
+  const handleSaveMatch = (updatedMatch) => {
     const updatedMatches = [...event.matches];
     updatedMatches[editingMatchIndex] = updatedMatch;
     onEditMatch(event.id, updatedMatches);
     setIsEditingMatch(false);
     setEditingMatchIndex(null);
     setEditedMatch(null);
-    setResultType('');
-    setWinner('');
   };
 
   const handleCancelEditMatch = () => {
     setIsEditingMatch(false);
     setEditingMatchIndex(null);
     setEditedMatch(null);
-    setResultType('');
-    setWinner('');
   };
 
   const matchesWithCardType = event.matches.map((match, idx, arr) => ({
@@ -434,23 +346,8 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
           <h2 style={{ color: gold, marginTop: 24 }}>Edit Match</h2>
           <MatchEdit
             initialMatch={editedMatch}
-            onSave={updatedMatch => {
-              const updatedMatches = [...event.matches];
-              updatedMatches[editingMatchIndex] = updatedMatch;
-              onEditMatch(event.id, updatedMatches);
-              setIsEditingMatch(false);
-              setEditingMatchIndex(null);
-              setEditedMatch(null);
-              setResultType('');
-              setWinner('');
-            }}
-            onCancel={() => {
-              setIsEditingMatch(false);
-              setEditingMatchIndex(null);
-              setEditedMatch(null);
-              setResultType('');
-              setWinner('');
-            }}
+            onSave={handleSaveMatch}
+            onCancel={handleCancelEditMatch}
             isCompleted={editedMatch?.status === 'completed' || event.status === 'completed'}
           />
         </div>
