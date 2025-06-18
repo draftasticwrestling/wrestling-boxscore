@@ -267,7 +267,7 @@ function EventList({ events }) {
           return (
             <li key={event.id} style={{ marginBottom: 16 }}>
               <Link to={`/event/${event.id}`} style={{ color: gold, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <EventLogoOrText name={event.name} style={{ height: 32, verticalAlign: 'middle' }} textStyle={{ color: gold }} />
+                <EventLogoOrText name={event.name} style={{ maxHeight: 48, maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96, display: 'block', margin: '24px auto 8px auto', height: 'auto', width: 'auto', objectFit: 'contain' }} textStyle={{ color: gold }} />
                 {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
               </Link>
               <br />
@@ -465,9 +465,13 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
         <EventLogoOrText 
           name={event.name} 
           style={{ 
-            height: ['night of champions', 'survivor series'].includes(event.name.trim().toLowerCase()) ? 64 : 48, 
+            maxHeight: 48, 
+            maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96, 
             display: 'block', 
-            margin: '24px auto 8px auto' 
+            margin: '24px auto 8px auto',
+            height: 'auto',
+            width: 'auto',
+            objectFit: 'contain',
           }} 
           textStyle={{ color: gold, fontSize: 32, marginTop: 24, textAlign: 'center' }} 
         />
