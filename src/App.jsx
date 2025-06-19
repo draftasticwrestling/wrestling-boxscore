@@ -41,19 +41,6 @@ const TITLE_OUTCOME_OPTIONS = [
   "Successful Defense",
   "New Champion"
 ];
-const SPECIAL_WINNER_OPTIONS = [
-  "None",
-  "Women's Money in the Bank winner",
-  "Men's Money in the Bank winner",
-  "Men's Royal Rumble winner",
-  "Women's Royal Rumble winner",
-  "Men's Elimination Chamber winner",
-  "Women's Elimination Chamber winner",
-  "King of the Ring winner",
-  "Queen of the Ring winner",
-  "Men's Ultimate Survivor",
-  "Women's Ultimate Survivor"
-];
 const CUSTOM_STIPULATION_OPTIONS = [
   "Cage Match",
   "Hell in a Cell",
@@ -70,22 +57,25 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Women's Survivor Series qualifier",
   "King of the Ring finalist",
   "Queen of the Ring finalist",
-  "King of the Ring winner",
-  "Queen of the Ring winner",
-  "Men's Money in the Bank winner",
-  "Women's Money in the Bank winner",
-  "Men's Royal Rumble winner",
-  "Women's Royal Rumble winner",
-  "Men's Elimination Chamber winner",
-  "Women's Elimination Chamber winner",
-  "Men's Ultimate Survivor",
-  "Women's Ultimate Survivor",
-  "Men's War Games winner",
-  "Women's War Games winner",
   "Triple Threat match",
   "Fatal Four-way match",
   "Unsanctioned Match",
   "Custom/Other"
+];
+const SPECIAL_WINNER_OPTIONS = [
+  "None",
+  "Women's Money in the Bank winner",
+  "Men's Money in the Bank winner",
+  "Men's Royal Rumble winner",
+  "Women's Royal Rumble winner",
+  "Men's Elimination Chamber winner",
+  "Women's Elimination Chamber winner",
+  "King of the Ring winner",
+  "Queen of the Ring winner",
+  "Men's Ultimate Survivor",
+  "Women's Ultimate Survivor",
+  "Men's War Games winner",
+  "Women's War Games winner"
 ];
 
 // Update color variables to match new banner
