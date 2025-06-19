@@ -7,19 +7,24 @@ import MatchEdit from './components/MatchEdit';
 // Place these at the top level, after imports
 const STIPULATION_OPTIONS = [
   "None",
-  "Undisputed WWE Championship",
-  "World Heavyweight Championship",
-  "Men's IC Championship",
-  "Men's U.S. Championship",
-  "Raw Tag Team Championship",
-  "SmackDown Tag Team Championship",
-  "Men's Speed Championship",
-  "WWE Women's Championship",
-  "Women's World Championship",
-  "Women's IC Championship",
-  "Women's U.S. Championship",
-  "Women's Tag Team Championship",
-  "Women's Speed Championship",
+  "Cage Match",
+  "Hell in a Cell",
+  "Street Fight",
+  "Bloodline Rules",
+  "Bakersfield Brawl",
+  "King of the Ring qualifier",
+  "Queen of the Ring qualifier",
+  "Men's Elimination Chamber qualifier",
+  "Women's Elimination Chamber qualifier",
+  "Men's Money in the Bank qualifier",
+  "Women's Money in the Bank qualifier",
+  "Men's Survivor Series Qualifier",
+  "Women's Survivor Series qualifier",
+  "King of the Ring finalist",
+  "Queen of the Ring finalist",
+  "Triple Threat match",
+  "Fatal Four-way match",
+  "Unsanctioned Match",
   "Custom/Other"
 ];
 const METHOD_OPTIONS = [
@@ -40,6 +45,22 @@ const TITLE_OUTCOME_OPTIONS = [
   "None",
   "Successful Defense",
   "New Champion"
+];
+const TITLE_OPTIONS = [
+  "None",
+  "Undisputed WWE Championship",
+  "World Heavyweight Championship",
+  "Men's IC Championship",
+  "Men's U.S. Championship",
+  "Raw Tag Team Championship",
+  "SmackDown Tag Team Championship",
+  "Men's Speed Championship",
+  "WWE Women's Championship",
+  "Women's World Championship",
+  "Women's IC Championship",
+  "Women's U.S. Championship",
+  "Women's Tag Team Championship",
+  "Women's Speed Championship"
 ];
 const CUSTOM_STIPULATION_OPTIONS = [
   "Cage Match",
@@ -403,6 +424,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               <th style={thStyle}>Method</th>
               <th style={thStyle}>Time</th>
               <th style={thStyle}>Stipulation</th>
+              <th style={thStyle}>Title</th>
               <th style={thStyle}>Title Outcome</th>
               <th style={thStyle}>Actions</th>
             </tr>
@@ -425,6 +447,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     ? match.customStipulation
                     : match.stipulation
                 }</td>
+                <td style={tdStyle}>{match.title || ""}</td>
                 <td style={tdStyle}>{match.titleOutcome || ""}</td>
                 <td style={tdStyle}>
                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -553,6 +576,7 @@ function AddEvent({ addEvent }) {
     time: '',
     stipulation: '',
     customStipulation: '',
+    title: '',
     titleOutcome: '',
     notes: ''
   });
@@ -583,7 +607,7 @@ function AddEvent({ addEvent }) {
       }
     }
     let finalStipulation = match.stipulation === "Custom/Other" 
-      ? (match.customStipulationType === "Custom/Other" ? match.customStipulation : match.customStipulationType)
+      ? match.customStipulation
       : match.stipulation === "None" ? "" : match.stipulation;
     
     // Add special winner to stipulation if selected
@@ -607,6 +631,7 @@ function AddEvent({ addEvent }) {
       time: '',
       stipulation: '',
       customStipulation: '',
+      title: '',
       titleOutcome: '',
       notes: ''
     });
@@ -817,51 +842,45 @@ function AddEvent({ addEvent }) {
             </label>
           </div>
           {match.stipulation === "Custom/Other" && (
-            <>
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>
-                  Custom Stipulation Type:
-                </label>
-                <select
-                  value={match.customStipulationType || ""}
-                  onChange={e => setMatch({ ...match, customStipulationType: e.target.value, customStipulation: '' })}
-                  style={inputStyle}
-                >
-                  <option value="">Select custom stipulation type...</option>
-                  {CUSTOM_STIPULATION_OPTIONS.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-              {match.customStipulationType === "Custom/Other" && (
-                <div style={{ marginBottom: 16 }}>
-                  <label>
-                    Custom Stipulation:<br />
-                  </label>
-                  <input
-                    value={match.customStipulation || ''}
-                    onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                    required={(!match.specialWinnerType || match.specialWinnerType === "None")}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              )}
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>
-                  Special Match Winner:
-                </label>
-                <select
-                  value={match.specialWinnerType || "None"}
-                  onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-                  style={inputStyle}
-                >
-                  {SPECIAL_WINNER_OPTIONS.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-            </>
+            <div style={{ marginBottom: 16 }}>
+              <label>
+                Custom Stipulation:<br />
+              </label>
+              <input
+                value={match.customStipulation || ''}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                style={{ width: '100%' }}
+              />
+            </div>
           )}
+          <div>
+            <label>
+              Title:<br />
+              <select
+                value={match.title}
+                onChange={e => setMatch({ ...match, title: e.target.value })}
+                style={inputStyle}
+              >
+                {TITLE_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>
+              Special Match Winner:
+            </label>
+            <select
+              value={match.specialWinnerType || "None"}
+              onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+              style={inputStyle}
+            >
+              {SPECIAL_WINNER_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>
               Title Outcome:
@@ -916,6 +935,7 @@ function EditEvent({ events, updateEvent }) {
     stipulation: '',
     customStipulationType: '',
     customStipulation: '',
+    title: '',
     titleOutcome: '',
     notes: ''
   });
@@ -932,7 +952,7 @@ function EditEvent({ events, updateEvent }) {
   const handleAddMatch = (e) => {
     e.preventDefault();
     let finalStipulation = match.stipulation === "Custom/Other"
-      ? (match.customStipulationType === "Custom/Other" ? match.customStipulation : match.customStipulationType)
+      ? match.customStipulation
       : match.stipulation === "None" ? "" : match.stipulation;
     
     // Add special winner to stipulation if selected
@@ -957,6 +977,7 @@ function EditEvent({ events, updateEvent }) {
       stipulation: '',
       customStipulationType: '',
       customStipulation: '',
+      title: '',
       titleOutcome: '',
       notes: ''
     });
@@ -1139,7 +1160,7 @@ function EditEvent({ events, updateEvent }) {
               <select
                 value={match.stipulation}
                 onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
-                style={{ width: '100%' }}
+                style={inputStyle}
               >
                 {STIPULATION_OPTIONS.map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
@@ -1148,54 +1169,39 @@ function EditEvent({ events, updateEvent }) {
             </label>
           </div>
           {match.stipulation === "Custom/Other" && (
-            <>
-              <div>
-                <label>
-                  Custom Stipulation Type:<br />
-                  <select
-                    value={match.customStipulationType || ""}
-                    onChange={e => setMatch({ ...match, customStipulationType: e.target.value, customStipulation: '' })}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="">Select custom stipulation type...</option>
-                    {CUSTOM_STIPULATION_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              {match.customStipulationType === "Custom/Other" && (
-                <div>
-                  <label>
-                    Custom Stipulation:<br />
-                  </label>
-                  <input
-                    value={match.customStipulation || ''}
-                    onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                    required={(!match.specialWinnerType || match.specialWinnerType === "None")}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              )}
-            </>
+            <div style={{ marginBottom: 16 }}>
+              <label>
+                Custom Stipulation:<br />
+              </label>
+              <input
+                value={match.customStipulation || ''}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                style={{ width: '100%' }}
+              />
+            </div>
           )}
+          <div>
+            <label>
+              Title:<br />
+              <select
+                value={match.title}
+                onChange={e => setMatch({ ...match, title: e.target.value })}
+                style={inputStyle}
+              >
+                {TITLE_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
+            <label style={labelStyle}>
               Special Match Winner:
             </label>
             <select
               value={match.specialWinnerType || "None"}
               onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-              style={{
-                width: '100%',
-                padding: 8,
-                fontSize: '15px',
-                border: '1px solid #888',
-                borderRadius: 3,
-                backgroundColor: '#232323',
-                color: 'white',
-                marginBottom: 8
-              }}
+              style={inputStyle}
             >
               {SPECIAL_WINNER_OPTIONS.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
@@ -1203,22 +1209,13 @@ function EditEvent({ events, updateEvent }) {
             </select>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 6, color: 'white' }}>
+            <label style={labelStyle}>
               Title Outcome:
             </label>
             <select
               value={match.titleOutcome || ""}
               onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
-              style={{
-                width: '100%',
-                padding: 8,
-                fontSize: '15px',
-                border: '1px solid #888',
-                borderRadius: 3,
-                backgroundColor: '#232323',
-                color: 'white',
-                marginBottom: 8
-              }}
+              style={inputStyle}
             >
               {TITLE_OUTCOME_OPTIONS.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>

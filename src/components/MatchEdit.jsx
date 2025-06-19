@@ -19,22 +19,6 @@ const METHOD_OPTIONS = [
 ];
 const STIPULATION_OPTIONS = [
   "None",
-  "Undisputed WWE Championship",
-  "World Heavyweight Championship",
-  "Men's IC Championship",
-  "Men's U.S. Championship",
-  "Raw Tag Team Championship",
-  "SmackDown Tag Team Championship",
-  "Men's Speed Championship",
-  "WWE Women's Championship",
-  "Women's World Championship",
-  "Women's IC Championship",
-  "Women's U.S. Championship",
-  "Women's Tag Team Championship",
-  "Women's Speed Championship",
-  "Custom/Other"
-];
-const CUSTOM_STIPULATION_OPTIONS = [
   "Cage Match",
   "Hell in a Cell",
   "Street Fight",
@@ -54,6 +38,22 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Fatal Four-way match",
   "Unsanctioned Match",
   "Custom/Other"
+];
+const TITLE_OPTIONS = [
+  "None",
+  "Undisputed WWE Championship",
+  "World Heavyweight Championship",
+  "Men's IC Championship",
+  "Men's U.S. Championship",
+  "Raw Tag Team Championship",
+  "SmackDown Tag Team Championship",
+  "Men's Speed Championship",
+  "WWE Women's Championship",
+  "Women's World Championship",
+  "Women's IC Championship",
+  "Women's U.S. Championship",
+  "Women's Tag Team Championship",
+  "Women's Speed Championship"
 ];
 const SPECIAL_WINNER_OPTIONS = [
   "None",
@@ -102,6 +102,7 @@ export default function MatchEdit({
     stipulation: '',
     customStipulationType: '',
     customStipulation: '',
+    title: '',
     specialWinnerType: '',
     titleOutcome: '',
     notes: '',
@@ -146,7 +147,7 @@ export default function MatchEdit({
   const handleSave = (e) => {
     e.preventDefault();
     let finalStipulation = match.stipulation === 'Custom/Other'
-      ? (match.customStipulationType === 'Custom/Other' ? match.customStipulation : match.customStipulationType)
+      ? match.customStipulation
       : match.stipulation === 'None' ? '' : match.stipulation;
     
     // Add special winner to stipulation if selected
@@ -277,45 +278,39 @@ export default function MatchEdit({
         </select>
       </div>
       {match.stipulation === 'Custom/Other' && (
-        <>
-          <div>
-            <label style={labelStyle}>Custom Stipulation Type:</label>
-            <select
-              style={inputStyle}
-              value={match.customStipulationType || ''}
-              onChange={e => setMatch({ ...match, customStipulationType: e.target.value, customStipulation: '' })}
-            >
-              <option value="">Select custom stipulation type...</option>
-              {CUSTOM_STIPULATION_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-          {match.customStipulationType === 'Custom/Other' && (
-            <div>
-              <label style={labelStyle}>Custom Stipulation:</label>
-              <input
-                style={inputStyle}
-                value={match.customStipulation || ''}
-                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                required={(!match.specialWinnerType || match.specialWinnerType === 'None')}
-              />
-            </div>
-          )}
-          <div>
-            <label style={labelStyle}>Special Match Winner:</label>
-            <select
-              style={inputStyle}
-              value={match.specialWinnerType || 'None'}
-              onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-            >
-              {SPECIAL_WINNER_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-        </>
+        <div>
+          <label style={labelStyle}>Custom Stipulation:</label>
+          <input
+            style={inputStyle}
+            value={match.customStipulation || ''}
+            onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+          />
+        </div>
       )}
+      <div>
+        <label style={labelStyle}>Title:</label>
+        <select
+          style={inputStyle}
+          value={match.title || ''}
+          onChange={e => setMatch({ ...match, title: e.target.value })}
+        >
+          {TITLE_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label style={labelStyle}>Special Match Winner:</label>
+        <select
+          style={inputStyle}
+          value={match.specialWinnerType || 'None'}
+          onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+        >
+          {SPECIAL_WINNER_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
       <div>
         <label style={labelStyle}>Title Outcome:</label>
         <select
