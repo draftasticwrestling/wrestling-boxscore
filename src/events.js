@@ -11,7 +11,8 @@ export const events = [
         result: "Sami Zayn def. Bronson Reed",
         method: "Pinfall",
         time: "12:34",
-        stipulation: "WWE Intercontinental Championship",
+        stipulation: "None",
+        title: "Men's IC Championship",
         titleOutcome: "Successful Defense"
       },
       {
@@ -20,7 +21,8 @@ export const events = [
         result: "Liv Morgan def. Becky Lynch",
         method: "Pinfall",
         time: "10:21",
-        stipulation: "Non-title Match",
+        stipulation: "None",
+        title: "None",
         titleOutcome: ""
       },
       {
@@ -30,6 +32,7 @@ export const events = [
         method: "Pinfall",
         time: "15:02",
         stipulation: "Tag Team Match",
+        title: "None",
         titleOutcome: ""
       }
     ]

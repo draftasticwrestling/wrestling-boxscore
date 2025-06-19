@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS events (
     matches JSONB NOT NULL DEFAULT '[]'::jsonb
 );
 
--- Add some sample data
+-- Add some sample data with new structure
 INSERT INTO events (id, name, date, location, matches)
 VALUES (
     'raw-2025-06-09',
@@ -21,7 +21,8 @@ VALUES (
             "result": "Sami Zayn def. Bronson Reed",
             "method": "Pinfall",
             "time": "12:34",
-            "stipulation": "WWE Intercontinental Championship",
+            "stipulation": "None",
+            "title": "Men''s IC Championship",
             "titleOutcome": "Successful Defense"
         },
         {
@@ -30,7 +31,8 @@ VALUES (
             "result": "Liv Morgan def. Becky Lynch",
             "method": "Pinfall",
             "time": "10:21",
-            "stipulation": "Non-title Match",
+            "stipulation": "None",
+            "title": "None",
             "titleOutcome": ""
         },
         {
@@ -40,6 +42,7 @@ VALUES (
             "method": "Pinfall",
             "time": "15:02",
             "stipulation": "Tag Team Match",
+            "title": "None",
             "titleOutcome": ""
         }
     ]'::jsonb
