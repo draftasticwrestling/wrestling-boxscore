@@ -443,7 +443,9 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 <td style={tdStyle}>{match.method}</td>
                 <td style={tdStyle}>{match.time}</td>
                 <td style={tdStyle}>{
-                  match.stipulation === "Custom/Other" && match.customStipulation
+                  match.specialWinnerType && match.specialWinnerType !== "None"
+                    ? match.specialWinnerType
+                    : match.stipulation === "Custom/Other" && match.customStipulation
                     ? match.customStipulation
                     : match.stipulation
                 }</td>
@@ -609,11 +611,6 @@ function AddEvent({ addEvent }) {
     let finalStipulation = match.stipulation === "Custom/Other" 
       ? match.customStipulation
       : match.stipulation === "None" ? "" : match.stipulation;
-    
-    // Add special winner to stipulation if selected
-    if (match.specialWinnerType && match.specialWinnerType !== "None") {
-      finalStipulation = finalStipulation ? `${finalStipulation} - ${match.specialWinnerType}` : match.specialWinnerType;
-    }
     
     let result = '';
     if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
@@ -954,11 +951,6 @@ function EditEvent({ events, updateEvent }) {
     let finalStipulation = match.stipulation === "Custom/Other"
       ? match.customStipulation
       : match.stipulation === "None" ? "" : match.stipulation;
-    
-    // Add special winner to stipulation if selected
-    if (match.specialWinnerType && match.specialWinnerType !== "None") {
-      finalStipulation = finalStipulation ? `${finalStipulation} - ${match.specialWinnerType}` : match.specialWinnerType;
-    }
     
     let result = '';
     if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {

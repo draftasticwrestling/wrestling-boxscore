@@ -31,4 +31,29 @@ SET matches = (
   )
   FROM jsonb_array_elements(matches) AS match
 )
+WHERE matches IS NOT NULL;
+
+-- Clean up Money in the Bank winners and other special winners
+UPDATE events
+SET matches = (
+  SELECT jsonb_agg(
+    CASE
+      -- Handle Money in the Bank winners
+      WHEN match->>'stipulation' = 'Women''s Money in the Bank winner' THEN
+        match || 
+        jsonb_build_object('specialWinnerType', 'Women''s Money in the Bank winner') ||
+        jsonb_build_object('stipulation', 'None')
+      WHEN match->>'stipulation' = 'Men''s Money in the Bank winner' THEN
+        match || 
+        jsonb_build_object('specialWinnerType', 'Men''s Money in the Bank winner') ||
+        jsonb_build_object('stipulation', 'None')
+      -- Remove title from stipulation if it exists in both fields
+      WHEN (match->>'stipulation' = match->>'title') AND (match->>'title' IS NOT NULL) AND (match->>'title' != 'None') THEN
+        match || 
+        jsonb_build_object('stipulation', 'None')
+      ELSE match
+    END
+  )
+  FROM jsonb_array_elements(matches) AS match
+)
 WHERE matches IS NOT NULL; 
