@@ -595,6 +595,12 @@ function AddEvent({ addEvent }) {
     let finalStipulation = match.stipulation === "Custom/Other" 
       ? (match.customStipulationType === "Custom/Other" ? match.customStipulation : match.customStipulationType)
       : match.stipulation === "None" ? "" : match.stipulation;
+    
+    // Add special winner to stipulation if selected
+    if (match.specialWinnerType && match.specialWinnerType !== "None") {
+      finalStipulation = finalStipulation ? `${finalStipulation} - ${match.specialWinnerType}` : match.specialWinnerType;
+    }
+    
     let result = '';
     if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
       const others = winnerOptions.filter(name => name !== winner);
@@ -938,6 +944,12 @@ function EditEvent({ events, updateEvent }) {
     let finalStipulation = match.stipulation === "Custom/Other"
       ? (match.customStipulationType === "Custom/Other" ? match.customStipulation : match.customStipulationType)
       : match.stipulation === "None" ? "" : match.stipulation;
+    
+    // Add special winner to stipulation if selected
+    if (match.specialWinnerType && match.specialWinnerType !== "None") {
+      finalStipulation = finalStipulation ? `${finalStipulation} - ${match.specialWinnerType}` : match.specialWinnerType;
+    }
+    
     let result = '';
     if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
       const others = winnerOptions.filter(name => name !== winner);
