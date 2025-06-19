@@ -15,7 +15,7 @@ const STIPULATION_OPTIONS = [
   "SmackDown Tag Team Championship",
   "Men's Speed Championship",
   "WWE Women's Championship",
-  "World Women's Championship",
+  "Women's World Championship",
   "Women's IC Championship",
   "Women's U.S. Championship",
   "Women's Tag Team Championship",
@@ -80,6 +80,11 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Women's Elimination Chamber winner",
   "Men's Ultimate Survivor",
   "Women's Ultimate Survivor",
+  "Men's War Games winner",
+  "Women's War Games winner",
+  "Triple Threat match",
+  "Fatal Four-way match",
+  "Unsanctioned Match",
   "Custom/Other"
 ];
 
@@ -558,7 +563,8 @@ function AddEvent({ addEvent }) {
     time: '',
     stipulation: '',
     customStipulation: '',
-    titleOutcome: ''
+    titleOutcome: '',
+    notes: ''
   });
   const [specialWinnerType, setSpecialWinnerType] = useState("None");
   const [specialWinnerName, setSpecialWinnerName] = useState('');
@@ -605,7 +611,8 @@ function AddEvent({ addEvent }) {
       time: '',
       stipulation: '',
       customStipulation: '',
-      titleOutcome: ''
+      titleOutcome: '',
+      notes: ''
     });
     setResultType('');
     setWinner('');
@@ -786,6 +793,17 @@ function AddEvent({ addEvent }) {
                   <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
                 </label>
               </div>
+              <div>
+                <label>
+                  Notes (optional):<br />
+                  <textarea 
+                    value={match.notes || ''} 
+                    onChange={e => setMatch({ ...match, notes: e.target.value })} 
+                    style={{ width: '100%', minHeight: '60px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
+                    placeholder="Enter any additional notes about the match..."
+                  />
+                </label>
+              </div>
             </>
           )}
           <div>
@@ -902,7 +920,8 @@ function EditEvent({ events, updateEvent }) {
     stipulation: '',
     customStipulationType: '',
     customStipulation: '',
-    titleOutcome: ''
+    titleOutcome: '',
+    notes: ''
   });
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
@@ -936,7 +955,8 @@ function EditEvent({ events, updateEvent }) {
       stipulation: '',
       customStipulationType: '',
       customStipulation: '',
-      titleOutcome: ''
+      titleOutcome: '',
+      notes: ''
     });
     setResultType('');
     setWinner('');
@@ -1096,6 +1116,17 @@ function EditEvent({ events, updateEvent }) {
                 <label>
                   Time:<br />
                   <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
+                </label>
+              </div>
+              <div>
+                <label>
+                  Notes (optional):<br />
+                  <textarea 
+                    value={match.notes || ''} 
+                    onChange={e => setMatch({ ...match, notes: e.target.value })} 
+                    style={{ width: '100%', minHeight: '60px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
+                    placeholder="Enter any additional notes about the match..."
+                  />
                 </label>
               </div>
             </>

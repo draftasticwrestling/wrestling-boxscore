@@ -45,6 +45,7 @@ export default function MatchEdit({
     customStipulation: '',
     specialWinnerType: '',
     titleOutcome: '',
+    notes: '',
     status: initialMatch.status || eventStatus || 'completed',
     ...initialMatch,
   });
@@ -262,6 +263,17 @@ export default function MatchEdit({
           ))}
         </select>
       </div>
+      {status === 'completed' && (
+        <div>
+          <label style={labelStyle}>Notes (optional):</label>
+          <textarea
+            style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
+            value={match.notes || ''}
+            onChange={e => setMatch({ ...match, notes: e.target.value })}
+            placeholder="Enter any additional notes about the match..."
+          />
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
         <button type="button" onClick={onCancel} style={{ flex: 1, background: '#444', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}>Cancel</button>
         <button type="submit" style={{ flex: 1, background: '#e63946', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}>Save</button>
