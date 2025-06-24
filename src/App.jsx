@@ -431,58 +431,89 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
           </thead>
           <tbody>
             {matchesWithCardType.map((match, index) => (
-              <tr key={match.order}>
-                <td style={tdStyle}>{match.order}</td>
-                <td style={tdStyle}>{match.cardType}</td>
-                <td style={participantsTdStyle}>{match.participants}</td>
-                <td style={tdStyle}>{
-                  match.result && match.result.includes(' def. ')
-                    ? match.result.split(' def. ')[0]
-                    : (match.result ? match.result : 'None')
-                }</td>
-                <td style={tdStyle}>{match.method}</td>
-                <td style={tdStyle}>{match.time}</td>
-                <td style={tdStyle}>{
-                  match.specialWinnerType && match.specialWinnerType !== "None"
-                    ? match.specialWinnerType
-                    : match.stipulation === "Custom/Other" && match.customStipulation
-                    ? match.customStipulation
-                    : match.stipulation
-                }</td>
-                <td style={tdStyle}>{match.title || ""}</td>
-                <td style={tdStyle}>{match.titleOutcome || ""}</td>
-                <td style={tdStyle}>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button 
-                      onClick={() => handleEditMatch(match, index)}
-                      style={{ ...buttonStyle, backgroundColor: '#4a90e2', color: 'white', marginRight: 0 }}
-                    >Edit</button>
-                    <button 
-                      onClick={() => handleMoveMatch(index, -1)}
-                      style={{ ...buttonStyle, backgroundColor: gold, color: '#232323', marginRight: 0 }}
-                      disabled={index === 0}
-                    >↑</button>
-                    <button 
-                      onClick={() => handleMoveMatch(index, 1)}
-                      style={{ ...buttonStyle, backgroundColor: gold, color: '#232323', marginRight: 0 }}
-                      disabled={index === event.matches.length - 1}
-                    >↓</button>
-                    <button 
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this match?')) {
-                          const updatedMatches = [...event.matches];
-                          updatedMatches.splice(index, 1);
-                          updatedMatches.forEach((match, idx) => {
-                            match.order = idx + 1;
-                          });
-                          onEditMatch(event.id, updatedMatches);
-                        }
-                      }}
-                      style={{ ...buttonStyle, backgroundColor: '#e24a4a', color: 'white', marginRight: 0 }}
-                    >×</button>
-                  </div>
-                </td>
-              </tr>
+              <React.Fragment key={match.order}>
+                <tr>
+                  <td style={tdStyle}>{match.order}</td>
+                  <td style={tdStyle}>{match.cardType}</td>
+                  <td style={participantsTdStyle}>{match.participants}</td>
+                  <td style={tdStyle}>{
+                    match.result && match.result.includes(' def. ')
+                      ? match.result.split(' def. ')[0]
+                      : (match.result ? match.result : 'None')
+                  }</td>
+                  <td style={tdStyle}>{match.method}</td>
+                  <td style={tdStyle}>{match.time}</td>
+                  <td style={tdStyle}>{
+                    match.specialWinnerType && match.specialWinnerType !== "None"
+                      ? match.specialWinnerType
+                      : match.stipulation === "Custom/Other" && match.customStipulation
+                      ? match.customStipulation
+                      : match.stipulation
+                  }</td>
+                  <td style={tdStyle}>{match.title || ""}</td>
+                  <td style={tdStyle}>{match.titleOutcome || ""}</td>
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button 
+                        onClick={() => handleEditMatch(match, index)}
+                        style={{ ...buttonStyle, backgroundColor: '#4a90e2', color: 'white', marginRight: 0 }}
+                      >Edit</button>
+                      <button 
+                        onClick={() => handleMoveMatch(index, -1)}
+                        style={{ ...buttonStyle, backgroundColor: gold, color: '#232323', marginRight: 0 }}
+                        disabled={index === 0}
+                      >↑</button>
+                      <button 
+                        onClick={() => handleMoveMatch(index, 1)}
+                        style={{ ...buttonStyle, backgroundColor: gold, color: '#232323', marginRight: 0 }}
+                        disabled={index === event.matches.length - 1}
+                      >↓</button>
+                      <button 
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this match?')) {
+                            const updatedMatches = [...event.matches];
+                            updatedMatches.splice(index, 1);
+                            updatedMatches.forEach((match, idx) => {
+                              match.order = idx + 1;
+                            });
+                            onEditMatch(event.id, updatedMatches);
+                          }
+                        }}
+                        style={{ ...buttonStyle, backgroundColor: '#e24a4a', color: 'white', marginRight: 0 }}
+                      >×</button>
+                    </div>
+                  </td>
+                </tr>
+                {match.isLive && Array.isArray(match.commentary) && match.commentary.length > 0 && (
+                  <tr>
+                    <td colSpan={10} style={{ background: '#181818', padding: 0 }}>
+                      <div style={{ padding: '12px 24px' }}>
+                        <div style={{ color: gold, fontWeight: 600, marginBottom: 6 }}>Live Commentary</div>
+                        <div style={{ maxHeight: 220, overflowY: 'auto', borderRadius: 4, background: '#232323', padding: 8 }}>
+                          {match.commentary.map((c, idx) => {
+                            // Calculate elapsed minutes from liveStart
+                            let elapsed = 0;
+                            if (match.liveStart) {
+                              elapsed = Math.ceil((c.timestamp - match.liveStart) / 60000);
+                            }
+                            return (
+                              <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ color: '#C6A04F', minWidth: 32 }}>{elapsed}'</span>
+                                <span style={{ color: '#fff' }}>{c.text}</span>
+                              </div>
+                            );
+                          })}
+                          {match.liveEnd && (
+                            <div style={{ color: '#bbb', marginTop: 8 }}>
+                              Match duration: {Math.ceil((match.liveEnd - match.liveStart) / 60000)} minute{Math.ceil((match.liveEnd - match.liveStart) / 60000) !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
