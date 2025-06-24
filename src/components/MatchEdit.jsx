@@ -171,6 +171,16 @@ export default function MatchEdit({
   // Save handler for completed match
   const handleSave = (e) => {
     e.preventDefault();
+    if (status === 'completed') {
+      if (!resultType) {
+        alert('Please select a result type.');
+        return;
+      }
+      if (resultType === 'Winner' && (!winner || winner.trim() === '')) {
+        alert('Please select a winner.');
+        return;
+      }
+    }
     let finalStipulation = match.stipulation === 'Custom/Other'
       ? match.customStipulation
       : match.stipulation === 'None' ? '' : match.stipulation;
@@ -326,7 +336,12 @@ export default function MatchEdit({
                 placeholder="Match time (e.g. 12:34)"
               />
             </div>
-            <button type="submit" style={{ marginTop: 16, background: '#4a90e2', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}>
+            <button type="submit" style={{ marginTop: 16, background: '#4a90e2', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}
+              disabled={
+                !resultType ||
+                (resultType === 'Winner' && (!winner || winner.trim() === ''))
+              }
+            >
               Save Match
             </button>
           </form>
