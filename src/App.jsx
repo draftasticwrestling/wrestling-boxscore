@@ -549,18 +549,43 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                               </div>
                             ))}
                           </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
-                          {winnerIndex === sideIdx && (
-                            <span style={{ color: '#fff', fontSize: 28, margin: '2px 0 0 0', display: 'block' }}>✔️</span>
+                          <span style={{
+                            fontWeight: 700,
+                            color: winnerIndex === sideIdx ? gold : '#fff',
+                            fontSize: 16,
+                            textAlign: 'center',
+                            marginBottom: 2
+                          }}>
+                            {team.join(' & ')}
+                          </span>
+                          <span style={{
+                            color: '#fff',
+                            fontSize: 28,
+                            margin: '2px 0 0 0',
+                            display: 'block',
+                            minHeight: 28,
+                            opacity: winnerIndex === sideIdx ? 1 : 0
+                          }}>
+                            ✔️
+                          </span>
+                          <div style={{
+                            minHeight: 44,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '8px auto 0 auto'
+                          }}>
+                            {isTitleMatch && winnerIndex === sideIdx ? (
+                              <BeltIcon size={44} />
+                            ) : (
+                              <span style={{ width: 44, height: 44, display: 'inline-block', opacity: 0 }} />
+                            )}
+                          </div>
+                          {isTitleMatch && winnerIndex === sideIdx && match.titleOutcome === 'New Champion' ? (
+                            <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
+                          ) : (
+                            <div style={{ minHeight: 19 }} />
                           )}
-                          {isTitleMatch && winnerIndex === sideIdx ? (
-                            <>
-                              <BeltIcon size={44} style={{ display: 'block', margin: '8px auto 0 auto' }} />
-                              {match.titleOutcome === 'New Champion' && (
-                                <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
-                              )}
-                            </>
-                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -595,18 +620,43 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                           </div>
                         ))}
                       </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
-                      {winnerIndex === 0 && (
-                        <span style={{ color: '#fff', fontSize: 28, margin: '2px 0 0 0', display: 'block' }}>✔️</span>
+                      <span style={{
+                        fontWeight: 700,
+                        color: winnerIndex === 0 ? gold : '#fff',
+                        fontSize: 16,
+                        textAlign: 'center',
+                        marginBottom: 2
+                      }}>
+                        {teams[0].join(' & ')}
+                      </span>
+                      <span style={{
+                        color: '#fff',
+                        fontSize: 28,
+                        margin: '2px 0 0 0',
+                        display: 'block',
+                        minHeight: 28,
+                        opacity: winnerIndex === 0 ? 1 : 0
+                      }}>
+                        ✔️
+                      </span>
+                      <div style={{
+                        minHeight: 44,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '8px auto 0 auto'
+                      }}>
+                        {isTitleMatch && winnerIndex === 0 ? (
+                          <BeltIcon size={44} />
+                        ) : (
+                          <span style={{ width: 44, height: 44, display: 'inline-block', opacity: 0 }} />
+                        )}
+                      </div>
+                      {isTitleMatch && winnerIndex === 0 && match.titleOutcome === 'New Champion' ? (
+                        <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
+                      ) : (
+                        <div style={{ minHeight: 19 }} />
                       )}
-                      {isTitleMatch && winnerIndex === 0 ? (
-                        <>
-                          <BeltIcon size={44} style={{ display: 'block', margin: '8px auto 0 auto' }} />
-                          {match.titleOutcome === 'New Champion' && (
-                            <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
-                          )}
-                        </>
-                      ) : null}
                     </div>
                     {/* Center column (match info) */}
                     <div style={{
@@ -643,18 +693,43 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                           </div>
                         ))}
                       </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
-                      {winnerIndex === 1 && (
-                        <span style={{ color: '#fff', fontSize: 28, margin: '2px 0 0 0', display: 'block' }}>✔️</span>
+                      <span style={{
+                        fontWeight: 700,
+                        color: winnerIndex === 1 ? gold : '#fff',
+                        fontSize: 16,
+                        textAlign: 'center',
+                        marginBottom: 2
+                      }}>
+                        {teams[1].join(' & ')}
+                      </span>
+                      <span style={{
+                        color: '#fff',
+                        fontSize: 28,
+                        margin: '2px 0 0 0',
+                        display: 'block',
+                        minHeight: 28,
+                        opacity: winnerIndex === 1 ? 1 : 0
+                      }}>
+                        ✔️
+                      </span>
+                      <div style={{
+                        minHeight: 44,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '8px auto 0 auto'
+                      }}>
+                        {isTitleMatch && winnerIndex === 1 ? (
+                          <BeltIcon size={44} />
+                        ) : (
+                          <span style={{ width: 44, height: 44, display: 'inline-block', opacity: 0 }} />
+                        )}
+                      </div>
+                      {isTitleMatch && winnerIndex === 1 && match.titleOutcome === 'New Champion' ? (
+                        <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
+                      ) : (
+                        <div style={{ minHeight: 19 }} />
                       )}
-                      {isTitleMatch && winnerIndex === 1 ? (
-                        <>
-                          <BeltIcon size={44} style={{ display: 'block', margin: '8px auto 0 auto' }} />
-                          {match.titleOutcome === 'New Champion' && (
-                            <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
-                          )}
-                        </>
-                      ) : null}
                     </div>
                   </div>
                 ) : !isMultiSide ? (
@@ -699,18 +774,43 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                               </div>
                             ))}
                           </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
-                          {winnerIndex === sideIdx && (
-                            <span style={{ color: '#fff', fontSize: 28, margin: '2px 0 0 0', display: 'block' }}>✔️</span>
+                          <span style={{
+                            fontWeight: 700,
+                            color: winnerIndex === sideIdx ? gold : '#fff',
+                            fontSize: 16,
+                            textAlign: 'center',
+                            marginBottom: 2
+                          }}>
+                            {team.join(' & ')}
+                          </span>
+                          <span style={{
+                            color: '#fff',
+                            fontSize: 28,
+                            margin: '2px 0 0 0',
+                            display: 'block',
+                            minHeight: 28,
+                            opacity: winnerIndex === sideIdx ? 1 : 0
+                          }}>
+                            ✔️
+                          </span>
+                          <div style={{
+                            minHeight: 44,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '8px auto 0 auto'
+                          }}>
+                            {isTitleMatch && winnerIndex === sideIdx ? (
+                              <BeltIcon size={44} />
+                            ) : (
+                              <span style={{ width: 44, height: 44, display: 'inline-block', opacity: 0 }} />
+                            )}
+                          </div>
+                          {isTitleMatch && winnerIndex === sideIdx && match.titleOutcome === 'New Champion' ? (
+                            <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
+                          ) : (
+                            <div style={{ minHeight: 19 }} />
                           )}
-                          {isTitleMatch && winnerIndex === sideIdx ? (
-                            <>
-                              <BeltIcon size={44} style={{ display: 'block', margin: '8px auto 0 auto' }} />
-                              {match.titleOutcome === 'New Champion' && (
-                                <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
-                              )}
-                            </>
-                          ) : null}
                         </div>
                       ))}
                     </div>
