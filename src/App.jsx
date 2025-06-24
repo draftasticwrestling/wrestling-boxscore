@@ -439,78 +439,70 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
           </div>
         )}
         <h3 style={{ marginTop: 24, color: gold }}>Match Results</h3>
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>#</th>
-              <th style={thStyle}>Card</th>
-              <th style={thStyle}>Match</th>
-              <th style={thStyle}>Winner</th>
-              <th style={thStyle}>Method</th>
-              <th style={thStyle}>Time</th>
-              <th style={thStyle}>Stipulation</th>
-              <th style={thStyle}>Title</th>
-              <th style={thStyle}>Title Outcome</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {matchesWithCardType.map((match, index) => (
-              <tr key={match.order} onClick={() => navigate(`/event/${event.id}/match/${match.order}`)} style={{ cursor: 'pointer' }}>
-                <td style={tdStyle}>{match.order}</td>
-                <td style={tdStyle}>{match.cardType}</td>
-                <td style={participantsTdStyle}>{match.participants}</td>
-                <td style={tdStyle}>{
-                  match.result && match.result.includes(' def. ')
-                    ? match.result.split(' def. ')[0]
-                    : (match.result ? match.result : 'None')
-                }</td>
-                <td style={tdStyle}>{match.method}</td>
-                <td style={tdStyle}>{match.time}</td>
-                <td style={tdStyle}>{
-                  match.specialWinnerType && match.specialWinnerType !== "None"
-                    ? match.specialWinnerType
-                    : match.stipulation === "Custom/Other" && match.customStipulation
-                    ? match.customStipulation
-                    : match.stipulation
-                }</td>
-                <td style={tdStyle}>{match.title || ""}</td>
-                <td style={tdStyle}>{match.titleOutcome || ""}</td>
-                <td style={tdStyle} onClick={e => e.stopPropagation()}>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button 
-                      onClick={() => handleEditMatch(match, index)}
-                      style={{ ...buttonStyle, backgroundColor: '#4a90e2', color: 'white', marginRight: 0 }}
-                    >Edit</button>
-                    <button 
-                      onClick={() => handleMoveMatch(index, -1)}
-                      style={{ ...buttonStyle, backgroundColor: gold, color: '#232323', marginRight: 0 }}
-                      disabled={index === 0}
-                    >↑</button>
-                    <button 
-                      onClick={() => handleMoveMatch(index, 1)}
-                      style={{ ...buttonStyle, backgroundColor: gold, color: '#232323', marginRight: 0 }}
-                      disabled={index === event.matches.length - 1}
-                    >↓</button>
-                    <button 
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this match?')) {
-                          const updatedMatches = [...event.matches];
-                          updatedMatches.splice(index, 1);
-                          updatedMatches.forEach((match, idx) => {
-                            match.order = idx + 1;
-                          });
-                          onEditMatch(event.id, updatedMatches);
-                        }
-                      }}
-                      style={{ ...buttonStyle, backgroundColor: '#e24a4a', color: 'white', marginRight: 0 }}
-                    >×</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {matchesWithCardType.map((match, index) => {
+            // Split participants by 'vs'
+            const [left, right] = match.participants.split(' vs ').map(s => s.trim());
+            // Winner logic
+            const winner = match.result && match.result.includes(' def. ')
+              ? match.result.split(' def. ')[0]
+              : (match.result ? match.result : '');
+            const isLeftWinner = left && winner && winner.startsWith(left);
+            const isRightWinner = right && winner && winner.startsWith(right);
+            return (
+              <div
+                key={match.order}
+                onClick={() => navigate(`/event/${event.id}/match/${match.order}`)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#232323',
+                  borderRadius: 12,
+                  boxShadow: '0 0 12px #C6A04F22',
+                  padding: '18px 24px',
+                  cursor: 'pointer',
+                  border: '1px solid #444',
+                  transition: 'background 0.2s',
+                  position: 'relative',
+                  minHeight: 120,
+                }}
+              >
+                {/* Left participant */}
+                <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
+                    {/* Placeholder for image */}
+                    <span role="img" aria-label="wrestler">👤</span>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <div style={{ fontWeight: 700, color: isLeftWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>{left}</div>
+                  {/* Placeholder for record/title */}
+                  <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>{isLeftWinner && match.title !== 'None' ? '🏆' : ''}</div>
+                  {/* Placeholder for flag/nationality */}
+                  <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
+                </div>
+                {/* Center match info */}
+                <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2 }}>{match.cardType}{match.title && match.title !== 'None' ? ' - Title Match' : ''}</div>
+                  <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
+                  <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}{match.time ? `, ${match.time}` : ''}</div>
+                  <div style={{ color: '#bbb', fontSize: 14 }}>{match.stipulation && match.stipulation !== 'None' ? match.stipulation : ''}</div>
+                  <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
+                </div>
+                {/* Right participant */}
+                <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
+                    {/* Placeholder for image */}
+                    <span role="img" aria-label="wrestler">👤</span>
+                  </div>
+                  <div style={{ fontWeight: 700, color: isRightWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>{right}</div>
+                  {/* Placeholder for record/title */}
+                  <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>{isRightWinner && match.title !== 'None' ? '🏆' : ''}</div>
+                  {/* Placeholder for flag/nationality */}
+                  <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
         <div style={{
           display: 'flex',
           gap: 12,
