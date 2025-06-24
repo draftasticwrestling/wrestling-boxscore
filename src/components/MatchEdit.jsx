@@ -272,7 +272,7 @@ export default function MatchEdit({
           </button>
         )}
         {liveEnd && (
-          <form onSubmit={handleSave} style={{ marginTop: 24 }}>
+          <form onSubmit={e => { handleSave(e); if (onCancel) onCancel(); }} style={{ marginTop: 24 }}>
             <h4 style={{ color: '#C6A04F' }}>Finalize Match Result</h4>
             <div>
               <label style={labelStyle}>Result Type:</label>
