@@ -4,6 +4,7 @@ import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
+import BeltIcon from './components/BeltIcon';
 
 // Place these at the top level, after imports
 const STIPULATION_OPTIONS = [
@@ -449,13 +450,27 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
               : (match.result ? match.result : '');
             const isLeftWinner = left && winner && winner.startsWith(left);
             const isRightWinner = right && winner && winner.startsWith(right);
+            const isTitleMatch = match.title && match.title !== 'None';
+            // Arrow SVG
+            const arrow = <span style={{ color: '#fff', fontSize: 28, margin: '0 8px', display: 'flex', alignItems: 'center' }}>&#9654;</span>;
+            // Belt icon (can be replaced with an image later)
+            const belt = <span style={{ fontSize: 22, marginLeft: 4, marginRight: 4 }}>🏆</span>;
+            // Top label: stipulation and/or title
+            let topLabel = '';
+            if (isTitleMatch && match.stipulation && match.stipulation !== 'None') {
+              topLabel = `${match.stipulation} — ${match.title}`;
+            } else if (isTitleMatch) {
+              topLabel = match.title;
+            } else if (match.stipulation && match.stipulation !== 'None') {
+              topLabel = match.stipulation;
+            }
             return (
               <div
                 key={match.order}
                 onClick={() => navigate(`/event/${event.id}/match/${match.order}`)}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  flexDirection: 'column',
                   background: '#232323',
                   borderRadius: 12,
                   boxShadow: '0 0 12px #C6A04F22',
@@ -465,39 +480,70 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                   transition: 'background 0.2s',
                   position: 'relative',
                   minHeight: 120,
+                  marginBottom: 2,
                 }}
               >
-                {/* Left participant */}
-                <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
-                    {/* Placeholder for image */}
-                    <span role="img" aria-label="wrestler">👤</span>
+                {/* Top label: stipulation/title */}
+                {topLabel && (
+                  <div style={{
+                    color: gold,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    marginBottom: 8,
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>{topLabel}</div>
+                )}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 0,
+                  minHeight: 80,
+                  width: '100%',
+                }}>
+                  {/* Left participant */}
+                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
+                      {/* Placeholder for image */}
+                      <span role="img" aria-label="wrestler">👤</span>
+                    </div>
+                    <div style={{ fontWeight: 700, color: isLeftWinner ? gold : '#fff', fontSize: 16, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>{left}</div>
+                    {/* Belt icon for title match */}
+                    <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>
+                      {isTitleMatch && isLeftWinner ? <BeltIcon size={32} style={{ display: 'block', margin: '0 auto' }} /> : ''}
+                    </div>
+                    {/* Placeholder for flag/nationality */}
+                    <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
                   </div>
-                  <div style={{ fontWeight: 700, color: isLeftWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>{left}</div>
-                  {/* Placeholder for record/title */}
-                  <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>{isLeftWinner && match.title !== 'None' ? '🏆' : ''}</div>
-                  {/* Placeholder for flag/nationality */}
-                  <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
-                </div>
-                {/* Center match info */}
-                <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2 }}>{match.cardType}{match.title && match.title !== 'None' ? ' - Title Match' : ''}</div>
-                  <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
-                  <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}{match.time ? `, ${match.time}` : ''}</div>
-                  <div style={{ color: '#bbb', fontSize: 14 }}>{match.stipulation && match.stipulation !== 'None' ? match.stipulation : ''}</div>
-                  <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
-                </div>
-                {/* Right participant */}
-                <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
-                    {/* Placeholder for image */}
-                    <span role="img" aria-label="wrestler">👤</span>
+                  {/* Arrow for winner */}
+                  <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isLeftWinner ? arrow : isRightWinner ? <span style={{ color: '#fff', fontSize: 28, margin: '0 8px', display: 'flex', alignItems: 'center', transform: 'rotate(180deg)' }}>&#9654;</span> : null}
                   </div>
-                  <div style={{ fontWeight: 700, color: isRightWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>{right}</div>
-                  {/* Placeholder for record/title */}
-                  <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>{isRightWinner && match.title !== 'None' ? '🏆' : ''}</div>
-                  {/* Placeholder for flag/nationality */}
-                  <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
+                  {/* Center match info */}
+                  <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
+                    <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
+                    <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
+                    <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
+                  </div>
+                  {/* Right participant */}
+                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
+                      {/* Placeholder for image */}
+                      <span role="img" aria-label="wrestler">👤</span>
+                    </div>
+                    <div style={{ fontWeight: 700, color: isRightWinner ? gold : '#fff', fontSize: 16, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>{right}</div>
+                    {/* Belt icon for title match */}
+                    <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>
+                      {isTitleMatch && isRightWinner ? <BeltIcon size={32} style={{ display: 'block', margin: '0 auto' }} /> : ''}
+                    </div>
+                    {/* Placeholder for flag/nationality */}
+                    <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
+                  </div>
                 </div>
               </div>
             );
