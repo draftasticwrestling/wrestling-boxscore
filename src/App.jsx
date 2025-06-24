@@ -617,22 +617,19 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                   </div>
                 ) : (
                   <>
-                    {/* Match info above for multi-way */}
+                    {/* Single match info block above participants */}
                     <div style={{
-                      fontWeight: 700,
-                      color: gold,
-                      fontSize: 15,
-                      marginBottom: 6,
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                    <div style={{ textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 18 }}>
-                      {match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 10,
+                    }}>
+                      <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
+                      <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
+                      <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
                     </div>
-                    <div style={{ textAlign: 'center', color: '#bbb', fontSize: 15 }}>{match.method}</div>
-                    <div style={{ textAlign: 'center', color: '#bbb', fontSize: 14 }}>{match.time}</div>
                     <div style={{
                       display: 'flex',
                       flexDirection: 'row',
@@ -641,7 +638,6 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       width: '100%',
                       gap: 24,
                       minHeight: 80,
-                      marginTop: 10,
                     }}>
                       {teams.map((team, sideIdx) => (
                         <div key={sideIdx} style={{
