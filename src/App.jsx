@@ -503,26 +503,22 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 {/* For 3+ sides, center match info above participants */}
                 {isMultiSide && (
                   <div style={{
-                    fontWeight: 700,
-                    color: gold,
-                    fontSize: 15,
-                    marginBottom: 6,
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                )}
-                {isMultiSide && (
-                  <div style={{ textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 18 }}>
-                    {match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 10,
+                  }}>
+                    <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+                      {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
+                    </div>
+                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>
+                      {match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}
+                    </div>
+                    <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
+                    <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
+                    <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
                   </div>
-                )}
-                {isMultiSide && (
-                  <div style={{ textAlign: 'center', color: '#bbb', fontSize: 15 }}>{match.method}</div>
-                )}
-                {isMultiSide && (
-                  <div style={{ textAlign: 'center', color: '#bbb', fontSize: 14 }}>{match.time}</div>
                 )}
                 {/* Sides row */}
                 {isTwoSide ? (
