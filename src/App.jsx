@@ -845,7 +845,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
           </Link>
           <button
             onClick={() => {
-              if (window.confirm('Are you sure you want to delete this event?')) {
+              if (window.confirm('Are you sure you want to delete this item?')) {
                 onDelete(event.id);
                 navigate('/');
               }
@@ -1448,46 +1448,103 @@ function EditEvent({ events, updateEvent }) {
           </div>
           <h3 style={{ marginTop: 24 }}>Matches</h3>
           {matches.length > 0 && (
-            <ol>
+            <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {matches.map((m, idx) => (
-                <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <strong>{m.participants}</strong> — {m.result} ({m.stipulation})
-                  <button type="button" onClick={() => {
-                    const updatedMatches = matches.filter(match => match.order !== m.order);
-                    updatedMatches.forEach((match, idx) => {
-                      match.order = idx + 1;
-                    });
-                    setMatches(updatedMatches);
-                  }} style={{ color: 'red', marginLeft: 8 }}>Delete</button>
+                <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333' }}>
+                  <span style={{ flex: 1, fontWeight: 700, color: '#fff', fontSize: 17 }}>{m.participants}</span>
+                  <span style={{ flex: 2, color: '#bbb', fontSize: 15, marginLeft: 12 }}>{m.result} {m.stipulation && m.stipulation !== 'None' ? `(${m.stipulation})` : ''}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 16 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (idx === 0) return;
+                        const updated = [...matches];
+                        [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
+                        updated.forEach((match, i) => { match.order = i + 1; });
+                        setMatches(updated);
+                      }}
+                      style={{
+                        background: '#C6A04F',
+                        color: '#232323',
+                        border: 'none',
+                        borderRadius: 4,
+                        fontWeight: 700,
+                        fontSize: 22,
+                        width: 36,
+                        height: 36,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: idx === 0 ? 0.3 : 1,
+                        cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                        marginRight: 2
+                      }}
+                      disabled={idx === 0}
+                      aria-label="Move Up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (idx === matches.length - 1) return;
+                        const updated = [...matches];
+                        [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+                        updated.forEach((match, i) => { match.order = i + 1; });
+                        setMatches(updated);
+                      }}
+                      style={{
+                        background: '#C6A04F',
+                        color: '#232323',
+                        border: 'none',
+                        borderRadius: 4,
+                        fontWeight: 700,
+                        fontSize: 22,
+                        width: 36,
+                        height: 36,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: idx === matches.length - 1 ? 0.3 : 1,
+                        cursor: idx === matches.length - 1 ? 'not-allowed' : 'pointer',
+                        marginRight: 10
+                      }}
+                      disabled={idx === matches.length - 1}
+                      aria-label="Move Down"
+                    >
+                      ↓
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
-                      if (idx === 0) return;
-                      const updated = [...matches];
-                      [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
-                      updated.forEach((match, i) => { match.order = i + 1; });
-                      setMatches(updated);
+                      if (!window.confirm('Are you sure you want to delete this item?')) return;
+                      const updatedMatches = matches.filter(match => match.order !== m.order);
+                      updatedMatches.forEach((match, idx) => {
+                        match.order = idx + 1;
+                      });
+                      setMatches(updatedMatches);
                     }}
-                    style={{ marginLeft: 8, fontSize: 18, opacity: idx === 0 ? 0.3 : 1, cursor: idx === 0 ? 'not-allowed' : 'pointer', background: 'none', border: 'none', color: '#C6A04F' }}
-                    disabled={idx === 0}
-                    aria-label="Move Up"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (idx === matches.length - 1) return;
-                      const updated = [...matches];
-                      [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
-                      updated.forEach((match, i) => { match.order = i + 1; });
-                      setMatches(updated);
+                    style={{
+                      background: '#b02a37',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      fontSize: 18,
+                      width: 36,
+                      height: 36,
+                      marginLeft: 18,
+                      opacity: 0.85,
+                      transition: 'opacity 0.2s',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
-                    style={{ marginLeft: 2, fontSize: 18, opacity: idx === matches.length - 1 ? 0.3 : 1, cursor: idx === matches.length - 1 ? 'not-allowed' : 'pointer', background: 'none', border: 'none', color: '#C6A04F' }}
-                    disabled={idx === matches.length - 1}
-                    aria-label="Move Down"
+                    aria-label="Delete"
                   >
-                    ↓
+                    ×
                   </button>
                 </li>
               ))}
