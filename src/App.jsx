@@ -451,10 +451,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             const isLeftWinner = left && winner && winner.startsWith(left);
             const isRightWinner = right && winner && winner.startsWith(right);
             const isTitleMatch = match.title && match.title !== 'None';
-            // Arrow SVG
-            const arrow = <span style={{ color: '#fff', fontSize: 28, margin: '0 8px', display: 'flex', alignItems: 'center' }}>&#9654;</span>;
-            // Belt icon (can be replaced with an image later)
-            const belt = <span style={{ fontSize: 22, marginLeft: 4, marginRight: 4 }}>🏆</span>;
+            // Arrow SVGs
+            const arrowRight = <span style={{ color: '#fff', fontSize: 28, marginRight: 8, display: 'flex', alignItems: 'center' }}>&#9654;</span>; // ▶
+            const arrowLeft = <span style={{ color: '#fff', fontSize: 28, marginLeft: 8, display: 'flex', alignItems: 'center' }}>&#9664;</span>; // ◀
+            // Belt icon (SVG)
             // Top label: stipulation and/or title
             let topLabel = '';
             if (isTitleMatch && match.stipulation && match.stipulation !== 'None') {
@@ -510,17 +510,15 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       {/* Placeholder for image */}
                       <span role="img" aria-label="wrestler">👤</span>
                     </div>
-                    <div style={{ fontWeight: 700, color: isLeftWinner ? gold : '#fff', fontSize: 16, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>{left}</div>
-                    {/* Belt icon for title match */}
-                    <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>
-                      {isTitleMatch && isLeftWinner ? <BeltIcon size={32} style={{ display: 'block', margin: '0 auto' }} /> : ''}
+                    <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: isLeftWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>
+                      {/* Arrow for left winner */}
+                      {isLeftWinner && arrowRight}
+                      <span>{left}</span>
+                      {/* Belt icon for title match */}
+                      {isTitleMatch && isLeftWinner ? <BeltIcon size={32} style={{ display: 'block', marginLeft: 6 }} /> : null}
                     </div>
                     {/* Placeholder for flag/nationality */}
                     <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
-                  </div>
-                  {/* Arrow for winner */}
-                  <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {isLeftWinner ? arrow : isRightWinner ? <span style={{ color: '#fff', fontSize: 28, margin: '0 8px', display: 'flex', alignItems: 'center', transform: 'rotate(180deg)' }}>&#9654;</span> : null}
                   </div>
                   {/* Center match info */}
                   <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0 }}>
@@ -536,10 +534,12 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       {/* Placeholder for image */}
                       <span role="img" aria-label="wrestler">👤</span>
                     </div>
-                    <div style={{ fontWeight: 700, color: isRightWinner ? gold : '#fff', fontSize: 16, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>{right}</div>
-                    {/* Belt icon for title match */}
-                    <div style={{ color: gold, fontSize: 13, marginTop: 2 }}>
-                      {isTitleMatch && isRightWinner ? <BeltIcon size={32} style={{ display: 'block', margin: '0 auto' }} /> : ''}
+                    <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: isRightWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>
+                      <span>{right}</span>
+                      {/* Arrow for right winner */}
+                      {isRightWinner && arrowLeft}
+                      {/* Belt icon for title match */}
+                      {isTitleMatch && isRightWinner ? <BeltIcon size={32} style={{ display: 'block', marginLeft: 6 }} /> : null}
                     </div>
                     {/* Placeholder for flag/nationality */}
                     <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
