@@ -540,20 +540,30 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       {isTwoSide && sideIdx === 1 && (
                         <div style={{ flex: 1, minWidth: 0 }} />
                       )}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                      <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        minWidth: 0,
+                        height: '100%',
+                        padding: '12px 0',
+                      }}>
                         {/* Tag team: row of images */}
-                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                           {team.map((wrestler, i) => (
                             <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#888' }}>
                               <span role="img" aria-label="wrestler">👤</span>
                             </div>
                           ))}
                         </div>
-                        {/* Winner checkmark for the winning side */}
+                        {/* Name at top, then checkmark, then belt icon (if winner) */}
+                        <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
                         {winnerIndex === sideIdx && (
-                          <span style={{ color: '#fff', fontSize: 28, margin: '4px 0 0 0', display: 'block' }}>✔️</span>
+                          <span style={{ color: '#fff', fontSize: 28, margin: '2px 0 0 0', display: 'block' }}>✔️</span>
                         )}
-                        {/* Belt icon below name for title match winner */}
                         {isTitleMatch && winnerIndex === sideIdx ? (
                           <>
                             <BeltIcon size={44} style={{ display: 'block', margin: '8px auto 0 auto' }} />
@@ -562,11 +572,19 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                             )}
                           </>
                         ) : null}
-                        <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>{team.join(' & ')}</span>
                       </div>
                       {/* Center match info for 2 sides */}
                       {isTwoSide && sideIdx === 0 && (
-                        <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0 }}>
+                        <div style={{
+                          flex: 1.2,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 2,
+                          minWidth: 0,
+                          margin: '0 8px',
+                        }}>
                           <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
                           <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
                           <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
