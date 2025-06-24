@@ -467,6 +467,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             }
             // Layout for 2+ sides
             const isMultiSide = teams.length > 2;
+            const isTwoSide = teams.length === 2;
             return (
               <div
                 key={match.order}
@@ -534,18 +535,20 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                   marginTop: isMultiSide ? 10 : 0,
                 }}>
                   {teams.map((team, sideIdx) => (
-                    <div key={sideIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                      {/* Tag team: row of images */}
-                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 4 }}>
-                        {team.map((wrestler, i) => (
-                          <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#888' }}>
-                            <span role="img" aria-label="wrestler">👤</span>
-                          </div>
-                        ))}
-                      </div>
-                      {/* Winner arrow and belt icon for the winning side */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', flexDirection: 'column' }}>
-                        <span>{team.join(' & ')}</span>
+                    <React.Fragment key={sideIdx}>
+                      {/* Left side */}
+                      {isTwoSide && sideIdx === 1 && (
+                        <div style={{ flex: 1, minWidth: 0 }} />
+                      )}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                        {/* Tag team: row of images */}
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 4 }}>
+                          {team.map((wrestler, i) => (
+                            <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#888' }}>
+                              <span role="img" aria-label="wrestler">👤</span>
+                            </div>
+                          ))}
+                        </div>
                         {/* Winner checkmark for the winning side */}
                         {winnerIndex === sideIdx && (
                           <span style={{ color: '#fff', fontSize: 28, margin: '4px 0 0 0', display: 'block' }}>✔️</span>
@@ -559,20 +562,21 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                             )}
                           </>
                         ) : null}
+                        <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>{team.join(' & ')}</span>
                       </div>
-                    </div>
+                      {/* Center match info for 2 sides */}
+                      {isTwoSide && sideIdx === 0 && (
+                        <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                          <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
+                          <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
+                          <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
+                          <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
+                        </div>
+                      )}
+                    </React.Fragment>
                   ))}
                 </div>
-                {/* For 2 sides, match info in center column */}
-                {!isMultiSide && (
-                  <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0, marginTop: 8 }}>
-                    <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
-                    <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
-                    <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
-                    <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
-                  </div>
-                )}
               </div>
             );
           })}

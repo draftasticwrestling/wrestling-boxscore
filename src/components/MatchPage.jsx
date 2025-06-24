@@ -58,7 +58,11 @@ export default function MatchPage({ events }) {
         </thead>
         <tbody>
           <tr><td style={tdStyle}>Participants</td><td style={tdStyle}>{match.participants}</td></tr>
-          <tr><td style={tdStyle}>Winner</td><td style={tdStyle}>{match.result || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Winner</td><td style={tdStyle}>{
+            match.result && match.result.includes(' def. ')
+              ? match.result.split(' def. ')[0]
+              : (match.result || 'None')
+          }</td></tr>
           <tr><td style={tdStyle}>Method</td><td style={tdStyle}>{match.method || 'None'}</td></tr>
           <tr><td style={tdStyle}>Time</td><td style={tdStyle}>{match.time || 'None'}</td></tr>
           <tr><td style={tdStyle}>Stipulation</td><td style={tdStyle}>{match.stipulation || 'None'}</td></tr>
