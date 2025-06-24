@@ -1450,7 +1450,7 @@ function EditEvent({ events, updateEvent }) {
           {matches.length > 0 && (
             <ol>
               {matches.map((m, idx) => (
-                <li key={idx}>
+                <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <strong>{m.participants}</strong> — {m.result} ({m.stipulation})
                   <button type="button" onClick={() => {
                     const updatedMatches = matches.filter(match => match.order !== m.order);
@@ -1459,6 +1459,36 @@ function EditEvent({ events, updateEvent }) {
                     });
                     setMatches(updatedMatches);
                   }} style={{ color: 'red', marginLeft: 8 }}>Delete</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (idx === 0) return;
+                      const updated = [...matches];
+                      [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
+                      updated.forEach((match, i) => { match.order = i + 1; });
+                      setMatches(updated);
+                    }}
+                    style={{ marginLeft: 8, fontSize: 18, opacity: idx === 0 ? 0.3 : 1, cursor: idx === 0 ? 'not-allowed' : 'pointer', background: 'none', border: 'none', color: '#C6A04F' }}
+                    disabled={idx === 0}
+                    aria-label="Move Up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (idx === matches.length - 1) return;
+                      const updated = [...matches];
+                      [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+                      updated.forEach((match, i) => { match.order = i + 1; });
+                      setMatches(updated);
+                    }}
+                    style={{ marginLeft: 2, fontSize: 18, opacity: idx === matches.length - 1 ? 0.3 : 1, cursor: idx === matches.length - 1 ? 'not-allowed' : 'pointer', background: 'none', border: 'none', color: '#C6A04F' }}
+                    disabled={idx === matches.length - 1}
+                    aria-label="Move Down"
+                  >
+                    ↓
+                  </button>
                 </li>
               ))}
             </ol>
