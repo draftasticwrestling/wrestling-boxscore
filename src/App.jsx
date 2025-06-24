@@ -278,35 +278,58 @@ function EventList({ events }) {
         boxShadow: '0 0 8px #C6A04F22',
         transition: 'background 0.2s, color 0.2s',
       }}>+ Add Event</Link>
-      <ul style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24 }}>
         {events.map(event => {
           const isUpcoming = isUpcomingEST(event);
           return (
-            <li key={event.id} style={{ marginBottom: 16 }}>
-              <Link to={`/event/${event.id}`} style={{ color: gold, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <EventLogoOrText 
-                  name={event.name} 
-                  style={{ 
-                    display: 'inline-block',
-                    verticalAlign: 'middle',
-                    marginRight: 8,
-                    maxHeight: 48,
-                    maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
-                    height: 'auto',
-                    width: 'auto',
-                    objectFit: 'contain',
-                  }} 
-                  textStyle={{ color: gold }} 
-                />
-                {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
-                {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
-              </Link>
-              <br />
-              <span style={{ color: gold }}>{formatDate(event.date)}</span> — <span style={{ color: gold }}>{event.location}</span>
-            </li>
+            <Link
+              to={`/event/${event.id}`}
+              key={event.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 24,
+                background: 'rgba(34,34,34,0.98)',
+                borderRadius: 10,
+                boxShadow: '0 0 8px #C6A04F22',
+                padding: '16px 24px',
+                marginBottom: 18,
+                textDecoration: 'none',
+                color: gold,
+                transition: 'background 0.2s',
+                cursor: 'pointer',
+                position: 'relative',
+                border: '1px solid #333',
+              }}
+            >
+              <EventLogoOrText
+                name={event.name}
+                style={{
+                  display: 'inline-block',
+                  verticalAlign: 'middle',
+                  maxHeight: 48,
+                  maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
+                  height: 'auto',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  marginRight: 12,
+                }}
+                textStyle={{ color: gold }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ color: gold, fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+                  {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
+                  {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
+                </div>
+                <div style={{ color: gold, fontSize: 16, marginTop: 2 }}>
+                  {formatDate(event.date)} — {event.location}
+                </div>
+              </div>
+            </Link>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }
