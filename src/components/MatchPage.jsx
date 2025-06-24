@@ -12,6 +12,30 @@ const sectionStyle = {
   maxWidth: 600,
 };
 
+const tableStyle = {
+  width: '100%',
+  background: 'rgba(34, 34, 34, 0.98)',
+  color: gold,
+  borderCollapse: 'collapse',
+  boxShadow: '0 0 12px #C6A04F22',
+};
+const thStyle = {
+  background: '#222',
+  color: gold,
+  fontWeight: 700,
+  borderBottom: '2px solid #C6A04F',
+  padding: 10,
+  textAlign: 'left',
+  minWidth: 120,
+};
+const tdStyle = {
+  background: 'rgba(34, 34, 34, 0.98)',
+  color: '#fff8e1',
+  borderBottom: '1px solid #444',
+  padding: 10,
+  verticalAlign: 'top',
+};
+
 export default function MatchPage({ events }) {
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
@@ -25,15 +49,21 @@ export default function MatchPage({ events }) {
     <div style={sectionStyle}>
       <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
       <h2 style={{ color: gold, marginTop: 24 }}>Match Details</h2>
-      <table style={{ width: '100%', color: gold, marginBottom: 24 }}>
+      <table style={tableStyle}>
+        <thead>
+          <tr>
+            <th style={thStyle}>Field</th>
+            <th style={thStyle}>Value</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td>Participants:</td><td>{match.participants}</td></tr>
-          <tr><td>Winner:</td><td>{match.result || 'None'}</td></tr>
-          <tr><td>Method:</td><td>{match.method || 'None'}</td></tr>
-          <tr><td>Time:</td><td>{match.time || 'None'}</td></tr>
-          <tr><td>Stipulation:</td><td>{match.stipulation || 'None'}</td></tr>
-          <tr><td>Title:</td><td>{match.title || 'None'}</td></tr>
-          <tr><td>Title Outcome:</td><td>{match.titleOutcome || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Participants</td><td style={tdStyle}>{match.participants}</td></tr>
+          <tr><td style={tdStyle}>Winner</td><td style={tdStyle}>{match.result || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Method</td><td style={tdStyle}>{match.method || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Time</td><td style={tdStyle}>{match.time || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Stipulation</td><td style={tdStyle}>{match.stipulation || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Title</td><td style={tdStyle}>{match.title || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Title Outcome</td><td style={tdStyle}>{match.titleOutcome || 'None'}</td></tr>
         </tbody>
       </table>
       {match.notes && (
