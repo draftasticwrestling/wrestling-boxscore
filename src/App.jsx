@@ -545,10 +545,11 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       </div>
                       {/* Winner arrow and belt icon for the winning side */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', flexDirection: 'column' }}>
-                        {/* Arrow for winner */}
-                        {winnerIndex === sideIdx && sideIdx === 0 && arrowRight}
                         <span>{team.join(' & ')}</span>
-                        {winnerIndex === sideIdx && sideIdx === 1 && arrowLeft}
+                        {/* Winner checkmark for the winning side */}
+                        {winnerIndex === sideIdx && (
+                          <span style={{ color: '#fff', fontSize: 28, margin: '4px 0 0 0', display: 'block' }}>✔️</span>
+                        )}
                         {/* Belt icon below name for title match winner */}
                         {isTitleMatch && winnerIndex === sideIdx ? (
                           <>
