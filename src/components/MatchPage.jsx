@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEvents } from '../App'; // We'll use context or pass events as prop if needed
+import MatchEdit from './MatchEdit';
 
 const gold = '#C6A04F';
 const sectionStyle = {
@@ -36,19 +37,58 @@ const tdStyle = {
   verticalAlign: 'top',
 };
 
-export default function MatchPage({ events }) {
+export default function MatchPage({ events, onEditMatch }) {
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
-  const match = event ? event.matches.find(m => String(m.order) === String(matchOrder)) : null;
+  const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
+  const match = event && matchIndex !== -1 ? event.matches[matchIndex] : null;
+  const [isEditing, setIsEditing] = React.useState(false);
 
   if (!event || !match) {
     return <div style={{ padding: 24 }}>Match not found.</div>;
+  }
+
+  if (isEditing) {
+    return (
+      <div style={sectionStyle}>
+        <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
+        <h2 style={{ color: gold, marginTop: 24 }}>Edit Match</h2>
+        <MatchEdit
+          initialMatch={match}
+          eventStatus={event.status}
+          eventDate={event.date}
+          onSave={updatedMatch => {
+            const updatedMatches = [...event.matches];
+            updatedMatches[matchIndex] = updatedMatch;
+            onEditMatch(event.id, updatedMatches);
+            setIsEditing(false);
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
   }
 
   return (
     <div style={sectionStyle}>
       <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
       <h2 style={{ color: gold, marginTop: 24 }}>Match Details</h2>
+      <button
+        style={{
+          marginBottom: 24,
+          background: gold,
+          color: '#232323',
+          border: 'none',
+          borderRadius: 4,
+          fontWeight: 700,
+          fontSize: 16,
+          padding: '8px 24px',
+          cursor: 'pointer',
+        }}
+        onClick={() => setIsEditing(true)}
+      >
+        Edit Match
+      </button>
       <table style={tableStyle}>
         <thead>
           <tr>

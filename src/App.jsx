@@ -1778,7 +1778,7 @@ function App() {
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
         <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} />} />
-        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} />} />
+        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} onEditMatch={handleEditMatch} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
       </Routes>
