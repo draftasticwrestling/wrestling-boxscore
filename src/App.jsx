@@ -544,12 +544,20 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                         ))}
                       </div>
                       {/* Winner arrow and belt icon for the winning side */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', flexDirection: 'column' }}>
                         {/* Arrow for winner */}
                         {winnerIndex === sideIdx && sideIdx === 0 && arrowRight}
                         <span>{team.join(' & ')}</span>
                         {winnerIndex === sideIdx && sideIdx === 1 && arrowLeft}
-                        {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon size={32} style={{ display: 'block', marginLeft: 6 }} /> : null}
+                        {/* Belt icon below name for title match winner */}
+                        {isTitleMatch && winnerIndex === sideIdx ? (
+                          <>
+                            <BeltIcon size={44} style={{ display: 'block', margin: '8px auto 0 auto' }} />
+                            {match.titleOutcome === 'New Champion' && (
+                              <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
+                            )}
+                          </>
+                        ) : null}
                       </div>
                     </div>
                   ))}
