@@ -502,23 +502,69 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 )}
                 {/* For 3+ sides, center match info above participants */}
                 {isMultiSide && (
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 10,
-                  }}>
-                    <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
-                      {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
+                  <>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 10,
+                    }}>
+                      <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+                        {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
+                      </div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>
+                        {match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}
+                      </div>
+                      <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
+                      <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
+                      <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
                     </div>
-                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>
-                      {match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                        gap: 24,
+                        minHeight: 80,
+                      }}
+                    >
+                      {teams.map((team, sideIdx) => (
+                        <div key={sideIdx} style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          minWidth: 0,
+                          padding: '12px 0',
+                        }}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                            {team.map((wrestler, i) => (
+                              <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#888' }}>
+                                <span role="img" aria-label="wrestler">👤</span>
+                              </div>
+                            ))}
+                          </div>
+                          <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
+                          {winnerIndex === sideIdx && (
+                            <span style={{ color: '#fff', fontSize: 28, margin: '2px 0 0 0', display: 'block' }}>✔️</span>
+                          )}
+                          {isTitleMatch && winnerIndex === sideIdx ? (
+                            <>
+                              <BeltIcon size={44} style={{ display: 'block', margin: '8px auto 0 auto' }} />
+                              {match.titleOutcome === 'New Champion' && (
+                                <div style={{ color: gold, fontWeight: 700, fontSize: 15, marginTop: 2 }}>New Champion</div>
+                              )}
+                            </>
+                          ) : null}
+                        </div>
+                      ))}
                     </div>
-                    <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
-                    <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
-                    <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
-                  </div>
+                  </>
                 )}
                 {/* Sides row */}
                 {isTwoSide ? (
