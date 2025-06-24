@@ -616,22 +616,35 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     </div>
                   </div>
                 ) : (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'stretch',
-                    justifyContent: 'center',
-                    gap: 24,
-                    minHeight: 80,
-                    width: '100%',
-                    marginTop: 10,
-                  }}>
-                    {teams.map((team, sideIdx) => (
-                      <React.Fragment key={sideIdx}>
-                        {/* Left side */}
-                        {sideIdx === 1 && (
-                          <div style={{ flex: 1, minWidth: 0 }} />
-                        )}
-                        <div style={{
+                  <>
+                    {/* Match info above for multi-way */}
+                    <div style={{
+                      fontWeight: 700,
+                      color: gold,
+                      fontSize: 15,
+                      marginBottom: 6,
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                    <div style={{ textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 18 }}>
+                      {match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}
+                    </div>
+                    <div style={{ textAlign: 'center', color: '#bbb', fontSize: 15 }}>{match.method}</div>
+                    <div style={{ textAlign: 'center', color: '#bbb', fontSize: 14 }}>{match.time}</div>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      gap: 24,
+                      minHeight: 80,
+                      marginTop: 10,
+                    }}>
+                      {teams.map((team, sideIdx) => (
+                        <div key={sideIdx} style={{
                           flex: 1,
                           display: 'flex',
                           flexDirection: 'column',
@@ -639,10 +652,8 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                           justifyContent: 'center',
                           gap: 8,
                           minWidth: 0,
-                          height: '100%',
                           padding: '12px 0',
                         }}>
-                          {/* Tag team: row of images */}
                           <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                             {team.map((wrestler, i) => (
                               <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#888' }}>
@@ -650,7 +661,6 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                               </div>
                             ))}
                           </div>
-                          {/* Name at top, then checkmark, then belt icon (if winner) */}
                           <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
                           {winnerIndex === sideIdx && (
                             <span style={{ color: '#fff', fontSize: 28, margin: '2px 0 0 0', display: 'block' }}>✔️</span>
@@ -664,9 +674,9 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                             </>
                           ) : null}
                         </div>
-                      </React.Fragment>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             );
