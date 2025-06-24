@@ -14,19 +14,25 @@ const STIPULATION_OPTIONS = [
   "Street Fight",
   "Bloodline Rules",
   "Bakersfield Brawl",
-  "King of the Ring qualifier",
-  "Queen of the Ring qualifier",
-  "Men's Elimination Chamber qualifier",
-  "Women's Elimination Chamber qualifier",
-  "Men's Money in the Bank qualifier",
-  "Women's Money in the Bank qualifier",
+  "King of the Ring Qualifier",
+  "Queen of the Ring Qualifier",
+  "Men's Elimination Chamber Qualifier",
+  "Women's Elimination Chamber Qualifier",
+  "Men's Money in the Bank Qualifier",
+  "Women's Money in the Bank Qualifier",
+  "Men's Money in the Bank Ladder Match",
+  "Women's Money in the Bank Ladder Match",
   "Men's Survivor Series Qualifier",
-  "Women's Survivor Series qualifier",
-  "King of the Ring finalist",
-  "Queen of the Ring finalist",
+  "Women's Survivor Series Qualifier",
+  "King of the Ring Semi-final",
+  "Queen of the Ring Semi-final",
   "Triple Threat match",
   "Fatal Four-way match",
   "Unsanctioned Match",
+  "Men's War Games Match",
+  "Women's War Games Match",
+  "Men's Royal Rumble",
+  "Women's Royal Rumble",
   "Custom/Other"
 ];
 const METHOD_OPTIONS = [
@@ -1310,6 +1316,7 @@ function EditEvent({ events, updateEvent }) {
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [eventStatus, setEventStatus] = useState(event.status || 'completed');
+  const [editingMatchIdx, setEditingMatchIdx] = useState(null);
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -1451,101 +1458,142 @@ function EditEvent({ events, updateEvent }) {
             <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {matches.map((m, idx) => (
                 <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333' }}>
-                  <span style={{ flex: 1, fontWeight: 700, color: '#fff', fontSize: 17 }}>{m.participants}</span>
-                  <span style={{ flex: 2, color: '#bbb', fontSize: 15, marginLeft: 12 }}>{m.result} {m.stipulation && m.stipulation !== 'None' ? `(${m.stipulation})` : ''}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 16 }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (idx === 0) return;
-                        const updated = [...matches];
-                        [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
-                        updated.forEach((match, i) => { match.order = i + 1; });
-                        setMatches(updated);
-                      }}
-                      style={{
-                        background: '#C6A04F',
-                        color: '#232323',
-                        border: 'none',
-                        borderRadius: 4,
-                        fontWeight: 700,
-                        fontSize: 22,
-                        width: 36,
-                        height: 36,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: idx === 0 ? 0.3 : 1,
-                        cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                        marginRight: 2
-                      }}
-                      disabled={idx === 0}
-                      aria-label="Move Up"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (idx === matches.length - 1) return;
-                        const updated = [...matches];
-                        [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
-                        updated.forEach((match, i) => { match.order = i + 1; });
-                        setMatches(updated);
-                      }}
-                      style={{
-                        background: '#C6A04F',
-                        color: '#232323',
-                        border: 'none',
-                        borderRadius: 4,
-                        fontWeight: 700,
-                        fontSize: 22,
-                        width: 36,
-                        height: 36,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: idx === matches.length - 1 ? 0.3 : 1,
-                        cursor: idx === matches.length - 1 ? 'not-allowed' : 'pointer',
-                        marginRight: 10
-                      }}
-                      disabled={idx === matches.length - 1}
-                      aria-label="Move Down"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!window.confirm('Are you sure you want to delete this item?')) return;
-                      const updatedMatches = matches.filter(match => match.order !== m.order);
-                      updatedMatches.forEach((match, idx) => {
-                        match.order = idx + 1;
-                      });
-                      setMatches(updatedMatches);
-                    }}
-                    style={{
-                      background: '#b02a37',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 4,
-                      fontWeight: 700,
-                      fontSize: 18,
-                      width: 36,
-                      height: 36,
-                      marginLeft: 18,
-                      opacity: 0.85,
-                      transition: 'opacity 0.2s',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    aria-label="Delete"
-                  >
-                    ×
-                  </button>
+                  {editingMatchIdx === idx ? (
+                    <div style={{ flex: 1, width: '100%' }}>
+                      <MatchEdit
+                        initialMatch={m}
+                        eventStatus={eventStatus}
+                        eventDate={date}
+                        onSave={updatedMatch => {
+                          const updated = [...matches];
+                          updated[idx] = updatedMatch;
+                          setMatches(updated);
+                          setEditingMatchIdx(null);
+                        }}
+                        onCancel={() => setEditingMatchIdx(null)}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setEditingMatchIdx(idx)}
+                        style={{
+                          background: '#4a90e2',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 4,
+                          fontWeight: 700,
+                          fontSize: 16,
+                          width: 56,
+                          height: 36,
+                          marginRight: 10,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        aria-label="Edit Match"
+                      >
+                        Edit
+                      </button>
+                      <span style={{ flex: 1, fontWeight: 700, color: '#fff', fontSize: 17 }}>{m.participants}</span>
+                      <span style={{ flex: 2, color: '#bbb', fontSize: 15, marginLeft: 12 }}>{m.result} {m.stipulation && m.stipulation !== 'None' ? `(${m.stipulation})` : ''}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 16 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (idx === 0) return;
+                            const updated = [...matches];
+                            [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
+                            updated.forEach((match, i) => { match.order = i + 1; });
+                            setMatches(updated);
+                          }}
+                          style={{
+                            background: '#C6A04F',
+                            color: '#232323',
+                            border: 'none',
+                            borderRadius: 4,
+                            fontWeight: 700,
+                            fontSize: 22,
+                            width: 36,
+                            height: 36,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: idx === 0 ? 0.3 : 1,
+                            cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                            marginRight: 2
+                          }}
+                          disabled={idx === 0}
+                          aria-label="Move Up"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (idx === matches.length - 1) return;
+                            const updated = [...matches];
+                            [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+                            updated.forEach((match, i) => { match.order = i + 1; });
+                            setMatches(updated);
+                          }}
+                          style={{
+                            background: '#C6A04F',
+                            color: '#232323',
+                            border: 'none',
+                            borderRadius: 4,
+                            fontWeight: 700,
+                            fontSize: 22,
+                            width: 36,
+                            height: 36,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: idx === matches.length - 1 ? 0.3 : 1,
+                            cursor: idx === matches.length - 1 ? 'not-allowed' : 'pointer',
+                            marginRight: 10
+                          }}
+                          disabled={idx === matches.length - 1}
+                          aria-label="Move Down"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!window.confirm('Are you sure you want to delete this item?')) return;
+                          const updatedMatches = matches.filter(match => match.order !== m.order);
+                          updatedMatches.forEach((match, idx) => {
+                            match.order = idx + 1;
+                          });
+                          setMatches(updatedMatches);
+                        }}
+                        style={{
+                          background: '#b02a37',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 4,
+                          fontWeight: 700,
+                          fontSize: 18,
+                          width: 36,
+                          height: 36,
+                          marginLeft: 18,
+                          opacity: 0.85,
+                          transition: 'opacity 0.2s',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        aria-label="Delete"
+                      >
+                        ×
+                      </button>
+                    </>
+                  )}
                 </li>
               ))}
             </ol>
