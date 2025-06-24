@@ -442,19 +442,20 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
         <h3 style={{ marginTop: 24, color: gold }}>Match Results</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {matchesWithCardType.map((match, index) => {
-            // Split participants by 'vs'
-            const [left, right] = match.participants.split(' vs ').map(s => s.trim());
+            // Parse participants into sides (split by 'vs')
+            const sides = match.participants.split(' vs ').map(s => s.trim());
+            // For each side, split by '&' for tag teams
+            const teams = sides.map(side => side.split('&').map(name => name.trim()));
             // Winner logic
             const winner = match.result && match.result.includes(' def. ')
               ? match.result.split(' def. ')[0]
               : (match.result ? match.result : '');
-            const isLeftWinner = left && winner && winner.startsWith(left);
-            const isRightWinner = right && winner && winner.startsWith(right);
+            // Find which side is the winner
+            const winnerIndex = sides.findIndex(side => winner.startsWith(side));
             const isTitleMatch = match.title && match.title !== 'None';
             // Arrow SVGs
             const arrowRight = <span style={{ color: '#fff', fontSize: 28, marginRight: 8, display: 'flex', alignItems: 'center' }}>&#9654;</span>; // ▶
             const arrowLeft = <span style={{ color: '#fff', fontSize: 28, marginLeft: 8, display: 'flex', alignItems: 'center' }}>&#9664;</span>; // ◀
-            // Belt icon (SVG)
             // Top label: stipulation and/or title
             let topLabel = '';
             if (isTitleMatch && match.stipulation && match.stipulation !== 'None') {
@@ -464,6 +465,8 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             } else if (match.stipulation && match.stipulation !== 'None') {
               topLabel = match.stipulation;
             }
+            // Layout for 2+ sides
+            const isMultiSide = teams.length > 2;
             return (
               <div
                 key={match.order}
@@ -496,55 +499,71 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     textOverflow: 'ellipsis',
                   }}>{topLabel}</div>
                 )}
+                {/* For 3+ sides, center match info above participants */}
+                {isMultiSide && (
+                  <div style={{
+                    fontWeight: 700,
+                    color: gold,
+                    fontSize: 15,
+                    marginBottom: 6,
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                )}
+                {isMultiSide && (
+                  <div style={{ textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 18 }}>
+                    {match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}
+                  </div>
+                )}
+                {isMultiSide && (
+                  <div style={{ textAlign: 'center', color: '#bbb', fontSize: 15 }}>{match.method}</div>
+                )}
+                {isMultiSide && (
+                  <div style={{ textAlign: 'center', color: '#bbb', fontSize: 14 }}>{match.time}</div>
+                )}
+                {/* Sides row */}
                 <div style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: 0,
+                  alignItems: 'stretch',
+                  justifyContent: 'center',
+                  gap: 24,
                   minHeight: 80,
                   width: '100%',
+                  marginTop: isMultiSide ? 10 : 0,
                 }}>
-                  {/* Left participant */}
-                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
-                      {/* Placeholder for image */}
-                      <span role="img" aria-label="wrestler">👤</span>
+                  {teams.map((team, sideIdx) => (
+                    <div key={sideIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                      {/* Tag team: row of images */}
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 4 }}>
+                        {team.map((wrestler, i) => (
+                          <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#888' }}>
+                            <span role="img" aria-label="wrestler">👤</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Winner arrow and belt icon for the winning side */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>
+                        {/* Arrow for winner */}
+                        {winnerIndex === sideIdx && sideIdx === 0 && arrowRight}
+                        <span>{team.join(' & ')}</span>
+                        {winnerIndex === sideIdx && sideIdx === 1 && arrowLeft}
+                        {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon size={32} style={{ display: 'block', marginLeft: 6 }} /> : null}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: isLeftWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>
-                      {/* Arrow for left winner */}
-                      {isLeftWinner && arrowRight}
-                      <span>{left}</span>
-                      {/* Belt icon for title match */}
-                      {isTitleMatch && isLeftWinner ? <BeltIcon size={32} style={{ display: 'block', marginLeft: 6 }} /> : null}
-                    </div>
-                    {/* Placeholder for flag/nationality */}
-                    <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
-                  </div>
-                  {/* Center match info */}
-                  <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0 }}>
+                  ))}
+                </div>
+                {/* For 2 sides, match info in center column */}
+                {!isMultiSide && (
+                  <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0, marginTop: 8 }}>
                     <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
                     <div style={{ fontWeight: 700, color: '#fff', fontSize: 18 }}>{match.result ? (match.method === 'Submission' ? 'Final Sub' : 'Final') : ''}</div>
                     <div style={{ color: '#bbb', fontSize: 15 }}>{match.method}</div>
                     <div style={{ color: '#bbb', fontSize: 14 }}>{match.time}</div>
                     <div style={{ color: gold, fontSize: 13 }}>{match.notes ? match.notes : ''}</div>
                   </div>
-                  {/* Right participant */}
-                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#888' }}>
-                      {/* Placeholder for image */}
-                      <span role="img" aria-label="wrestler">👤</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: isRightWinner ? gold : '#fff', fontSize: 16, textAlign: 'center' }}>
-                      <span>{right}</span>
-                      {/* Arrow for right winner */}
-                      {isRightWinner && arrowLeft}
-                      {/* Belt icon for title match */}
-                      {isTitleMatch && isRightWinner ? <BeltIcon size={32} style={{ display: 'block', marginLeft: 6 }} /> : null}
-                    </div>
-                    {/* Placeholder for flag/nationality */}
-                    <div style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>Flag</div>
-                  </div>
-                </div>
+                )}
               </div>
             );
           })}
