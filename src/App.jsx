@@ -611,7 +611,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       ) : null}
                     </div>
                   </div>
-                ) : (
+                ) : !isMultiSide ? (
                   <>
                     {/* Single match info block above participants */}
                     <div style={{
@@ -669,7 +669,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       ))}
                     </div>
                   </>
-                )}
+                ) : null}
               </div>
             );
           })}
