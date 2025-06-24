@@ -113,6 +113,11 @@ export default function MatchEdit({
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [winnerOptions, setWinnerOptions] = useState([]);
+  const [isLive, setIsLive] = useState(match.isLive || false);
+  const [liveStart, setLiveStart] = useState(match.liveStart || null);
+  const [liveEnd, setLiveEnd] = useState(match.liveEnd || null);
+  const [commentary, setCommentary] = useState(match.commentary || []);
+  const [commentaryInput, setCommentaryInput] = useState("");
 
   useEffect(() => {
     setMatch(m => ({ ...m, status }));
@@ -144,17 +149,42 @@ export default function MatchEdit({
     return d >= cutoff;
   }
 
+  // Helper to get elapsed minutes
+  function getElapsedMinutes(ts) {
+    if (!liveStart) return 0;
+    return Math.ceil((ts - liveStart) / 60000);
+  }
+
+  // Start match handler
+  const handleStartMatch = () => {
+    const now = Date.now();
+    setLiveStart(now);
+    setCommentary([{ timestamp: now, text: "The match begins" }]);
+    setLiveEnd(null);
+  };
+
+  // End match handler
+  const handleEndMatch = () => {
+    const now = Date.now();
+    setLiveEnd(now);
+    setCommentary(prev => [{ timestamp: now, text: "The match ends" }, ...prev]);
+  };
+
+  // Add commentary line
+  const handleAddCommentary = (e) => {
+    e.preventDefault();
+    if (!commentaryInput.trim()) return;
+    const now = Date.now();
+    setCommentary(prev => [{ timestamp: now, text: commentaryInput.trim() }, ...prev]);
+    setCommentaryInput("");
+  };
+
+  // Save handler includes live fields
   const handleSave = (e) => {
     e.preventDefault();
     let finalStipulation = match.stipulation === 'Custom/Other'
       ? match.customStipulation
       : match.stipulation === 'None' ? '' : match.stipulation;
-    
-    // Add special winner to stipulation if selected
-    if (match.specialWinnerType && match.specialWinnerType !== 'None') {
-      finalStipulation = finalStipulation ? `${finalStipulation} - ${match.specialWinnerType}` : match.specialWinnerType;
-    }
-    
     let result = '';
     if (status === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
       const others = winnerOptions.filter(name => name !== winner);
@@ -162,7 +192,16 @@ export default function MatchEdit({
     } else if (status === 'completed' && resultType === 'No Winner') {
       result = 'No winner';
     }
-    onSave({ ...match, result, stipulation: finalStipulation, status });
+    onSave({
+      ...match,
+      result,
+      stipulation: finalStipulation,
+      status,
+      isLive,
+      liveStart,
+      liveEnd,
+      commentary,
+    });
   };
 
   return (
@@ -197,6 +236,21 @@ export default function MatchEdit({
           }}
         >
           Completed
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsLive(live => !live)}
+          style={{
+            padding: '8px 16px',
+            background: isLive ? '#4a90e2' : '#232323',
+            color: isLive ? 'white' : '#bbb',
+            border: '1px solid #888',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: isLive ? 'bold' : 'normal'
+          }}
+        >
+          Live
         </button>
       </div>
       <div>
@@ -332,6 +386,47 @@ export default function MatchEdit({
             onChange={e => setMatch({ ...match, notes: e.target.value })}
             placeholder="Enter any additional notes about the match..."
           />
+        </div>
+      )}
+      {isLive && (
+        <div style={{ background: '#232323', padding: 12, borderRadius: 6, marginBottom: 16 }}>
+          {!liveStart && (
+            <button type="button" onClick={handleStartMatch} style={{ marginBottom: 8 }}>
+              Start Match
+            </button>
+          )}
+          {liveStart && !liveEnd && (
+            <>
+              <form onSubmit={handleAddCommentary} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input
+                  value={commentaryInput}
+                  onChange={e => setCommentaryInput(e.target.value)}
+                  placeholder="Enter live commentary..."
+                  style={{ flex: 1, ...inputStyle, marginBottom: 0 }}
+                />
+                <button type="submit">Submit</button>
+              </form>
+              <button type="button" onClick={handleEndMatch} style={{ marginBottom: 8 }}>
+                End Match
+              </button>
+            </>
+          )}
+          {liveStart && (
+            <div style={{ maxHeight: 200, overflowY: 'auto', background: '#181818', borderRadius: 4, padding: 8 }}>
+              {commentary.length === 0 && <div style={{ color: '#bbb' }}>No commentary yet.</div>}
+              {commentary.map((c, idx) => (
+                <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: '#C6A04F', minWidth: 32 }}>{getElapsedMinutes(c.timestamp)}'</span>
+                  <span style={{ color: '#fff' }}>{c.text}</span>
+                </div>
+              ))}
+              {liveEnd && (
+                <div style={{ color: '#bbb', marginTop: 8 }}>
+                  Match duration: {getElapsedMinutes(liveEnd)} minute{getElapsedMinutes(liveEnd) !== 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>

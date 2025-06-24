@@ -650,7 +650,7 @@ function AddEvent({ addEvent }) {
     }
     setMatches([
       ...matches,
-      { ...match, result, stipulation: finalStipulation, order: matches.length + 1 }
+      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, order: matches.length + 1 }
     ]);
     setMatch({
       participants: '',
@@ -661,7 +661,8 @@ function AddEvent({ addEvent }) {
       customStipulation: '',
       title: '',
       titleOutcome: '',
-      notes: ''
+      notes: '',
+      isLive: false
     });
     setResultType('');
     setWinner('');
@@ -768,6 +769,17 @@ function AddEvent({ addEvent }) {
             </label>
           </div>
           <h3 style={{ marginTop: 24 }}>Add Matches</h3>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: gold, fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={match.isLive || false}
+                onChange={e => setMatch({ ...match, isLive: e.target.checked })}
+                style={{ marginRight: 8 }}
+              />
+              Live Match
+            </label>
+          </div>
           {matches.length > 0 && (
             <ol>
               {matches.map((m, idx) => (
@@ -990,7 +1002,7 @@ function EditEvent({ events, updateEvent }) {
     }
     setMatches([
       ...matches,
-      { ...match, result, stipulation: finalStipulation, order: matches.length + 1 }
+      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, order: matches.length + 1 }
     ]);
     setMatch({
       participants: '',
@@ -998,11 +1010,11 @@ function EditEvent({ events, updateEvent }) {
       method: '',
       time: '',
       stipulation: '',
-      customStipulationType: '',
       customStipulation: '',
       title: '',
       titleOutcome: '',
-      notes: ''
+      notes: '',
+      isLive: false
     });
     setResultType('');
     setWinner('');
