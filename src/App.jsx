@@ -421,22 +421,24 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
     <div style={appBackground}>
       <div style={sectionStyle}>
         <Link to="/" style={{ color: gold }}>← Back to Events</Link>
-        <EventLogoOrText 
-          name={event.name} 
-          style={{ 
-            display: 'inline-block',
-            verticalAlign: 'middle',
-            marginRight: 8,
-            maxHeight: 48,
-            maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
-            height: 'auto',
-            width: 'auto',
-            objectFit: 'contain',
-          }} 
-          textStyle={{ color: gold }} 
-        />
-        <div style={{ color: gold, marginBottom: 8 }}>
-          <strong>{formatDate(event.date)}</strong> — {event.location}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
+          <EventLogoOrText 
+            name={event.name} 
+            style={{ 
+              display: 'inline-block',
+              verticalAlign: 'middle',
+              marginRight: 8,
+              maxHeight: 48,
+              maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
+              height: 'auto',
+              width: 'auto',
+              objectFit: 'contain',
+            }} 
+            textStyle={{ color: gold }} 
+          />
+          <div style={{ color: gold, marginTop: 8, fontSize: 18 }}>
+            <strong>{formatDate(event.date)}</strong> — {event.location}
+          </div>
         </div>
         {event.specialWinner && (
           <div style={{ marginBottom: 16, padding: 8, backgroundColor: '#f0f0f0', borderRadius: 4 }}>
