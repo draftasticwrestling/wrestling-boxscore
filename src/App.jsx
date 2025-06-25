@@ -601,16 +601,6 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                           }}>
                             {team.join(' & ')}
                           </span>
-                          <span style={{
-                            color: '#fff',
-                            fontSize: 28,
-                            margin: '2px 0 0 0',
-                            display: 'block',
-                            minHeight: 28,
-                            opacity: winnerIndex === sideIdx ? 1 : 0
-                          }}>
-                            ✔️
-                          </span>
                           <div style={{
                             minHeight: 44,
                             display: 'flex',
