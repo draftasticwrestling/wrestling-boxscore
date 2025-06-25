@@ -487,6 +487,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             // Layout for 2+ sides
             const isMultiSide = teams.length > 2;
             const isTwoSide = teams.length === 2;
+            console.log('DEBUG match:', { winnerIndex, teams, result: match.result, participants: match.participants });
             return (
               <div
                 key={match.order}
