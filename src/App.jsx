@@ -358,6 +358,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
   const [editedMatch, setEditedMatch] = useState(null);
   const logo = getEventLogo(event.name);
   const [showCustomStipulation, setShowCustomStipulation] = useState(false);
+  const [expanded, setExpanded] = React.useState(false);
 
   if (!event) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
@@ -641,6 +642,70 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     </div>
                   </div>
                 ) : null}
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                  <button
+                    onClick={e => { e.stopPropagation(); setExpanded(exp => !exp); }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'transform 0.2s',
+                      transform: expanded ? 'rotate(180deg)' : 'none',
+                    }}
+                    aria-label={expanded ? 'Collapse details' : 'Expand details'}
+                  >
+                    <svg width="32" height="20" viewBox="0 0 32 20">
+                      <polyline points="4,6 16,18 28,6" fill="none" stroke="#C6A04F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+                {/* Animated expandable details */}
+                <div
+                  style={{
+                    maxHeight: expanded ? 400 : 0,
+                    overflow: 'hidden',
+                    transition: 'max-height 0.35s cubic-bezier(0.4,0,0.2,1)',
+                    opacity: expanded ? 1 : 0,
+                    pointerEvents: expanded ? 'auto' : 'none',
+                    marginTop: expanded ? 16 : 0,
+                    background: '#181511',
+                    borderRadius: 8,
+                    boxShadow: expanded ? '0 2px 12px #C6A04F22' : 'none',
+                    padding: expanded ? '16px 12px' : '0 12px',
+                    color: '#fff',
+                  }}
+                >
+                  {/* Modern compact details layout */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
+                    <div><strong>Participants:</strong> {match.participants}</div>
+                    <div><strong>Winner:</strong> {match.result && match.result.includes(' def. ')
+                      ? match.result.split(' def. ')[0]
+                      : (match.result || 'None')}</div>
+                    <div><strong>Method:</strong> {match.method || 'None'}</div>
+                    <div><strong>Time:</strong> {match.time || 'None'}</div>
+                    <div><strong>Stipulation:</strong> {match.stipulation || 'None'}</div>
+                    <div><strong>Title:</strong> {match.title || 'None'}</div>
+                    <div><strong>Title Outcome:</strong> {match.titleOutcome || 'None'}</div>
+                    {match.notes && <div style={{ flexBasis: '100%' }}><strong>Notes:</strong> {match.notes}</div>}
+                  </div>
+                  {/* Scrollable commentary section if available */}
+                  {Array.isArray(match.commentary) && match.commentary.length > 0 && (
+                    <div style={{ maxHeight: 160, overflowY: 'auto', background: '#232323', borderRadius: 6, padding: 8, marginTop: 8 }}>
+                      <div style={{ color: gold, fontWeight: 700, marginBottom: 6 }}>Match Commentary</div>
+                      {match.commentary.map((c, i) => (
+                        <div key={i} style={{ color: '#fff', fontSize: 15, marginBottom: 4 }}>
+                          <span style={{ color: '#bbb', fontSize: 13, marginRight: 6 }}>{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          {c.text}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -1136,6 +1201,7 @@ function EditEvent({ events, updateEvent }) {
   const [winner, setWinner] = useState('');
   const [eventStatus, setEventStatus] = useState(event.status || 'completed');
   const [editingMatchIdx, setEditingMatchIdx] = useState(null);
+  const [expanded, setExpanded] = React.useState(false);
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
