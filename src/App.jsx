@@ -532,10 +532,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                         {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(teams[0].join(' & ')) ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
-                    {/* Arrow (if left is winner) */}
-                    {winnerIndex === 0 && (
-                      <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{triangleRight}</div>
-                    )}
+                    {/* Left arrow (always reserve space) */}
+                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+                    </div>
                     {/* Center match details */}
                     <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
                       <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
@@ -543,10 +543,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
                       <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
                     </div>
-                    {/* Arrow (if right is winner) */}
-                    {winnerIndex === 1 && (
-                      <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{triangleLeft}</div>
-                    )}
+                    {/* Right arrow (always reserve space) */}
+                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+                    </div>
                     {/* Right participant */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
                       <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -570,10 +570,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                         {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(teams[0].join(' & ')) ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
-                    {/* Arrow (if left is winner) */}
-                    {winnerIndex === 0 && (
-                      <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{triangleRight}</div>
-                    )}
+                    {/* Left arrow (always reserve space) */}
+                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+                    </div>
                     {/* Center match details */}
                     <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
                       <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
@@ -581,10 +581,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
                       <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
                     </div>
-                    {/* Arrow (if right is winner) */}
-                    {winnerIndex === 1 && (
-                      <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{triangleLeft}</div>
-                    )}
+                    {/* Right arrow (always reserve space) */}
+                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+                    </div>
                     {/* Right participant */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
                       <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
