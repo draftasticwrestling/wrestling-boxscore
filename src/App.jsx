@@ -451,6 +451,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
         <h3 style={{ marginTop: 24, color: gold }}>Match Results</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {matchesWithCardType.map((match, index) => {
+            const [expanded, setExpanded] = React.useState(false);
             // Parse participants into sides (split by 'vs')
             const sides = match.participants.split(' vs ').map(s => s.trim());
             // For each side, split by '&' for tag teams
