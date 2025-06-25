@@ -459,10 +459,22 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             // Find which side is the winner
             const winnerIndex = sides.findIndex(side => winner.startsWith(side));
             const isTitleMatch = match.title && match.title !== 'None';
-            // Arrow SVGs
-            const arrowRight = <span style={{ color: gold, fontSize: 24, marginLeft: 8, verticalAlign: 'middle' }}>&#8594;</span>; // →
-            const arrowLeft = <span style={{ color: gold, fontSize: 24, marginRight: 8, verticalAlign: 'middle' }}>&#8592;</span>; // ←
-            const arrowDown = <span style={{ color: gold, fontSize: 22, display: 'block', margin: '0 auto 2px auto' }}>&#8595;</span>; // ↓
+            // SVG triangle arrows for winner indication
+            const triangleRight = (
+              <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
+                <polygon points="0,8 8,0 8,16" fill="#fff" />
+              </svg>
+            );
+            const triangleLeft = (
+              <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }}>
+                <polygon points="8,8 0,0 0,16" fill="#fff" />
+              </svg>
+            );
+            const triangleDown = (
+              <svg width="16" height="8" viewBox="0 0 16 8" style={{ display: 'block', margin: '0 auto 2px auto' }}>
+                <polygon points="8,8 0,0 16,0" fill="#fff" />
+              </svg>
+            );
             // Top label: stipulation and/or title
             let topLabel = '';
             if (isTitleMatch && match.stipulation && match.stipulation !== 'None') {
@@ -521,21 +533,19 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
                       {teams.map((team, sideIdx) => (
                         <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
-                          {/* Arrow above winner */}
-                          <div style={{ height: 22, marginBottom: 2 }}>
-                            {winnerIndex === sideIdx ? arrowDown : null}
+                          {/* Arrow above winner, reserve space for all */}
+                          <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                            {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
                           </div>
                           <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {/* Avatar placeholder */}
                             <span style={{ fontSize: 38, color: '#7da2c1' }}>&#128100;</span>
                           </div>
                           <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
-                          {/* Belt icon under champion's name */}
-                          {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(team.join(' & ')) && (
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                              <BeltIcon />
-                            </div>
-                          )}
+                          {/* Belt icon under champion's name, reserve space for all */}
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                            {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(team.join(' & ')) ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                          </div>
                         </div>
                       ))}
                     </div>
