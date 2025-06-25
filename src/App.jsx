@@ -521,43 +521,34 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                 )}
                 {/* For 3+ sides, center match info above participants */}
                 {isMultiSide ? (
-                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-                    {/* Left participant */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                      <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 38, color: '#7da2c1' }}>&#128100;</span>
-                      </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                      </div>
-                    </div>
-                    {/* Left arrow (always reserve space) */}
-                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
-                    </div>
-                    {/* Center match details */}
-                    <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
+                  <>
+                    {/* Match Info Block */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
                       <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
                       <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>{match.result && match.result !== 'No winner' ? 'Final' : match.result}</div>
                       <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
                       <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
                     </div>
-                    {/* Right arrow (always reserve space) */}
-                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+                    {/* Participants Row */}
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
+                      {teams.map((team, sideIdx) => (
+                        <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
+                          {/* Arrow above winner */}
+                          <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                            {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
+                          </div>
+                          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 38, color: '#7da2c1' }}>&#128100;</span>
+                          </div>
+                          <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
+                          {/* Belt icon under winner if title match */}
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                            {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    {/* Right participant */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                      <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 38, color: '#7da2c1' }}>&#128100;</span>
-                      </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                      </div>
-                    </div>
-                  </div>
+                  </>
                 ) : !isMultiSide ? (
                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
                     {/* Left participant */}
