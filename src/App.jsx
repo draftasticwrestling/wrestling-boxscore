@@ -529,7 +529,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(teams[0].join(' & ')) ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                        {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
                     {/* Left arrow (always reserve space) */}
@@ -554,7 +554,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(teams[1].join(' & ')) ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                        {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(teams[0].join(' & ')) ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                        {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
                     {/* Left arrow (always reserve space) */}
@@ -592,7 +592,7 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && match.title && match.title !== 'None' && match.participants.includes(teams[1].join(' & ')) ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                        {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
                   </div>
