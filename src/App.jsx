@@ -537,8 +537,25 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                           <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                             {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
                           </div>
-                          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: 38, color: '#7da2c1' }}>&#128100;</span>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                            {team.map((wrestler, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  width: 64,
+                                  height: 64,
+                                  borderRadius: '50%',
+                                  background: '#444',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 64 * 0.6,
+                                  color: '#7da2c1'
+                                }}
+                              >
+                                <span role="img" aria-label="wrestler">&#128100;</span>
+                              </div>
+                            ))}
                           </div>
                           <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
                           {/* Belt icon under winner if title match */}
@@ -553,8 +570,25 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
                     {/* Left participant */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                      <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 38, color: '#7da2c1' }}>&#128100;</span>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                        {teams[0].map((wrestler, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: '50%',
+                              background: '#444',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 64 * 0.6,
+                              color: '#7da2c1'
+                            }}
+                          >
+                            <span role="img" aria-label="wrestler">&#128100;</span>
+                          </div>
+                        ))}
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
@@ -578,8 +612,25 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     </div>
                     {/* Right participant */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                      <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 38, color: '#7da2c1' }}>&#128100;</span>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                        {teams[1].map((wrestler, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: '50%',
+                              background: '#444',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 64 * 0.6,
+                              color: '#7da2c1'
+                            }}
+                          >
+                            <span role="img" aria-label="wrestler">&#128100;</span>
+                          </div>
+                        ))}
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
