@@ -5,6 +5,12 @@ import { supabase } from './supabaseClient';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
 import BeltIcon from './components/BeltIcon';
+import BriefcaseIcon from './components/BriefcaseIcon';
+import CrownIcon from './components/CrownIcon';
+import TrophyIcon from './components/TrophyIcon';
+import ChamberIcon from './components/ChamberIcon';
+import WarGamesIcon from './components/WarGamesIcon';
+import SurvivorIcon from './components/SurvivorIcon';
 
 // Place these at the top level, after imports
 const STIPULATION_OPTIONS = [
@@ -348,6 +354,32 @@ function formatResult(winner, others) {
   return `${winner} def. ${others.slice(0, -1).join(', ')} and ${others[others.length - 1]}`;
 }
 
+// Function to get the appropriate special winner icon
+function getSpecialWinnerIcon(specialWinnerType) {
+  switch (specialWinnerType) {
+    case "Women's Money in the Bank winner":
+    case "Men's Money in the Bank winner":
+      return <BriefcaseIcon size={32} />;
+    case "King of the Ring winner":
+    case "Queen of the Ring winner":
+      return <CrownIcon size={32} />;
+    case "Men's Royal Rumble winner":
+    case "Women's Royal Rumble winner":
+      return <TrophyIcon size={32} />;
+    case "Men's Elimination Chamber winner":
+    case "Women's Elimination Chamber winner":
+      return <ChamberIcon size={32} />;
+    case "Men's War Games winner":
+    case "Women's War Games winner":
+      return <WarGamesIcon size={32} />;
+    case "Men's Ultimate Survivor":
+    case "Women's Ultimate Survivor":
+      return <SurvivorIcon size={32} />;
+    default:
+      return null;
+  }
+}
+
 // Event Box Score Component (with discreet Edit/Delete below the match card)
 function EventBoxScore({ events, onDelete, onEditMatch }) {
   const { eventId } = useParams();
@@ -564,7 +596,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                           <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
                           {/* Belt icon under winner if title match */}
                           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                            {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                            {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon /> : 
+                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
+                             getSpecialWinnerIcon(match.specialWinnerType) : 
+                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                           </div>
                         </div>
                       ))}
@@ -596,7 +631,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                        {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : 
+                         match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
+                         getSpecialWinnerIcon(match.specialWinnerType) : 
+                         <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
                     {/* Left arrow (always reserve space) */}
@@ -638,7 +676,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                        {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : 
+                         match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
+                         getSpecialWinnerIcon(match.specialWinnerType) : 
+                         <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
                   </div>
