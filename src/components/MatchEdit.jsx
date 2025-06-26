@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import WrestlerMultiSelect from './WrestlerMultiSelect';
+import { supabase } from '../supabaseClient';
 
 // These should be imported or passed as props in a real app, but for now, define them here:
 const METHOD_OPTIONS = [
@@ -126,6 +128,10 @@ export default function MatchEdit({
   const [commentaryInput, setCommentaryInput] = useState("");
   const [liveMode, setLiveMode] = useState(isLive && (liveStart || !status || status === 'upcoming'));
   const [matchDetailsSaved, setMatchDetailsSaved] = useState(false);
+  // New state for team participants
+  const [team1, setTeam1] = useState([]); // array of wrestler objects
+  const [team2, setTeam2] = useState([]); // array of wrestler objects
+  const [allWrestlers, setAllWrestlers] = useState([]);
 
   useEffect(() => {
     setMatch(m => ({ ...m, status }));
@@ -148,6 +154,24 @@ export default function MatchEdit({
       }
     }
   }, [initialMatch, winnerOptions]);
+
+  useEffect(() => {
+    // Fetch all wrestlers for display (for winner dropdown, etc.)
+    async function fetchWrestlers() {
+      const { data, error } = await supabase.from('wrestlers').select('id, name');
+      if (!error) setAllWrestlers(data);
+    }
+    fetchWrestlers();
+  }, []);
+
+  // Winner options are all selected participants
+  const winnerOptions = [...team1, ...team2];
+
+  // Helper to get wrestler name by id
+  const getWrestlerName = (id) => {
+    const w = allWrestlers.find(w => w.id === id);
+    return w ? w.name : id;
+  };
 
   // Helper to check if method is required
   function isMethodRequired() {
@@ -177,6 +201,11 @@ export default function MatchEdit({
   // Save handler for completed match
   const handleSave = (e) => {
     e.preventDefault();
+    // Validation
+    if (team1.length === 0 || team2.length === 0) {
+      alert('Please select at least one participant for each team.');
+      return;
+    }
     if (status === 'completed') {
       if (!resultType) {
         alert('Please select a result type.');
@@ -187,26 +216,36 @@ export default function MatchEdit({
         return;
       }
     }
-    let finalStipulation = match.stipulation === 'Custom/Other'
-      ? match.customStipulation
-      : match.stipulation === 'None' ? '' : match.stipulation;
+    // Format participants as array of arrays of IDs
+    const participants = [team1.map(w => w.id), team2.map(w => w.id)];
+    // Format result using names for display, but store winner ID
     let result = '';
     if (status === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-      const others = winnerOptions.filter(name => name !== winner);
-      result = `${winner} def. ${others.join(' & ')}`;
+      const winnerName = getWrestlerName(winner);
+      const others = winnerOptions.filter(w => w.id !== winner).map(w => getWrestlerName(w.id));
+      result = `${winnerName} def. ${others.join(' & ')}`;
     } else if (status === 'completed' && resultType === 'No Winner') {
       result = 'No winner';
     }
-    onSave({
+    const matchToSave = {
       ...match,
+      participants, // array of arrays of IDs
       result,
-      stipulation: finalStipulation,
+      method: match.method || '',
+      time: match.time || '',
+      stipulation: match.stipulation === 'Custom/Other' ? match.customStipulation : (match.stipulation === 'None' ? '' : match.stipulation),
+      customStipulation: match.customStipulation || '',
+      title: match.title || '',
+      specialWinnerType: match.specialWinnerType || '',
+      titleOutcome: match.titleOutcome || '',
+      notes: match.notes || '',
       status,
       isLive,
       liveStart,
       liveEnd,
       commentary,
-    });
+    };
+    if (onSave) onSave(matchToSave);
   };
 
   // Save commentary line immediately (simulate DB save)
@@ -313,8 +352,8 @@ export default function MatchEdit({
                   required
                 >
                   <option value="">Select winner</option>
-                  {winnerOptions.map(side => (
-                    <option key={side} value={side}>{side}</option>
+                  {winnerOptions.map(w => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
                   ))}
                 </select>
               </div>
@@ -406,16 +445,14 @@ export default function MatchEdit({
           Live
         </button>
       </div>
-      <div>
-        <label style={labelStyle}>Participants:</label>
-        <input
-          style={inputStyle}
-          value={match.participants}
-          onChange={e => setMatch({ ...match, participants: e.target.value })}
-          placeholder="Wrestler 1 vs Wrestler 2"
-          required={status === 'completed'}
-        />
-      </div>
+      <WrestlerMultiSelect
+        label="Team 1 Participants"
+        onChange={setTeam1}
+      />
+      <WrestlerMultiSelect
+        label="Team 2 Participants"
+        onChange={setTeam2}
+      />
       {status === 'completed' && (
         <>
           <div>
@@ -441,8 +478,8 @@ export default function MatchEdit({
                 required
               >
                 <option value="">Select winner</option>
-                {winnerOptions.map(side => (
-                  <option key={side} value={side}>{side}</option>
+                {winnerOptions.map(w => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
                 ))}
               </select>
             </div>
