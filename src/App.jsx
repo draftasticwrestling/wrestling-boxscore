@@ -589,7 +589,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                                   color: '#7da2c1'
                                 }}
                               >
-                                <span role="img" aria-label="wrestler">&#128100;</span>
+                                {wrestlerMap[wrestler]?.image_url
+                                  ? <img src={wrestlerMap[wrestler].image_url} alt={wrestlerMap[wrestler].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                                  : <span role="img" aria-label="wrestler">&#128100;</span>
+                                }
                               </div>
                             ))}
                           </div>
@@ -625,7 +628,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                               color: '#7da2c1'
                             }}
                           >
-                            <span role="img" aria-label="wrestler">&#128100;</span>
+                            {wrestlerMap[wrestler]?.image_url
+                              ? <img src={wrestlerMap[wrestler].image_url} alt={wrestlerMap[wrestler].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                              : <span role="img" aria-label="wrestler">&#128100;</span>
+                            }
                           </div>
                         ))}
                       </div>
@@ -670,7 +676,10 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                               color: '#7da2c1'
                             }}
                           >
-                            <span role="img" aria-label="wrestler">&#128100;</span>
+                            {wrestlerMap[wrestler]?.image_url
+                              ? <img src={wrestlerMap[wrestler].image_url} alt={wrestlerMap[wrestler].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                              : <span role="img" aria-label="wrestler">&#128100;</span>
+                            }
                           </div>
                         ))}
                       </div>
@@ -1691,6 +1700,8 @@ function App() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [wrestlers, setWrestlers] = useState([]);
+  const [wrestlerMap, setWrestlerMap] = useState({});
 
   // Load events from Supabase
   useEffect(() => {
@@ -1803,6 +1814,17 @@ function App() {
       updateEvent({ ...eventToUpdate, matches: updatedMatches });
     }
   };
+
+  useEffect(() => {
+    async function fetchWrestlers() {
+      const { data } = await supabase.from('wrestlers').select('*');
+      setWrestlers(data);
+      const map = {};
+      data.forEach(w => { map[w.id] = w; });
+      setWrestlerMap(map);
+    }
+    fetchWrestlers();
+  }, []);
 
   if (loading) {
     return (
