@@ -381,7 +381,7 @@ function getSpecialWinnerIcon(specialWinnerType) {
 }
 
 // Event Box Score Component (with discreet Edit/Delete below the match card)
-function EventBoxScore({ events, onDelete, onEditMatch }) {
+function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
@@ -1861,7 +1861,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
-        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} />} />
+        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} wrestlerMap={wrestlerMap} />} />
         <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} onEditMatch={handleEditMatch} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
