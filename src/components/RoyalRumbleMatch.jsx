@@ -36,7 +36,6 @@ export default function RoyalRumbleMatch({
   onCancel,
   eventStatus,
   eventDate,
-  onSaveEntrants,
 }) {
   const [participants, setParticipants] = useState(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
   const [eliminations, setEliminations] = useState([]);
@@ -271,37 +270,6 @@ export default function RoyalRumbleMatch({
         <div style={{ marginTop: '8px', color: '#bbb', fontSize: '14px' }}>
           Entry times will be auto-generated: #1 at 00:00, #2 at 00:01, #3 at 00:02, etc.
         </div>
-        {/* Save Entrants Button */}
-        {participants.filter(p => p.trim()).length === 30 &&
-         new Set(participants.map(p => p.trim()).filter(Boolean)).size === 30 && (
-          <button
-            type="button"
-            style={{ ...buttonStyle, backgroundColor: '#4a90e2', marginTop: 12 }}
-            onClick={() => {
-              if (typeof onSaveEntrants === 'function') {
-                const draftMatch = {
-                  participants: `${isMen ? "Men's" : "Women's"} Royal Rumble`,
-                  method: "Elimination",
-                  stipulation: `${isMen ? "Men's" : "Women's"} Royal Rumble`,
-                  title: "None",
-                  titleOutcome: "",
-                  specialWinnerType: `${isMen ? "Men's" : "Women's"} Royal Rumble winner`,
-                  royalRumbleData: {
-                    participants: participants.map((name, index) => ({
-                      name,
-                      entryNumber: index + 1,
-                      entryTime: `${Math.floor(index / 60).toString().padStart(2, '0')}:${(index % 60).toString().padStart(2, '0')}`
-                    }))
-                  },
-                  status: 'draft',
-                };
-                onSaveEntrants(draftMatch);
-              }
-            }}
-          >
-            Save Entrants
-          </button>
-        )}
       </div>
 
       {/* Eliminations Entry */}

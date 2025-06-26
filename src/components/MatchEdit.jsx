@@ -100,7 +100,6 @@ export default function MatchEdit({
   onCancel,
   eventStatus,
   eventDate,
-  onSaveEntrants,
 }) {
   const [match, setMatch] = useState({
     participants: '',
@@ -418,7 +417,6 @@ export default function MatchEdit({
           onCancel={onCancel}
           eventStatus={eventStatus}
           eventDate={eventDate}
-          onSaveEntrants={onSaveEntrants}
         />
       ) : (
         <>

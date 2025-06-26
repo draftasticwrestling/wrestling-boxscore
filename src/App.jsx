@@ -1188,21 +1188,6 @@ function AddEvent({ addEvent }) {
                 setShowAddMatch(false);
               }}
               onCancel={() => setShowAddMatch(false)}
-              onSaveEntrants={draftMatch => {
-                // Save event with draft match
-                const id = eventType.toLowerCase().replace(/\s+/g, '-') + '-' + date.replace(/[^0-9]/g, '');
-                const eventData = {
-                  id,
-                  name: eventType,
-                  date,
-                  location,
-                  matches: [...matches, { ...draftMatch, order: matches.length + 1 }],
-                  status: eventStatus,
-                  isLive: eventStatus === 'live'
-                };
-                addEvent(eventData);
-                navigate('/');
-              }}
             />
           ) : (
             <button
