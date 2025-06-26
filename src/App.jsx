@@ -523,11 +523,6 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
             // Layout for 2+ sides
             const isMultiSide = teams.length > 2;
             const isTwoSide = teams.length === 2;
-            
-            // Royal Rumble detection
-            const isRoyalRumble = match.royalRumbleData && 
-              (match.stipulation === "Men's Royal Rumble" || match.stipulation === "Women's Royal Rumble");
-            
             return (
               <div
                 key={match.order}
@@ -560,233 +555,135 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     textOverflow: 'ellipsis',
                   }}>{topLabel}</div>
                 )}
-                
-                {/* Royal Rumble Specialized Display */}
-                {isRoyalRumble ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                    {/* Winner Display */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {/* For 3+ sides, center match info above participants */}
+                {isMultiSide ? (
+                  <>
+                    {/* Match Info Block */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                      <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>{match.result && match.result !== 'No winner' ? 'Final' : match.result}</div>
+                      <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+                      <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+                    </div>
+                    {/* Participants Row */}
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
+                      {teams.map((team, sideIdx) => (
+                        <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
+                          {/* Arrow above winner */}
+                          <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                            {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
+                          </div>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                            {team.map((wrestler, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  width: 64,
+                                  height: 64,
+                                  borderRadius: '50%',
+                                  background: '#444',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 64 * 0.6,
+                                  color: '#7da2c1'
+                                }}
+                              >
+                                <span role="img" aria-label="wrestler">&#128100;</span>
+                              </div>
+                            ))}
+                          </div>
+                          <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
+                          {/* Belt icon under winner if title match */}
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                            {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon /> : 
+                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
+                             getSpecialWinnerIcon(match.specialWinnerType) : 
+                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : !isMultiSide ? (
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                    {/* Left participant */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                        <div
-                          style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: '50%',
-                            background: '#444',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 80 * 0.6,
-                            color: '#7da2c1'
-                          }}
-                        >
-                          <span role="img" aria-label="wrestler">&#128100;</span>
-                        </div>
-                      </div>
-                      <span style={{ fontWeight: 700, color: gold, fontSize: 24, textAlign: 'center', marginBottom: 4 }}>
-                        {match.royalRumbleData.winner}
-                      </span>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 32, marginTop: 4 }}>
-                        {getSpecialWinnerIcon(match.specialWinnerType)}
-                      </div>
-                      <div style={{ color: gold, fontSize: 18, fontWeight: 600, marginTop: 8 }}>
-                        Royal Rumble Winner
-                      </div>
-                    </div>
-                    
-                    {/* Stats Display */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 16 }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ color: '#bbb', fontSize: 14, marginBottom: 4 }}>Iron Man</div>
-                        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>
-                          {match.royalRumbleData.ironMan}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ color: '#bbb', fontSize: 14, marginBottom: 4 }}>Most Eliminations</div>
-                        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>
-                          {match.royalRumbleData.mostEliminations}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Match Details */}
-                    <div style={{ textAlign: 'center', marginTop: 16 }}>
-                      <div style={{ color: '#bbb', fontSize: 15, marginBottom: 4 }}>{match.method}</div>
-                      <div style={{ color: '#bbb', fontSize: 15 }}>{match.time}</div>
-                    </div>
-                    
-                    {/* Participants Summary */}
-                    <div style={{ marginTop: 16, textAlign: 'center' }}>
-                      <div style={{ color: '#bbb', fontSize: 14, marginBottom: 8 }}>
-                        30 Participants • {match.royalRumbleData.participants.length} entries
-                      </div>
-                      <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(6, 1fr)', 
-                        gap: 4, 
-                        maxHeight: 120, 
-                        overflowY: 'auto',
-                        background: '#181511',
-                        borderRadius: 8,
-                        padding: 12
-                      }}>
-                        {match.royalRumbleData.participants.slice(0, 12).map((participant, index) => (
-                          <div key={index} style={{ 
-                            fontSize: 11, 
-                            color: participant.name === match.royalRumbleData.winner ? gold : '#fff',
-                            fontWeight: participant.name === match.royalRumbleData.winner ? 600 : 400,
-                            textAlign: 'center'
-                          }}>
-                            {participant.entryNumber}. {participant.name}
+                        {teams[0].map((wrestler, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: '50%',
+                              background: '#444',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 64 * 0.6,
+                              color: '#7da2c1'
+                            }}
+                          >
+                            <span role="img" aria-label="wrestler">&#128100;</span>
                           </div>
                         ))}
-                        {match.royalRumbleData.participants.length > 12 && (
-                          <div style={{ 
-                            fontSize: 11, 
-                            color: '#666', 
-                            textAlign: 'center',
-                            gridColumn: 'span 6'
-                          }}>
-                            +{match.royalRumbleData.participants.length - 12} more participants
+                      </div>
+                      <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                        {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : 
+                         match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
+                         getSpecialWinnerIcon(match.specialWinnerType) : 
+                         <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                      </div>
+                    </div>
+                    {/* Left arrow (always reserve space) */}
+                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+                    </div>
+                    {/* Center match details */}
+                    <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
+                      <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>{match.result && match.result !== 'No winner' ? 'Final' : match.result}</div>
+                      <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+                      <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+                    </div>
+                    {/* Right arrow (always reserve space) */}
+                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+                    </div>
+                    {/* Right participant */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                        {teams[1].map((wrestler, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: '50%',
+                              background: '#444',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 64 * 0.6,
+                              color: '#7da2c1'
+                            }}
+                          >
+                            <span role="img" aria-label="wrestler">&#128100;</span>
                           </div>
-                        )}
+                        ))}
+                      </div>
+                      <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                        {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : 
+                         match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
+                         getSpecialWinnerIcon(match.specialWinnerType) : 
+                         <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    {/* For 3+ sides, center match info above participants */}
-                    {isMultiSide ? (
-                      <>
-                        {/* Match Info Block */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-                          <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                          <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>{match.result && match.result !== 'No winner' ? 'Final' : match.result}</div>
-                          <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-                          <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
-                        </div>
-                        {/* Participants Row */}
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
-                          {teams.map((team, sideIdx) => (
-                            <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
-                              {/* Arrow above winner */}
-                              <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                                {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
-                              </div>
-                              <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                                {team.map((wrestler, i) => (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      width: 64,
-                                      height: 64,
-                                      borderRadius: '50%',
-                                      background: '#444',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: 64 * 0.6,
-                                      color: '#7da2c1'
-                                    }}
-                                  >
-                                    <span role="img" aria-label="wrestler">&#128100;</span>
-                                  </div>
-                                ))}
-                              </div>
-                              <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
-                              {/* Belt icon under winner if title match */}
-                              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                                {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon /> : 
-                                 match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
-                                 getSpecialWinnerIcon(match.specialWinnerType) : 
-                                 <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    ) : !isMultiSide ? (
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-                        {/* Left participant */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                            {teams[0].map((wrestler, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  width: 64,
-                                  height: 64,
-                                  borderRadius: '50%',
-                                  background: '#444',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 64 * 0.6,
-                                  color: '#7da2c1'
-                                }}
-                              >
-                                <span role="img" aria-label="wrestler">&#128100;</span>
-                              </div>
-                            ))}
-                          </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
-                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                            {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : 
-                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
-                             getSpecialWinnerIcon(match.specialWinnerType) : 
-                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                          </div>
-                        </div>
-                        {/* Left arrow (always reserve space) */}
-                        <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
-                        </div>
-                        {/* Center match details */}
-                        <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
-                          <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                          <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>{match.result && match.result !== 'No winner' ? 'Final' : match.result}</div>
-                          <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-                          <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
-                        </div>
-                        {/* Right arrow (always reserve space) */}
-                        <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
-                        </div>
-                        {/* Right participant */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                            {teams[1].map((wrestler, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  width: 64,
-                                  height: 64,
-                                  borderRadius: '50%',
-                                  background: '#444',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 64 * 0.6,
-                                  color: '#7da2c1'
-                                }}
-                              >
-                                <span role="img" aria-label="wrestler">&#128100;</span>
-                              </div>
-                            ))}
-                          </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
-                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                            {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : 
-                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
-                             getSpecialWinnerIcon(match.specialWinnerType) : 
-                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-                  </>
-                )}
+                ) : null}
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
                   <button
                     onClick={e => { e.stopPropagation(); setExpanded(exp => !exp); }}
@@ -837,42 +734,6 @@ function EventBoxScore({ events, onDelete, onEditMatch }) {
                     <div><strong>Title:</strong> {match.title || 'None'}</div>
                     <div><strong>Title Outcome:</strong> {match.titleOutcome || 'None'}</div>
                     {match.notes && <div style={{ flexBasis: '100%' }}><strong>Notes:</strong> {match.notes}</div>}
-                    
-                    {/* Royal Rumble specific details */}
-                    {isRoyalRumble && match.royalRumbleData && (
-                      <>
-                        <div style={{ flexBasis: '100%', marginTop: 8, paddingTop: 8, borderTop: '1px solid #444' }}>
-                          <strong style={{ color: gold }}>Royal Rumble Details:</strong>
-                        </div>
-                        <div><strong>Iron Man:</strong> {match.royalRumbleData.ironMan}</div>
-                        <div><strong>Most Eliminations:</strong> {match.royalRumbleData.mostEliminations}</div>
-                        <div style={{ flexBasis: '100%', marginTop: 8 }}>
-                          <strong>All Participants:</strong>
-                          <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(3, 1fr)', 
-                            gap: 8, 
-                            marginTop: 4,
-                            maxHeight: 200,
-                            overflowY: 'auto',
-                            background: '#232323',
-                            borderRadius: 4,
-                            padding: 8
-                          }}>
-                            {match.royalRumbleData.participants.map((participant, index) => (
-                              <div key={index} style={{ 
-                                fontSize: 12,
-                                color: participant.name === match.royalRumbleData.winner ? gold : '#fff',
-                                fontWeight: participant.name === match.royalRumbleData.winner ? 600 : 400
-                              }}>
-                                {participant.entryNumber}. {participant.name} 
-                                {participant.eliminations > 0 && ` (${participant.eliminations} elims)`}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
                   {/* Scrollable commentary section if available */}
                   {Array.isArray(match.commentary) && match.commentary.length > 0 && (
