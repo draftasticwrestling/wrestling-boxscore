@@ -289,7 +289,7 @@ export default function RoyalRumbleMatch({
             onChange={(e) => setCurrentElimination({ ...currentElimination, eliminatedBy: e.target.value })}
             placeholder="Eliminator"
           />
-          <button style={buttonStyle} onClick={addElimination}>
+          <button type="button" style={buttonStyle} onClick={addElimination}>
             Add
           </button>
         </div>
