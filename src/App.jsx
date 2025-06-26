@@ -28,7 +28,6 @@ const STIPULATION_OPTIONS = [
   "Women's Money in the Bank Qualifier",
   "Men's Money in the Bank Ladder Match",
   "Women's Money in the Bank Ladder Match",
-  "Ladder Match",
   "Men's Survivor Series Qualifier",
   "Women's Survivor Series Qualifier",
   "King of the Ring Semi-final",

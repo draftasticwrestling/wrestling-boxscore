@@ -33,7 +33,6 @@ const STIPULATION_OPTIONS = [
   "Women's Money in the Bank Qualifier",
   "Men's Money in the Bank Ladder Match",
   "Women's Money in the Bank Ladder Match",
-  "Ladder Match",
   "Men's Survivor Series Qualifier",
   "Women's Survivor Series Qualifier",
   "King of the Ring Semi-final",
@@ -201,16 +200,9 @@ export default function MatchEdit({
       result = 'No winner';
     }
     onSave({
-      participants: match.participants || '',
+      ...match,
       result,
-      method: match.method || '',
-      time: match.time || '',
       stipulation: finalStipulation,
-      customStipulation: match.customStipulation || '',
-      title: match.title || '',
-      specialWinnerType: match.specialWinnerType || '',
-      titleOutcome: match.titleOutcome || '',
-      notes: match.notes || '',
       status,
       isLive,
       liveStart,
