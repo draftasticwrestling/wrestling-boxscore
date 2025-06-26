@@ -1245,6 +1245,11 @@ function EditEvent({ events, updateEvent }) {
   const [editingMatchIdx, setEditingMatchIdx] = useState(null);
   const [expanded, setExpanded] = React.useState(false);
 
+  // Winner options based on participants
+  const winnerOptions = match.participants.includes(' vs ')
+    ? match.participants.split(' vs ').map(side => side.trim()).filter(Boolean)
+    : [];
+
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
