@@ -7,8 +7,8 @@ export const events = [
     matches: [
       {
         order: 1,
-        participants: "Sami Zayn vs. Bronson Reed",
-        result: "Sami Zayn def. Bronson Reed",
+        participants: "sami-zayn vs. bronson-reed",
+        result: "sami-zayn def. bronson-reed",
         method: "Pinfall",
         time: "12:34",
         stipulation: "None",
@@ -17,8 +17,8 @@ export const events = [
       },
       {
         order: 2,
-        participants: "Becky Lynch vs. Liv Morgan",
-        result: "Liv Morgan def. Becky Lynch",
+        participants: "becky-lynch vs. liv-morgan",
+        result: "liv-morgan def. becky-lynch",
         method: "Pinfall",
         time: "10:21",
         stipulation: "None",
@@ -27,8 +27,8 @@ export const events = [
       },
       {
         order: 3,
-        participants: "Cody Rhodes & Jey Uso vs. The Judgment Day",
-        result: "Cody Rhodes & Jey Uso def. The Judgment Day",
+        participants: "cody-rhodes & jey-uso vs. the-judgment-day",
+        result: "cody-rhodes & jey-uso def. the-judgment-day",
         method: "Pinfall",
         time: "15:02",
         stipulation: "Tag Team Match",
