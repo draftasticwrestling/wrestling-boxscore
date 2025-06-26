@@ -129,6 +129,7 @@ export default function MatchEdit({
   const [commentaryInput, setCommentaryInput] = useState("");
   const [liveMode, setLiveMode] = useState(isLive && (liveStart || !status || status === 'upcoming'));
   const [matchDetailsSaved, setMatchDetailsSaved] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     setMatch(m => ({ ...m, status }));
@@ -180,13 +181,17 @@ export default function MatchEdit({
   // Save handler for completed match
   const handleSave = (e) => {
     e.preventDefault();
+    console.log('handleSave called', { match, resultType, winner });
+    setValidationError('');
     if (status === 'completed') {
       if (!resultType) {
-        alert('Please select a result type.');
+        setValidationError('Please select a result type.');
+        console.log('Validation failed: resultType missing');
         return;
       }
       if (resultType === 'Winner' && (!winner || winner.trim() === '')) {
-        alert('Please select a winner.');
+        setValidationError('Please select a winner.');
+        console.log('Validation failed: winner missing');
         return;
       }
     }
@@ -200,7 +205,7 @@ export default function MatchEdit({
     } else if (status === 'completed' && resultType === 'No Winner') {
       result = 'No winner';
     }
-    onSave({
+    const matchToSave = {
       participants: match.participants || '',
       result,
       method: match.method || '',
@@ -216,7 +221,12 @@ export default function MatchEdit({
       liveStart,
       liveEnd,
       commentary,
-    });
+    };
+    console.log('onSave about to be called with:', matchToSave);
+    if (onSave) {
+      onSave(matchToSave);
+      console.log('onSave called');
+    }
   };
 
   // Save commentary line immediately (simulate DB save)
@@ -369,6 +379,9 @@ export default function MatchEdit({
   // Default: show match details form
   return (
     <form onSubmit={isLive ? handleSaveMatchDetails : handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
+      {validationError && (
+        <div style={{ color: 'red', marginBottom: 12 }}>{validationError}</div>
+      )}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         <button
           type="button"
