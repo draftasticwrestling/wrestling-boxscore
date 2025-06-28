@@ -576,6 +576,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                           </div>
                           <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                             {team.map((wrestler, i) => (
+                              console.log('Rendering match participant:', wrestler, wrestlerMap[wrestler]),
                               <div
                                 key={i}
                                 style={{
@@ -615,6 +616,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                         {teams[0].map((wrestler, i) => (
+                          console.log('Rendering match participant:', wrestler, wrestlerMap[wrestler]),
                           <div
                             key={i}
                             style={{
@@ -663,6 +665,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                         {teams[1].map((wrestler, i) => (
+                          console.log('Rendering match participant:', wrestler, wrestlerMap[wrestler]),
                           <div
                             key={i}
                             style={{
