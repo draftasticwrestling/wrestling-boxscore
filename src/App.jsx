@@ -1844,6 +1844,7 @@ function App() {
       setWrestlers(data);
       const map = {};
       data.forEach(w => { map[w.id] = w; });
+      console.log('Wrestler map keys:', Object.keys(map)); // Debug log
       setWrestlerMap(map);
     }
     fetchWrestlers();
