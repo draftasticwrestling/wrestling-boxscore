@@ -381,6 +381,25 @@ function getSpecialWinnerIcon(specialWinnerType) {
   }
 }
 
+// Replace all occurrences of splitting participants as a string with array logic
+// Example: parsing teams for rendering
+const getTeams = (participants) => {
+  if (Array.isArray(participants)) return participants;
+  if (typeof participants === 'string' && participants.trim()) {
+    // fallback for legacy data
+    return participants.split(' vs ').map(side => side.split('&').map(name => name.trim()));
+  }
+  return [];
+};
+
+// When displaying participants as a string
+const getParticipantsDisplay = (participants) => {
+  if (Array.isArray(participants)) {
+    return participants.map(team => team.join(' & ')).join(' vs ');
+  }
+  return participants || '';
+};
+
 // Event Box Score Component (with discreet Edit/Delete below the match card)
 function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
   const { eventId } = useParams();
@@ -486,15 +505,15 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
           {matchesWithCardType.map((match, index) => {
             const [expanded, setExpanded] = React.useState(false);
             // Parse participants into sides (split by 'vs')
-            const sides = match.participants.split(' vs ').map(s => s.trim());
+            const teams = getTeams(match.participants);
             // For each side, split by '&' for tag teams
-            const teams = sides.map(side => side.split('&').map(name => name.trim()));
+            const teamStrings = teams.map(team => team.join(' & '));
             // Winner logic
             const winner = match.result && match.result.includes(' def. ')
               ? match.result.split(' def. ')[0]
               : (match.result ? match.result : '');
             // Find which side is the winner
-            const winnerIndex = sides.findIndex(side => winner.startsWith(side));
+            const winnerIndex = teamStrings.findIndex(side => winner.startsWith(side));
             const isTitleMatch = match.title && match.title !== 'None';
             // SVG triangle arrows for winner indication
             const triangleRight = (
@@ -737,7 +756,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                 >
                   {/* Modern compact details layout */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
-                    <div><strong>Participants:</strong> {match.participants}</div>
+                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants)}</div>
                     <div><strong>Winner:</strong> {match.result && match.result.includes(' def. ')
                       ? match.result.split(' def. ')[0]
                       : (match.result || 'None')}</div>
@@ -1546,7 +1565,7 @@ function EditEvent({ events, updateEvent }) {
               <input value={match.participants} onChange={e => {
                 const newParticipants = e.target.value;
                 const newOptions = newParticipants.includes(' vs ')
-                  ? newParticipants.split(' vs ').map(side => side.trim()).filter(Boolean)
+                  ? newParticipants.split(' vs ').map(side => side.trim())
                   : [];
                 if (!newOptions.includes(winner)) setWinner('');
                 setMatch({ ...match, participants: newParticipants });
