@@ -255,6 +255,7 @@ function EventLogoOrText({ name, alt, style, textStyle }) {
   const logoSrc = getEventLogo(name);
   const [imgError, setImgError] = React.useState(false);
   if (!imgError) {
+    console.log('Rendering wrestler:', name, logoSrc);
     return (
       <img src={logoSrc} alt={alt || name} style={style} onError={() => setImgError(true)} />
     );
