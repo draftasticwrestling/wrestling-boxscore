@@ -617,7 +617,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                               </div>
                             ))}
                           </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>{team.join(' & ')}</span>
+                          <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>
+                            {team.map(wrestler => wrestlerMap[wrestler]?.name || wrestler).join(' & ')}
+                          </span>
                           {/* Belt icon under winner if title match */}
                           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                             {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon /> : 
@@ -657,7 +659,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                           </div>
                         ))}
                       </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[0].join(' & ')}</span>
+                      <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
+                        {teams[0].map(wrestler => wrestlerMap[wrestler]?.name || wrestler).join(' & ')}
+                      </span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                         {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : 
                          match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
@@ -706,7 +710,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                           </div>
                         ))}
                       </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>{teams[1].join(' & ')}</span>
+                      <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
+                        {teams[1].map(wrestler => wrestlerMap[wrestler]?.name || wrestler).join(' & ')}
+                      </span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                         {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : 
                          match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
