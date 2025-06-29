@@ -166,12 +166,8 @@ export default function MatchEdit({
       result = 'No winner';
     }
     
-    const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
-    
     onSave({
       ...match,
-      participants,
-      tagTeams,
       result,
       stipulation: finalStipulation,
       status,
