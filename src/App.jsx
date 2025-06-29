@@ -1950,16 +1950,16 @@ function App() {
 
 export default App;
 
-// Helper to parse a team string like "The New Day (kofi-kingston & xavier-woods)" or just "kofi-kingston & xavier-woods"
+// Improved helper to parse a team string for all cases
 function parseTeamString(teamStr) {
+  // Team name with slugs in parentheses
   const tagTeamMatch = teamStr.match(/^([^(]+)\s*\(([^)]+)\)$/);
   if (tagTeamMatch) {
     const teamName = tagTeamMatch[1].trim();
-    const slugs = tagTeamMatch[2].split('&').map(s => s.trim());
+    const slugs = tagTeamMatch[2].split('&').map(s => s.trim()).filter(Boolean);
     return { teamName, slugs };
-  } else {
-    // No team name, just slugs
-    const slugs = teamStr.split('&').map(s => s.trim());
-    return { teamName: null, slugs };
   }
+  // Just slugs (tag or singles)
+  const slugs = teamStr.split('&').map(s => s.trim()).filter(Boolean);
+  return { teamName: null, slugs };
 }
