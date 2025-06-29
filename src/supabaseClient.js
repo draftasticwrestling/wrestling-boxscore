@@ -24,3 +24,31 @@ supabase.from('events').select('count').then(
     }
   }
 ); 
+
+export async function uploadWrestlerImage(file, wrestlerId) {
+  const fileExt = file.name.split('.').pop();
+  const filePath = `${wrestlerId}/${Date.now()}.${fileExt}`;
+  const { data, error } = await supabase.storage
+    .from('wrestler-images')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) throw error;
+
+  // Get public URL
+  const { data: publicUrlData } = supabase
+    .storage
+    .from('wrestler-images')
+    .getPublicUrl(filePath);
+
+  return publicUrlData.publicUrl;
+} 
+
+function slugify(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+    .replace(/(^-|-$)+/g, '');   // Remove leading/trailing hyphens
+} 

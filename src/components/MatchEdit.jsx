@@ -133,7 +133,18 @@ export default function MatchEdit({
 
   useEffect(() => {
     if (match.participants.includes(' vs ')) {
-      setWinnerOptions(match.participants.split(' vs ').map(s => s.trim()).filter(Boolean));
+      // Parse participants to get team names for winner selection
+      const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
+      const teamNames = participants.map((team, index) => {
+        const tagTeamName = tagTeams[index];
+        if (tagTeamName) {
+          return tagTeamName; // Use tag team name for winner selection
+        } else {
+          // Fall back to individual names joined with '&'
+          return team.join(' & ');
+        }
+      });
+      setWinnerOptions(teamNames);
     } else {
       setWinnerOptions([]);
     }
@@ -143,11 +154,27 @@ export default function MatchEdit({
     if (initialMatch && initialMatch.result) {
       setResultType(initialMatch.result.includes('def.') ? 'Winner' : 'No Winner');
       if (winnerOptions.length && initialMatch.result) {
-        const found = winnerOptions.find(w => initialMatch.result.startsWith(w));
+        // Try to find the winner by matching against tag team names first, then individual names
+        const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
+        let found = null;
+        
+        // First try to match against tag team names
+        for (let i = 0; i < participants.length; i++) {
+          if (tagTeams[i] && initialMatch.result.startsWith(tagTeams[i])) {
+            found = tagTeams[i];
+            break;
+          }
+        }
+        
+        // If no tag team match, try individual names
+        if (!found) {
+          found = winnerOptions.find(w => initialMatch.result.startsWith(w));
+        }
+        
         if (found) setWinner(found);
       }
     }
-  }, [initialMatch, winnerOptions]);
+  }, [initialMatch, winnerOptions, match.participants]);
 
   // Helper to check if method is required
   function isMethodRequired() {
@@ -192,13 +219,34 @@ export default function MatchEdit({
       : match.stipulation === 'None' ? '' : match.stipulation;
     let result = '';
     if (status === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-      const others = winnerOptions.filter(name => name !== winner);
-      result = `${winner} def. ${others.join(' & ')}`;
+      const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
+      const winnerIndex = winnerOptions.indexOf(winner);
+      
+      if (winnerIndex !== -1) {
+        const winnerTeam = participants[winnerIndex];
+        const loserTeams = participants.filter((_, index) => index !== winnerIndex);
+        
+        // Use tag team name for winner if available, otherwise use individual names
+        const winnerName = tagTeams[winnerIndex] || winnerTeam.join(' & ');
+        
+        // Use tag team names for losers if available, otherwise use individual names
+        const loserNames = loserTeams.map((team, index) => {
+          const actualIndex = index >= winnerIndex ? index + 1 : index;
+          return tagTeams[actualIndex] || team.join(' & ');
+        });
+        
+        result = `${winnerName} def. ${loserNames.join(' & ')}`;
+      }
     } else if (status === 'completed' && resultType === 'No Winner') {
       result = 'No winner';
     }
+    
+    const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
+    
     onSave({
       ...match,
+      participants,
+      tagTeams,
       result,
       stipulation: finalStipulation,
       status,
@@ -243,6 +291,61 @@ export default function MatchEdit({
     });
     setMatchDetailsSaved(false); // allow editing winner/method after ending
   };
+
+  function parseParticipants(input) {
+    if (Array.isArray(input)) {
+      // Already an array, assume it's correct
+      return input;
+    }
+    if (typeof input === "string") {
+      // Split by 'vs' for teams/sides, then by '&' for team members
+      return input
+        .split(/\s+vs\s+/i)
+        .map(side =>
+          side
+            .split(/\s*&\s*/i)
+            .map(slug => slug.trim())
+            .filter(Boolean)
+        );
+    }
+    return [];
+  }
+
+  function parseParticipantsWithTagTeams(input) {
+    if (Array.isArray(input)) {
+      // Already an array, assume it's correct
+      return { participants: input, tagTeams: {} };
+    }
+    if (typeof input === "string") {
+      const tagTeams = {};
+      const participants = input
+        .split(/\s+vs\s+/i)
+        .map((side, sideIndex) => {
+          // Check if this side has a tag team name in parentheses
+          const tagTeamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
+          if (tagTeamMatch) {
+            const tagTeamName = tagTeamMatch[1].trim();
+            const wrestlers = tagTeamMatch[2].trim();
+            tagTeams[sideIndex] = tagTeamName;
+            
+            // Split wrestlers by '&' and clean up
+            return wrestlers
+              .split(/\s*&\s*/i)
+              .map(slug => slug.trim())
+              .filter(Boolean);
+          } else {
+            // No tag team name, just split by '&'
+            return side
+              .split(/\s*&\s*/i)
+              .map(slug => slug.trim())
+              .filter(Boolean);
+          }
+        });
+      
+      return { participants, tagTeams };
+    }
+    return { participants: [], tagTeams: {} };
+  }
 
   // UI rendering
   if (isLive && (matchDetailsSaved || liveStart)) {
@@ -412,9 +515,12 @@ export default function MatchEdit({
           style={inputStyle}
           value={match.participants}
           onChange={e => setMatch({ ...match, participants: e.target.value })}
-          placeholder="Wrestler 1 vs Wrestler 2"
+          placeholder="Wrestler 1 vs Wrestler 2 or Team Name (Wrestler 1 & Wrestler 2) vs Team Name (Wrestler 3 & Wrestler 4)"
           required={status === 'completed'}
         />
+        <div style={{ fontSize: '12px', color: '#bbb', marginTop: '4px' }}>
+          Examples: "brutus-creed vs montez-ford" or "American Made (brutus-creed & julius-creed) vs Street Profits (montez-ford & angelo-dawkins)"
+        </div>
       </div>
       {status === 'completed' && (
         <>

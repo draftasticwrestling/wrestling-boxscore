@@ -400,6 +400,26 @@ const getParticipantsDisplay = (participants) => {
   return participants || '';
 };
 
+// Get display name for a team (tag team name + individual names)
+const getTeamDisplayName = (team, tagTeams, sideIndex, wrestlerMap) => {
+  const tagTeamName = tagTeams[sideIndex];
+  const individualNames = team.map(wrestler => wrestlerMap[wrestler]?.name || wrestler).join(' & ');
+  
+  if (tagTeamName) {
+    return {
+      tagTeamName,
+      individualNames,
+      displayText: `${tagTeamName}\n${individualNames}`
+    };
+  } else {
+    return {
+      tagTeamName: null,
+      individualNames,
+      displayText: individualNames
+    };
+  }
+};
+
 // Event Box Score Component (with discreet Edit/Delete below the match card)
 function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
   const { eventId } = useParams();
@@ -512,8 +532,21 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
             const winner = match.result && match.result.includes(' def. ')
               ? match.result.split(' def. ')[0]
               : (match.result ? match.result : '');
-            // Find which side is the winner
-            const winnerIndex = teamStrings.findIndex(side => winner.startsWith(side));
+            // Find which side is the winner - check tag team names first, then individual names
+            let winnerIndex = -1;
+            if (match.tagTeams) {
+              // Check tag team names first
+              for (let i = 0; i < teams.length; i++) {
+                if (match.tagTeams[i] && winner.startsWith(match.tagTeams[i])) {
+                  winnerIndex = i;
+                  break;
+                }
+              }
+            }
+            // If no tag team match found, check individual names
+            if (winnerIndex === -1) {
+              winnerIndex = teamStrings.findIndex(side => winner.startsWith(side));
+            }
             const isTitleMatch = match.title && match.title !== 'None';
             // SVG triangle arrows for winner indication
             const triangleRight = (
@@ -618,7 +651,23 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                             ))}
                           </div>
                           <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>
-                            {team.map(wrestler => wrestlerMap[wrestler]?.name || wrestler).join(' & ')}
+                            {(() => {
+                              const teamDisplay = getTeamDisplayName(team, match.tagTeams || {}, sideIdx, wrestlerMap);
+                              if (teamDisplay.tagTeamName) {
+                                return (
+                                  <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: 18, fontWeight: 800, color: winnerIndex === sideIdx ? gold : '#fff' }}>
+                                      {teamDisplay.tagTeamName}
+                                    </div>
+                                    <div style={{ fontSize: 14, color: '#bbb', fontStyle: 'italic' }}>
+                                      {teamDisplay.individualNames}
+                                    </div>
+                                  </div>
+                                );
+                              } else {
+                                return teamDisplay.individualNames;
+                              }
+                            })()}
                           </span>
                           {/* Belt icon under winner if title match */}
                           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
@@ -660,7 +709,23 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                         ))}
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
-                        {teams[0].map(wrestler => wrestlerMap[wrestler]?.name || wrestler).join(' & ')}
+                        {(() => {
+                          const teamDisplay = getTeamDisplayName(teams[0], match.tagTeams || {}, 0, wrestlerMap);
+                          if (teamDisplay.tagTeamName) {
+                            return (
+                              <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === 0 ? gold : '#fff' }}>
+                                  {teamDisplay.tagTeamName}
+                                </div>
+                                <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>
+                                  {teamDisplay.individualNames}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return teamDisplay.individualNames;
+                          }
+                        })()}
                       </span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                         {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : 
@@ -711,7 +776,23 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                         ))}
                       </div>
                       <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
-                        {teams[1].map(wrestler => wrestlerMap[wrestler]?.name || wrestler).join(' & ')}
+                        {(() => {
+                          const teamDisplay = getTeamDisplayName(teams[1], match.tagTeams || {}, 1, wrestlerMap);
+                          if (teamDisplay.tagTeamName) {
+                            return (
+                              <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === 1 ? gold : '#fff' }}>
+                                  {teamDisplay.tagTeamName}
+                                </div>
+                                <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>
+                                  {teamDisplay.individualNames}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return teamDisplay.individualNames;
+                          }
+                        })()}
                       </span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                         {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : 

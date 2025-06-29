@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useEvents } from '../App'; // We'll use context or pass events as prop if needed
 import MatchEdit from './MatchEdit';
 
 const gold = '#C6A04F';
