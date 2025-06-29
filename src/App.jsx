@@ -12,74 +12,15 @@ import TrophyIcon from './components/TrophyIcon';
 import ChamberIcon from './components/ChamberIcon';
 import WarGamesIcon from './components/WarGamesIcon';
 import SurvivorIcon from './components/SurvivorIcon';
+import {
+  STIPULATION_OPTIONS,
+  METHOD_OPTIONS,
+  TITLE_OPTIONS,
+  SPECIAL_WINNER_OPTIONS,
+  TITLE_OUTCOME_OPTIONS
+} from './options';
 
 // Place these at the top level, after imports
-const STIPULATION_OPTIONS = [
-  "None",
-  "Cage Match",
-  "Hell in a Cell",
-  "Street Fight",
-  "Bloodline Rules",
-  "Bakersfield Brawl",
-  "King of the Ring Qualifier",
-  "Queen of the Ring Qualifier",
-  "Men's Elimination Chamber Qualifier",
-  "Women's Elimination Chamber Qualifier",
-  "Men's Money in the Bank Qualifier",
-  "Women's Money in the Bank Qualifier",
-  "Men's Money in the Bank Ladder Match",
-  "Women's Money in the Bank Ladder Match",
-  "Men's Survivor Series Qualifier",
-  "Women's Survivor Series Qualifier",
-  "King of the Ring Semi-final",
-  "Queen of the Ring Semi-final",
-  "Triple Threat match",
-  "Fatal Four-way match",
-  "Unsanctioned Match",
-  "Men's War Games Match",
-  "Women's War Games Match",
-  "Men's Royal Rumble",
-  "Women's Royal Rumble",
-  "Last Man Standing",
-  "Last Woman Standing",
-  "Non-Title Match",
-  "Custom/Other"
-];
-const METHOD_OPTIONS = [
-  "Pinfall",
-  "Submission",
-  "DQ",
-  "Count out",
-  "No Contest",
-  "Draw",
-  "Unhook the prize",
-  "Escape",
-  "Elimination",
-  "KO / Last Man Standing",
-  "Enclosure win",
-  "Points / Decision"
-];
-const TITLE_OUTCOME_OPTIONS = [
-  "None",
-  "Successful Defense",
-  "New Champion"
-];
-const TITLE_OPTIONS = [
-  "None",
-  "Undisputed WWE Championship",
-  "World Heavyweight Championship",
-  "Men's IC Championship",
-  "Men's U.S. Championship",
-  "Raw Tag Team Championship",
-  "SmackDown Tag Team Championship",
-  "Men's Speed Championship",
-  "WWE Women's Championship",
-  "Women's World Championship",
-  "Women's IC Championship",
-  "Women's U.S. Championship",
-  "Women's Tag Team Championship",
-  "Women's Speed Championship"
-];
 const CUSTOM_STIPULATION_OPTIONS = [
   "Cage Match",
   "Hell in a Cell",
@@ -103,21 +44,6 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Last Woman Standing",
   "Non-Title Match",
   "Custom/Other"
-];
-const SPECIAL_WINNER_OPTIONS = [
-  "None",
-  "Women's Money in the Bank winner",
-  "Men's Money in the Bank winner",
-  "Men's Royal Rumble winner",
-  "Women's Royal Rumble winner",
-  "Men's Elimination Chamber winner",
-  "Women's Elimination Chamber winner",
-  "King of the Ring winner",
-  "Queen of the Ring winner",
-  "Men's Ultimate Survivor",
-  "Women's Ultimate Survivor",
-  "Men's War Games winner",
-  "Women's War Games winner"
 ];
 
 // Update color variables to match new banner
@@ -274,45 +200,49 @@ function EventList({ events }) {
   return (
     <div style={appBackground}>
       <div style={sectionStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h1 style={{ color: gold, margin: 0 }}>Wrestling Box Score</h1>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Link
-              to="/championships"
-              style={{
-                padding: '8px 16px',
-                background: '#4a90e2',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: 4,
-                fontWeight: 600,
-                fontSize: 14
-              }}
-            >
-              🏆 Champions
-            </Link>
-            <Link
-              to="/add-event"
-              style={{
-                padding: '8px 16px',
-                background: gold,
-                color: '#232323',
-                textDecoration: 'none',
-                borderRadius: 4,
-                fontWeight: 600,
-                fontSize: 14
-              }}
-            >
-              + Add Event
-            </Link>
-          </div>
+        {/* Header row: title only */}
+        <div style={{ textAlign: 'center', marginBottom: 0 }}>
+          <h1 style={{ color: gold, margin: 0, fontSize: 36, lineHeight: 1 }}>Wrestling Box Score</h1>
         </div>
+        {/* Logo centered below title */}
         <img src="/images/banner.png" alt="Wrestling Boxscore Banner" style={{
           display: 'block',
-          margin: '0 auto 32px auto',
+          margin: '24px auto 24px auto',
           maxWidth: 480,
           width: '100%',
         }} />
+        {/* Buttons centered below logo, above WWE Event Results */}
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+          <Link
+            to="/championships"
+            style={{
+              padding: '8px 16px',
+              background: '#4a90e2',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: 4,
+              fontWeight: 600,
+              fontSize: 14
+            }}
+          >
+            🏆 Champions
+          </Link>
+          <Link
+            to="/add-event"
+            style={{
+              padding: '8px 16px',
+              background: gold,
+              color: '#232323',
+              textDecoration: 'none',
+              borderRadius: 4,
+              fontWeight: 600,
+              fontSize: 14
+            }}
+          >
+            + Add Event
+          </Link>
+        </div>
+        {/* WWE Event Results heading */}
         <h1 style={{
           textAlign: 'center',
           color: gold,
