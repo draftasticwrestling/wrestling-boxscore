@@ -471,7 +471,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
             // Parse participants into sides (split by 'vs')
             const teams = getTeams(match.participants);
             // For each side, split by '&' for tag teams
-            const teamStrings = teams.map(team => team.join(' & '));
+            const teamStrings = (typeof match.participants === 'string')
+              ? match.participants.split(' vs ').map(s => s.trim())
+              : [];
             // Winner logic
             const winner = match.result && match.result.includes(' def. ')
               ? match.result.split(' def. ')[0]
