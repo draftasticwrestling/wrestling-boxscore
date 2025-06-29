@@ -59,50 +59,58 @@ CREATE POLICY "Allow authenticated users to manage championship history" ON cham
 -- Create function to update championship when new champion is crowned
 CREATE OR REPLACE FUNCTION update_championship_on_new_champion()
 RETURNS TRIGGER AS $$
+DECLARE
+  match jsonb;
+  winner_name TEXT;
+  winner_slug TEXT;
+  championship_id TEXT;
+  old_champion_slug TEXT;
+  match_order INTEGER;
+  event_date DATE;
 BEGIN
-  -- Only process if this is a new champion outcome
-  IF NEW.titleOutcome = 'New Champion' AND NEW.title IS NOT NULL AND NEW.title != 'None' THEN
-    -- Get the winner from the result
-    DECLARE
-      winner_name TEXT;
-      winner_slug TEXT;
-      championship_id TEXT;
-      old_champion_slug TEXT;
-    BEGIN
+  -- Loop through each match in the updated matches array
+  FOR match IN SELECT * FROM jsonb_array_elements(NEW.matches)
+  LOOP
+    IF match->>'titleOutcome' = 'New Champion'
+       AND match->>'title' IS NOT NULL
+       AND match->>'title' != 'None' THEN
+
       -- Extract winner name from result (format: "Winner def. Loser")
-      winner_name := SPLIT_PART(NEW.result, ' def. ', 1);
-      
+      winner_name := SPLIT_PART(match->>'result', ' def. ', 1);
+      match_order := (match->>'order')::INTEGER;
+      event_date := NEW.date;
+
       -- Find the championship record
       SELECT id, current_champion_slug INTO championship_id, old_champion_slug
       FROM championships 
-      WHERE title_name = NEW.title;
-      
+      WHERE title_name = match->>'title';
+
       -- If championship exists, update it
       IF championship_id IS NOT NULL THEN
         -- Find winner slug from wrestlers table
         SELECT id INTO winner_slug FROM wrestlers WHERE name = winner_name;
-        
+
         -- Update championship record
         UPDATE championships 
         SET 
           current_champion = winner_name,
           current_champion_slug = winner_slug,
-          date_won = (SELECT date FROM events WHERE id = NEW.event_id),
-          event_id = NEW.event_id,
-          match_order = NEW.order,
+          date_won = event_date,
+          event_id = NEW.id,
+          match_order = match_order,
           updated_at = NOW()
         WHERE id = championship_id;
-        
+
         -- Close the previous reign in history
         IF old_champion_slug IS NOT NULL THEN
           UPDATE championship_history 
           SET 
-            date_lost = (SELECT date FROM events WHERE id = NEW.event_id),
-            reign_days = (SELECT date FROM events WHERE id = NEW.event_id)::date - date_won
+            date_lost = event_date,
+            reign_days = event_date - date_won
           WHERE championship_id = championship_id 
             AND date_lost IS NULL;
         END IF;
-        
+
         -- Add new reign to history
         INSERT INTO championship_history (
           championship_id, 
@@ -114,17 +122,17 @@ BEGIN
           match_order
         ) VALUES (
           championship_id,
-          NEW.title,
+          match->>'title',
           winner_name,
           winner_slug,
-          (SELECT date FROM events WHERE id = NEW.event_id),
-          NEW.event_id,
-          NEW.order
+          event_date,
+          NEW.id,
+          match_order
         );
       END IF;
-    END;
-  END IF;
-  
+    END IF;
+  END LOOP;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
