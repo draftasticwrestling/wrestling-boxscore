@@ -1908,6 +1908,10 @@ function App() {
       for (const key of allowedFields) {
         if (updatedEvent[key] !== undefined) sanitizedEvent[key] = updatedEvent[key];
       }
+      // Remove any accidental top-level titleOutcome field
+      if ('titleOutcome' in sanitizedEvent) {
+        delete sanitizedEvent.titleOutcome;
+      }
       console.log('Sanitized event for update:', sanitizedEvent);
       const { data, error } = await supabase
         .from('events')
