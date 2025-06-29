@@ -1898,7 +1898,7 @@ function App() {
       const { data } = await supabase.from('wrestlers').select('*');
       setWrestlers(data);
       const map = {};
-      data.forEach(w => { map[w.slug] = w; }); // Use slug as key
+      data.forEach(w => { map[w.id] = w; }); // Revert to using id as key
       console.log('Wrestler map keys:', Object.keys(map)); // Debug log
       setWrestlerMap(map);
     }
