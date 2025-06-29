@@ -4,6 +4,7 @@ import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
+import ChampionshipsDisplay from './components/ChampionshipsDisplay';
 import BeltIcon from './components/BeltIcon';
 import BriefcaseIcon from './components/BriefcaseIcon';
 import CrownIcon from './components/CrownIcon';
@@ -39,6 +40,9 @@ const STIPULATION_OPTIONS = [
   "Women's War Games Match",
   "Men's Royal Rumble",
   "Women's Royal Rumble",
+  "Last Man Standing",
+  "Last Woman Standing",
+  "Non-Title Match",
   "Custom/Other"
 ];
 const METHOD_OPTIONS = [
@@ -95,6 +99,9 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Triple Threat match",
   "Fatal Four-way match",
   "Unsanctioned Match",
+  "Last Man Standing",
+  "Last Woman Standing",
+  "Non-Title Match",
   "Custom/Other"
 ];
 const SPECIAL_WINNER_OPTIONS = [
@@ -266,83 +273,105 @@ function EventLogoOrText({ name, alt, style, textStyle }) {
 function EventList({ events }) {
   return (
     <div style={appBackground}>
-      <img src="/images/banner.png" alt="Wrestling Boxscore Banner" style={{
-        display: 'block',
-        margin: '0 auto 32px auto',
-        maxWidth: 480,
-        width: '100%',
-      }} />
-      <h1 style={{
-        textAlign: 'center',
-        color: gold,
-        fontSize: 40,
-        marginBottom: 8,
-        marginTop: 0
-      }}>WWE Event Results</h1>
-      <Link to="/add-event" style={{
-        display: 'inline-block',
-        marginBottom: 16,
-        color: gold,
-        border: `1px solid ${gold}`,
-        borderRadius: 4,
-        padding: '6px 18px',
-        background: 'rgba(34,34,34,0.8)',
-        textDecoration: 'none',
-        fontWeight: 600,
-        boxShadow: '0 0 8px #C6A04F22',
-        transition: 'background 0.2s, color 0.2s',
-      }}>+ Add Event</Link>
-      <div style={{ marginTop: 24 }}>
-        {events.map(event => {
-          const isUpcoming = isUpcomingEST(event);
-          return (
+      <div style={sectionStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h1 style={{ color: gold, margin: 0 }}>Wrestling Box Score</h1>
+          <div style={{ display: 'flex', gap: 12 }}>
             <Link
-              to={`/event/${event.id}`}
-              key={event.id}
+              to="/championships"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 24,
-                background: 'rgba(34,34,34,0.98)',
-                borderRadius: 10,
-                boxShadow: '0 0 8px #C6A04F22',
-                padding: '16px 24px',
-                marginBottom: 18,
+                padding: '8px 16px',
+                background: '#4a90e2',
+                color: 'white',
                 textDecoration: 'none',
-                color: gold,
-                transition: 'background 0.2s',
-                cursor: 'pointer',
-                position: 'relative',
-                border: '1px solid #333',
+                borderRadius: 4,
+                fontWeight: 600,
+                fontSize: 14
               }}
             >
-              <EventLogoOrText
-                name={event.name}
-                style={{
-                  display: 'inline-block',
-                  verticalAlign: 'middle',
-                  maxHeight: 48,
-                  maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
-                  height: 'auto',
-                  width: 'auto',
-                  objectFit: 'contain',
-                  marginRight: 12,
-                }}
-                textStyle={{ color: gold }}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ color: gold, fontWeight: 600, fontSize: 20 }}>{event.name}</span>
-                  {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
-                  {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
-                </div>
-                <div style={{ color: gold, fontSize: 16, marginTop: 2 }}>
-                  {formatDate(event.date)} — {event.location}
-                </div>
-              </div>
+              🏆 Champions
             </Link>
-          );
-        })}
+            <Link
+              to="/add-event"
+              style={{
+                padding: '8px 16px',
+                background: gold,
+                color: '#232323',
+                textDecoration: 'none',
+                borderRadius: 4,
+                fontWeight: 600,
+                fontSize: 14
+              }}
+            >
+              + Add Event
+            </Link>
+          </div>
+        </div>
+        <img src="/images/banner.png" alt="Wrestling Boxscore Banner" style={{
+          display: 'block',
+          margin: '0 auto 32px auto',
+          maxWidth: 480,
+          width: '100%',
+        }} />
+        <h1 style={{
+          textAlign: 'center',
+          color: gold,
+          fontSize: 40,
+          marginBottom: 8,
+          marginTop: 0
+        }}>WWE Event Results</h1>
+        <div style={{ marginTop: 24 }}>
+          {events.map(event => {
+            const isUpcoming = isUpcomingEST(event);
+            return (
+              <Link
+                to={`/event/${event.id}`}
+                key={event.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 24,
+                  background: 'rgba(34,34,34,0.98)',
+                  borderRadius: 10,
+                  boxShadow: '0 0 8px #C6A04F22',
+                  padding: '16px 24px',
+                  marginBottom: 18,
+                  textDecoration: 'none',
+                  color: gold,
+                  transition: 'background 0.2s',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  border: '1px solid #333',
+                }}
+              >
+                <EventLogoOrText
+                  name={event.name}
+                  style={{
+                    display: 'inline-block',
+                    verticalAlign: 'middle',
+                    maxHeight: 48,
+                    maxWidth: ['night of champions', 'survivor series', "saturday night's main event"].includes(event.name.trim().toLowerCase()) ? 180 : 96,
+                    height: 'auto',
+                    width: 'auto',
+                    objectFit: 'contain',
+                    marginRight: 12,
+                  }}
+                  textStyle={{ color: gold }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ color: gold, fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+                    {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
+                    {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
+                  </div>
+                  <div style={{ color: gold, fontSize: 16, marginTop: 2 }}>
+                    {formatDate(event.date)} — {event.location}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1967,6 +1996,53 @@ function App() {
     const eventToUpdate = events.find(event => event.id === eventId);
     if (eventToUpdate) {
       updateEvent({ ...eventToUpdate, matches: updatedMatches });
+      // Check for new champions and update championships
+      checkForNewChampions(eventToUpdate, updatedMatches);
+    }
+  };
+
+  // Function to check for new champions and update championships
+  const checkForNewChampions = async (event, matches) => {
+    try {
+      for (const match of matches) {
+        if (match.titleOutcome === 'New Champion' && match.title && match.title !== 'None') {
+          console.log(`New champion detected: ${match.title} - ${match.result}`);
+          
+          // Extract winner name from result
+          const winnerName = match.result.split(' def. ')[0];
+          
+          // Find winner slug from wrestlerMap
+          const winnerSlug = Object.keys(wrestlerMap).find(slug => 
+            wrestlerMap[slug]?.name === winnerName
+          );
+          
+          if (winnerSlug) {
+            // Update championship in database
+            const championshipId = match.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            
+            const { error } = await supabase
+              .from('championships')
+              .upsert({
+                id: championshipId,
+                title_name: match.title,
+                current_champion: winnerName,
+                current_champion_slug: winnerSlug,
+                date_won: event.date,
+                event_id: event.id,
+                match_order: match.order,
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'id' });
+            
+            if (error) {
+              console.error('Error updating championship:', error);
+            } else {
+              console.log(`✅ Championship updated: ${match.title} - ${winnerName}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for new champions:', error);
     }
   };
 
@@ -2021,6 +2097,7 @@ function App() {
         <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} onEditMatch={handleEditMatch} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
+        <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} />
       </Routes>
     </Router>
   );
