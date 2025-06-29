@@ -1902,9 +1902,16 @@ function App() {
   // Update event in Supabase
   const updateEvent = async (updatedEvent) => {
     try {
+      // Only send allowed fields to Supabase
+      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'status', 'isLive'];
+      const sanitizedEvent = {};
+      for (const key of allowedFields) {
+        if (updatedEvent[key] !== undefined) sanitizedEvent[key] = updatedEvent[key];
+      }
+      console.log('Sanitized event for update:', sanitizedEvent);
       const { data, error } = await supabase
         .from('events')
-        .update(updatedEvent)
+        .update(sanitizedEvent)
         .eq('id', updatedEvent.id)
         .select();
 
