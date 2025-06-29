@@ -4,7 +4,6 @@ import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
-import ChampionshipsDisplay from './components/ChampionshipsDisplay';
 import BeltIcon from './components/BeltIcon';
 import BriefcaseIcon from './components/BriefcaseIcon';
 import CrownIcon from './components/CrownIcon';
@@ -211,22 +210,8 @@ function EventList({ events }) {
           maxWidth: 480,
           width: '100%',
         }} />
-        {/* Buttons centered below logo, above WWE Event Results */}
+        {/* Remove Champions button, only show Add Event */}
         <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-          <Link
-            to="/championships"
-            style={{
-              padding: '8px 16px',
-              background: '#4a90e2',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: 4,
-              fontWeight: 600,
-              fontSize: 14
-            }}
-          >
-            🏆 Champions
-          </Link>
           <Link
             to="/add-event"
             style={{
@@ -2038,7 +2023,7 @@ function App() {
         <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} onEditMatch={handleEditMatch} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
-        <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} />
+        {/* <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} /> */}
       </Routes>
     </Router>
   );
