@@ -670,8 +670,23 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                             })()}
                           </span>
                           {/* Belt icon under winner if title match */}
-                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                            {isTitleMatch && winnerIndex === sideIdx ? <BeltIcon /> : 
+                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                            {isTitleMatch && winnerIndex === sideIdx ? (
+                              <>
+                                <BeltIcon />
+                                {match.titleOutcome && match.titleOutcome !== 'None' && (
+                                  <div style={{ 
+                                    fontSize: 10, 
+                                    color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
+                                    fontWeight: 600,
+                                    marginTop: 2,
+                                    textAlign: 'center'
+                                  }}>
+                                    {match.titleOutcome}
+                                  </div>
+                                )}
+                              </>
+                            ) : 
                              match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
                              getSpecialWinnerIcon(match.specialWinnerType) : 
                              <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
@@ -727,8 +742,23 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                           }
                         })()}
                       </span>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 0 ? <BeltIcon /> : 
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                        {isTitleMatch && winnerIndex === 0 ? (
+                          <>
+                            <BeltIcon />
+                            {match.titleOutcome && match.titleOutcome !== 'None' && (
+                              <div style={{ 
+                                fontSize: 11, 
+                                color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
+                                fontWeight: 600,
+                                marginTop: 2,
+                                textAlign: 'center'
+                              }}>
+                                {match.titleOutcome}
+                              </div>
+                            )}
+                          </>
+                        ) : 
                          match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
                          getSpecialWinnerIcon(match.specialWinnerType) : 
                          <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
@@ -794,8 +824,23 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                           }
                         })()}
                       </span>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 1 ? <BeltIcon /> : 
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                        {isTitleMatch && winnerIndex === 1 ? (
+                          <>
+                            <BeltIcon />
+                            {match.titleOutcome && match.titleOutcome !== 'None' && (
+                              <div style={{ 
+                                fontSize: 11, 
+                                color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
+                                fontWeight: 600,
+                                marginTop: 2,
+                                textAlign: 'center'
+                              }}>
+                                {match.titleOutcome}
+                              </div>
+                            )}
+                          </>
+                        ) : 
                          match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
                          getSpecialWinnerIcon(match.specialWinnerType) : 
                          <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
