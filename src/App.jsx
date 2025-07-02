@@ -474,21 +474,21 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
             const winner = match.result && match.result.includes(' def. ')
               ? match.result.split(' def. ')[0]
               : (match.result ? match.result : '');
-            // Find which side is the winner - check tag team names first, then individual names
+            // Robust normalization function
+            function normalize(str) {
+              return (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+            }
             let winnerIndex = -1;
-            if (match.tagTeams) {
-              // Check tag team names first
-              for (let i = 0; i < teams.length; i++) {
-                if (match.tagTeams[i] && winner.startsWith(match.tagTeams[i])) {
-                  winnerIndex = i;
-                  break;
-                }
+            teamStrings.forEach((teamStr, idx) => {
+              const { teamName, slugs } = parseTeamString(teamStr);
+              const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+              if (
+                (teamName && normalize(winner) === normalize(teamName)) ||
+                normalize(winner) === normalize(individualNames)
+              ) {
+                winnerIndex = idx;
               }
-            }
-            // If no tag team match found, check individual names
-            if (winnerIndex === -1) {
-              winnerIndex = teamStrings.findIndex(side => winner.startsWith(side));
-            }
+            });
             const isTitleMatch = match.title && match.title !== 'None';
             // SVG triangle arrows for winner indication
             const triangleRight = (
