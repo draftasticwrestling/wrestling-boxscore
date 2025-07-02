@@ -619,42 +619,53 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                 ) : !isMultiSide ? (
                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
                     {/* Left participant */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                        {parseTeamString(teamStrings[0]).slugs.map((slug, i) => (
-                          <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
-                            {wrestlerMap[slug]?.image_url
-                              ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-                              : <span role="img" aria-label="wrestler">&#128100;</span>
-                            }
-                          </div>
-                        ))}
-                      </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
-                        {parseTeamString(teamStrings[0]).slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ')}
-                      </span>
-                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 0 ? (
-                          <>
-                            <BeltIcon />
-                            {match.titleOutcome && match.titleOutcome !== 'None' && (
-                              <div style={{ 
-                                fontSize: 11, 
-                                color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
-                                fontWeight: 600,
-                                marginTop: 2,
-                                textAlign: 'center'
-                              }}>
-                                {match.titleOutcome}
+                    {(() => {
+                      const { teamName, slugs } = parseTeamString(teamStrings[0]);
+                      const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+                      return (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                            {slugs.map((slug, i) => (
+                              <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
+                                {wrestlerMap[slug]?.image_url
+                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                                  : <span role="img" aria-label="wrestler">&#128100;</span>
+                                }
                               </div>
-                            )}
-                          </>
-                        ) : 
-                         match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
-                         getSpecialWinnerIcon(match.specialWinnerType) : 
-                         <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                      </div>
-                    </div>
+                            ))}
+                          </div>
+                          <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
+                            {teamName ? (
+                              <>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === 0 ? gold : '#fff' }}>{teamName}</div>
+                                <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                              </>
+                            ) : individualNames}
+                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                            {isTitleMatch && winnerIndex === 0 ? (
+                              <>
+                                <BeltIcon />
+                                {match.titleOutcome && match.titleOutcome !== 'None' && (
+                                  <div style={{ 
+                                    fontSize: 11, 
+                                    color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
+                                    fontWeight: 600,
+                                    marginTop: 2,
+                                    textAlign: 'center'
+                                  }}>
+                                    {match.titleOutcome}
+                                  </div>
+                                )}
+                              </>
+                            ) : 
+                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
+                             getSpecialWinnerIcon(match.specialWinnerType) : 
+                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {/* Left arrow (always reserve space) */}
                     <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
@@ -671,42 +682,53 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                       {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
                     </div>
                     {/* Right participant */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                        {parseTeamString(teamStrings[1]).slugs.map((slug, i) => (
-                          <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
-                            {wrestlerMap[slug]?.image_url
-                              ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-                              : <span role="img" aria-label="wrestler">&#128100;</span>
-                            }
-                          </div>
-                        ))}
-                      </div>
-                      <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
-                        {parseTeamString(teamStrings[1]).slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ')}
-                      </span>
-                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                        {isTitleMatch && winnerIndex === 1 ? (
-                          <>
-                            <BeltIcon />
-                            {match.titleOutcome && match.titleOutcome !== 'None' && (
-                              <div style={{ 
-                                fontSize: 11, 
-                                color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
-                                fontWeight: 600,
-                                marginTop: 2,
-                                textAlign: 'center'
-                              }}>
-                                {match.titleOutcome}
+                    {(() => {
+                      const { teamName, slugs } = parseTeamString(teamStrings[1]);
+                      const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+                      return (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                            {slugs.map((slug, i) => (
+                              <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
+                                {wrestlerMap[slug]?.image_url
+                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                                  : <span role="img" aria-label="wrestler">&#128100;</span>
+                                }
                               </div>
-                            )}
-                          </>
-                        ) : 
-                         match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
-                         getSpecialWinnerIcon(match.specialWinnerType) : 
-                         <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                      </div>
-                    </div>
+                            ))}
+                          </div>
+                          <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
+                            {teamName ? (
+                              <>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === 1 ? gold : '#fff' }}>{teamName}</div>
+                                <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                              </>
+                            ) : individualNames}
+                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                            {isTitleMatch && winnerIndex === 1 ? (
+                              <>
+                                <BeltIcon />
+                                {match.titleOutcome && match.titleOutcome !== 'None' && (
+                                  <div style={{ 
+                                    fontSize: 11, 
+                                    color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
+                                    fontWeight: 600,
+                                    marginTop: 2,
+                                    textAlign: 'center'
+                                  }}>
+                                    {match.titleOutcome}
+                                  </div>
+                                )}
+                              </>
+                            ) : 
+                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
+                             getSpecialWinnerIcon(match.specialWinnerType) : 
+                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : null}
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
