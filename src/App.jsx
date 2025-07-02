@@ -199,10 +199,6 @@ function EventList({ events }) {
   return (
     <div style={appBackground}>
       <div style={sectionStyle}>
-        {/* Header row: title only */}
-        <div style={{ textAlign: 'center', marginBottom: 0 }}>
-          <h1 style={{ color: gold, margin: 0, fontSize: 36, lineHeight: 1 }}>Wrestling Box Score</h1>
-        </div>
         {/* Logo centered below title */}
         <img src="/images/banner.png" alt="Wrestling Boxscore Banner" style={{
           display: 'block',
