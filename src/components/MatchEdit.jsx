@@ -139,6 +139,8 @@ export default function MatchEdit({
 
   // End match handler
   const handleEndMatch = () => {
+    const confirmed = window.confirm('Are you sure you want to end match? This will close live commentary and cannot be undone.');
+    if (!confirmed) return;
     const now = Date.now();
     setLiveEnd(now);
     setIsLive(false);
