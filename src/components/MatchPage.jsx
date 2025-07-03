@@ -126,7 +126,7 @@ export default function MatchPage({ events, onEditMatch }) {
           <div style={{ color: '#fff', marginTop: 4 }}>{match.notes}</div>
         </div>
       )}
-      {match.isLive && Array.isArray(match.commentary) && match.commentary.length > 0 && (
+      {Array.isArray(match.commentary) && match.commentary.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <div style={{ color: gold, fontWeight: 600, marginBottom: 6 }}>Live Commentary</div>
           <div style={{ maxHeight: 220, overflowY: 'auto', borderRadius: 4, background: '#232323', padding: 8 }}>
