@@ -137,52 +137,54 @@ export default function MatchEdit({
     // Optionally, persist match details here if needed
   };
 
+  // End match handler
+  const handleEndMatch = () => {
+    const now = Date.now();
+    setLiveEnd(now);
+    setIsLive(false);
+    setStatus('completed');
+    const newCommentary = [{ timestamp: now, text: 'The match ends' }, ...commentary];
+    setCommentary(newCommentary);
+    // Do NOT call onSave or exit edit mode here; let user fill in result fields and click Save
+    setMatchDetailsSaved(false); // allow editing winner/method after ending
+  };
+
   // Save handler for completed match
   const handleSave = (e) => {
     e.preventDefault();
-    if (status === 'completed') {
-      if (!resultType) {
-        alert('Please select a result type.');
-        return;
-      }
-      if (resultType === 'Winner' && (!winner || winner.trim() === '')) {
-        alert('Please select a winner.');
-        return;
-      }
+    let finalStatus = status;
+    let finalIsLive = isLive;
+    // If match is not live and has a winner/result, always set status to 'completed'
+    if (!isLive && (resultType === 'Winner' || resultType === 'No Winner')) {
+      finalStatus = 'completed';
+      finalIsLive = false;
     }
     let finalStipulation = match.stipulation === 'Custom/Other'
       ? match.customStipulation
       : match.stipulation === 'None' ? '' : match.stipulation;
     let result = '';
-    if (status === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
+    if (finalStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
       const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
       const winnerIndex = winnerOptions.indexOf(winner);
-      
       if (winnerIndex !== -1) {
         const winnerTeam = participants[winnerIndex];
         const loserTeams = participants.filter((_, index) => index !== winnerIndex);
-        
-        // Use tag team name for winner if available, otherwise use individual names
         const winnerName = tagTeams[winnerIndex] || winnerTeam.join(' & ');
-        
-        // Use tag team names for losers if available, otherwise use individual names
         const loserNames = loserTeams.map((team, index) => {
           const actualIndex = index >= winnerIndex ? index + 1 : index;
           return tagTeams[actualIndex] || team.join(' & ');
         });
-        
         result = `${winnerName} def. ${loserNames.join(' & ')}`;
       }
-    } else if (status === 'completed' && resultType === 'No Winner') {
+    } else if (finalStatus === 'completed' && resultType === 'No Winner') {
       result = 'No winner';
     }
-    
     onSave({
       ...match,
       result,
       stipulation: finalStipulation,
-      status,
-      isLive,
+      status: finalStatus,
+      isLive: finalIsLive,
       liveStart,
       liveEnd,
       commentary,
@@ -199,25 +201,6 @@ export default function MatchEdit({
     setCommentaryInput("");
     // Don't call onSave here - just update local state
     // Commentary will be saved when user clicks "Save" button
-  };
-
-  // End match handler
-  const handleEndMatch = () => {
-    const now = Date.now();
-    setLiveEnd(now);
-    const newCommentary = [{ timestamp: now, text: 'The match ends' }, ...commentary];
-    setCommentary(newCommentary);
-    setStatus('completed');
-    // Optionally, persist commentary to DB here
-    onSave({
-      ...match,
-      isLive,
-      liveStart,
-      liveEnd: now,
-      commentary: newCommentary,
-      status: 'completed',
-    });
-    setMatchDetailsSaved(false); // allow editing winner/method after ending
   };
 
   function parseParticipants(input) {
