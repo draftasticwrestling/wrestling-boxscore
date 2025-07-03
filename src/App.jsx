@@ -360,6 +360,17 @@ const getTeamDisplayName = (team, tagTeams, sideIndex, wrestlerMap) => {
   }
 };
 
+// Add at top-level, after imports (if not already present)
+function formatCommentaryElapsedTime(ts, liveStart, commentary) {
+  let start = liveStart;
+  if (!start && commentary && commentary.length > 0) {
+    // Use the last (oldest) commentary timestamp as start
+    start = commentary[commentary.length - 1].timestamp;
+  }
+  const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
+  return `${elapsed}'`;
+}
+
 // Event Box Score Component (with discreet Edit/Delete below the match card)
 function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
   const { eventId } = useParams();
@@ -788,7 +799,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                       <div style={{ color: gold, fontWeight: 700, marginBottom: 6 }}>Match Commentary</div>
                       {match.commentary.map((c, i) => (
                         <div key={i} style={{ color: '#fff', fontSize: 15, marginBottom: 4 }}>
-                          <span style={{ color: '#bbb', fontSize: 13, marginRight: 6 }}>{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span style={{ color: '#bbb', fontSize: 13, marginRight: 6 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
                           {c.text}
                         </div>
                       ))}
