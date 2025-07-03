@@ -460,6 +460,10 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
             }} 
             textStyle={{ color: gold }} 
           />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+            <span style={{ color: gold, fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+            {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
+          </div>
           <div style={{ color: gold, marginTop: 8, fontSize: 18 }}>
             <strong>{formatDate(event.date)}</strong> — {event.location}
           </div>
