@@ -269,7 +269,7 @@ export default function MatchEdit({
   }
 
   // UI rendering
-  if (isLive && (matchDetailsSaved || liveStart)) {
+  if (isLive) {
     // Show commentary UI
     return (
       <div style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
