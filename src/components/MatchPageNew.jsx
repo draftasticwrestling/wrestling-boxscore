@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 // Utility to calculate age from dob
 function calculateAge(dob) {
@@ -61,6 +62,9 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
 
   return (
     <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 1100, margin: '32px auto', padding: 32 }}>
+      <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
+        ← Back to Event
+      </Link>
       <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>
         {match.title}
       </div>

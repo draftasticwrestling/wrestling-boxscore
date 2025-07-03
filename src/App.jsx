@@ -4,6 +4,7 @@ import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
+import MatchPageNew from './components/MatchPageNew';
 import BeltIcon from './components/BeltIcon';
 import BriefcaseIcon from './components/BriefcaseIcon';
 import CrownIcon from './components/CrownIcon';
@@ -2030,7 +2031,7 @@ function App() {
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
         <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} wrestlerMap={wrestlerMap} />} />
-        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} onEditMatch={handleEditMatch} getParticipantsDisplay={getParticipantsDisplay} wrestlerMap={wrestlerMap} />} />
+        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} wrestlerMap={wrestlerMap} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
         {/* <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} /> */}
@@ -2053,4 +2054,93 @@ function parseTeamString(teamStr) {
   // Just slugs (tag or singles)
   const slugs = teamStr.split('&').map(s => s.trim()).filter(Boolean);
   return { teamName: null, slugs };
+}
+
+// Wrapper component for the new match page design
+function MatchPageNewWrapper({ events, onEditMatch, wrestlerMap }) {
+  const { eventId, matchOrder } = useParams();
+  const event = events.find(e => e.id === eventId);
+  const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
+  const match = event && matchIndex !== -1 ? event.matches[matchIndex] : null;
+  const [isEditing, setIsEditing] = React.useState(false);
+
+  if (!event || !match) {
+    return <div style={{ padding: 24 }}>Match not found.</div>;
+  }
+
+  // Prepare wrestler data for the new component
+  const getWrestlersForMatch = () => {
+    if (!match.participants || !wrestlerMap) return [];
+    
+    // Extract participant slugs from the match
+    let participantSlugs = [];
+    if (Array.isArray(match.participants)) {
+      // Handle array format: [['wrestler1', 'wrestler2'], ['wrestler3']]
+      participantSlugs = match.participants.flat();
+    } else if (typeof match.participants === 'string') {
+      // Handle string format: "wrestler1 & wrestler2 vs wrestler3"
+      participantSlugs = match.participants.split(' vs ').flatMap(side => 
+        side.split('&').map(slug => slug.trim())
+      );
+    }
+    
+    // Get full wrestler objects and add display properties
+    return participantSlugs.slice(0, 2).map(slug => {
+      const wrestler = wrestlerMap[slug] || { name: slug, image_url: null };
+      return {
+        ...wrestler,
+        // Add display properties for the new component
+        participantsDisplay: getParticipantsDisplay(match.participants, wrestlerMap),
+        winnerDisplay: (() => {
+          const winnerSlug = match.result && match.result.includes(' def. ')
+            ? match.result.split(' def. ')[0]
+            : (match.result || 'None');
+          return wrestlerMap && wrestlerMap[winnerSlug]
+            ? wrestlerMap[winnerSlug].name
+            : winnerSlug;
+        })()
+      };
+    });
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = (updatedMatch) => {
+    const updatedMatches = [...event.matches];
+    updatedMatches[matchIndex] = updatedMatch;
+    onEditMatch(event.id, updatedMatches);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div style={{ background: '#181511', minHeight: '100vh', padding: 24 }}>
+        <Link to={`/event/${event.id}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
+        <h2 style={{ color: '#C6A04F', marginTop: 24 }}>Edit Match</h2>
+        <MatchEdit
+          initialMatch={match}
+          eventStatus={event.status}
+          eventDate={event.date}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      </div>
+    );
+  }
+
+  const wrestlers = getWrestlersForMatch();
+  
+  return (
+    <MatchPageNew 
+      match={{ ...match, eventId: event.id }} 
+      wrestlers={wrestlers} 
+      onEdit={handleEdit}
+    />
+  );
 }
