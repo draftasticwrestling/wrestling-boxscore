@@ -32,23 +32,22 @@ function Last5Matches({ results }) {
 
 function WrestlerInfoBlock({ wrestler = {}, titleStatus, last5 }) {
   return (
-    <div style={{ flex: 1, minWidth: 220, textAlign: 'center', color: '#fff' }}>
-      <img src={wrestler.image_url} alt={wrestler.name} style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', marginBottom: 8 }} />
-      <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 2 }}>{wrestler.name || '—'}</div>
+    <div style={{ flex: 1, minWidth: 180, textAlign: 'center', color: '#fff', margin: '0 12px' }}>
+      <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 2 }}>{wrestler.name || '—'}</div>
       {titleStatus && <div style={{ color: '#FFD700', fontWeight: 600, marginBottom: 8 }}>{titleStatus}</div>}
-      <div style={{ fontSize: 15, marginBottom: 4 }}>
+      <div style={{ fontSize: 14, marginBottom: 2 }}>
         <b>Age:</b> {calculateAge(wrestler.dob)} &nbsp; <b>Nationality:</b> {wrestler.nationality || '—'}
       </div>
-      <div style={{ fontSize: 15, marginBottom: 4 }}>
+      <div style={{ fontSize: 14, marginBottom: 2 }}>
         <b>Promotion:</b> {wrestler.promotion || '—'} &nbsp; <b>Brand:</b> {wrestler.brand || '—'}
       </div>
-      <div style={{ fontSize: 15, marginBottom: 4 }}>
+      <div style={{ fontSize: 14, marginBottom: 2 }}>
         <b>Current title held:</b> {wrestler.currentTitle || 'None'}
       </div>
-      <div style={{ fontSize: 15, marginBottom: 4 }}>
+      <div style={{ fontSize: 14, marginBottom: 2 }}>
         <b>Most recent title held:</b> {wrestler.recentTitle || 'None'}
       </div>
-      <div style={{ fontSize: 15, marginBottom: 4 }}>
+      <div style={{ fontSize: 14, marginBottom: 2 }}>
         <b>Last 5 matches:</b> <Last5Matches results={last5} />
       </div>
     </div>
@@ -60,6 +59,17 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
   // last5Results: array of arrays, one per wrestler, e.g. [['W','L','W','W','D'], ...]
   // titleStatus: e.g. 'Successful Defense', 'New Champion', etc.
 
+  // Helper to get display names for participants
+  const getParticipantsDisplay = () => {
+    if (!match.participantsDisplay) return match.participants;
+    return match.participantsDisplay;
+  };
+  // Helper to get display name for winner
+  const getWinnerDisplay = () => {
+    if (!match.winnerDisplay) return match.winner;
+    return match.winnerDisplay;
+  };
+
   return (
     <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 1100, margin: '32px auto', padding: 32 }}>
       <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
@@ -68,23 +78,33 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
       <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>
         {match.title}
       </div>
-      <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 600, fontSize: 16, marginBottom: 8 }}>
-        {match.stipulation} {match.cardType ? `- ${match.cardType}` : ''}
-      </div>
-      <div style={{ textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 24, marginBottom: 2 }}>
+      <div style={{ textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 32, marginBottom: 2 }}>
         {match.result && match.result !== 'No winner' ? 'Final' : match.result}
       </div>
-      <div style={{ textAlign: 'center', color: '#bbb', fontSize: 16, marginBottom: 24 }}>
+      <div style={{ textAlign: 'center', color: '#bbb', fontSize: 18, marginBottom: 24 }}>
         {match.method}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 32, marginBottom: 24 }}>
+      {/* Match Card Layout */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, marginBottom: 16 }}>
+        <div style={{ textAlign: 'center' }}>
+          <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #C6A04F' }} />
+          <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[0]?.name || '—'}</div>
+        </div>
+        <div style={{ fontWeight: 700, fontSize: 32, color: '#C6A04F', margin: '0 24px' }}>vs</div>
+        <div style={{ textAlign: 'center' }}>
+          <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #C6A04F' }} />
+          <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[1]?.name || '—'}</div>
+        </div>
+      </div>
+      {/* Wrestler Info Blocks */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 24 }}>
         <WrestlerInfoBlock wrestler={wrestlers[0]} titleStatus={wrestlers[0]?.titleStatus} last5={wrestlers[0]?.last5Results} />
         <WrestlerInfoBlock wrestler={wrestlers[1]} titleStatus={wrestlers[1]?.titleStatus} last5={wrestlers[1]?.last5Results} />
       </div>
       <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
         <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
-        <div><b>Participants:</b> {match.participantsDisplay || match.participants}</div>
-        <div><b>Winner:</b> {match.winnerDisplay || match.winner}</div>
+        <div><b>Participants:</b> {getParticipantsDisplay()}</div>
+        <div><b>Winner:</b> {getWinnerDisplay()}</div>
         <div><b>Method:</b> {match.method}</div>
         <div><b>Time:</b> {match.time}</div>
         <div><b>Stipulation:</b> {match.stipulation}</div>
