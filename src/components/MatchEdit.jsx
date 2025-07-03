@@ -207,6 +207,7 @@ export default function MatchEdit({
     setLiveEnd(now);
     const newCommentary = [{ timestamp: now, text: 'The match ends' }, ...commentary];
     setCommentary(newCommentary);
+    setStatus('completed');
     // Optionally, persist commentary to DB here
     onSave({
       ...match,
@@ -214,6 +215,7 @@ export default function MatchEdit({
       liveStart,
       liveEnd: now,
       commentary: newCommentary,
+      status: 'completed',
     });
     setMatchDetailsSaved(false); // allow editing winner/method after ending
   };
