@@ -47,6 +47,18 @@ export default function MatchPage({ events, onEditMatch }) {
     return <div style={{ padding: 24 }}>Match not found.</div>;
   }
 
+  // Helper to format commentary time
+  function formatCommentaryTime(ts, liveStart) {
+    if (liveStart) {
+      const elapsed = Math.max(0, Math.ceil((ts - liveStart) / 60000));
+      return `${elapsed}'`;
+    } else {
+      // Fallback: show actual time
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+
   if (isEditing) {
     return (
       <div style={sectionStyle}>
@@ -120,13 +132,9 @@ export default function MatchPage({ events, onEditMatch }) {
           <div style={{ color: gold, fontWeight: 600, marginBottom: 6 }}>Live Commentary</div>
           <div style={{ maxHeight: 220, overflowY: 'auto', borderRadius: 4, background: '#232323', padding: 8 }}>
             {match.commentary.map((c, idx) => {
-              let elapsed = 0;
-              if (match.liveStart) {
-                elapsed = Math.ceil((c.timestamp - match.liveStart) / 60000);
-              }
               return (
                 <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: gold, minWidth: 32 }}>{elapsed}'</span>
+                  <span style={{ color: gold, minWidth: 32 }}>{formatCommentaryTime(c.timestamp, match.liveStart)}</span>
                   <span style={{ color: '#fff' }}>{c.text}</span>
                 </div>
               );
