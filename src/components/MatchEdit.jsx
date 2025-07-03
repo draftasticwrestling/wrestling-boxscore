@@ -415,11 +415,11 @@ export default function MatchEdit({
           placeholder="Enter any additional notes about the match..."
         />
       </div>
-      {/* Live Commentary UI below notes if isLive */}
-      {isLive && (
+      {/* Commentary UI: always show if there is commentary or if live match is active */}
+      {(isLive || commentary.length > 0) && (
         <div style={{ marginTop: 24 }}>
           <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
-          {!liveEnd && (
+          {isLive && !liveEnd && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input
                 value={commentaryInput}
@@ -478,7 +478,7 @@ export default function MatchEdit({
               </div>
             )}
           </div>
-          {!liveEnd && (
+          {isLive && !liveEnd && (
             <button type="button" onClick={handleEndMatch} style={{ marginTop: 16, background: '#e63946', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}>
               End Match
             </button>
