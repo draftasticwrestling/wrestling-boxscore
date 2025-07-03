@@ -73,10 +73,11 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
 
   // Determine winner index (0 or 1)
   let winnerIndex = -1;
+  let winnerName = '';
   if (match.result && match.result.includes(' def. ')) {
-    const winnerSlug = match.result.split(' def. ')[0];
-    if (wrestlers[0]?.name === winnerSlug) winnerIndex = 0;
-    else if (wrestlers[1]?.name === winnerSlug) winnerIndex = 1;
+    winnerName = match.result.split(' def. ')[0];
+    if (wrestlers[0]?.name === winnerName) winnerIndex = 0;
+    else if (wrestlers[1]?.name === winnerName) winnerIndex = 1;
   }
 
   // SVG triangle arrows for winner indication
@@ -105,7 +106,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
         {/* Left participant */}
         <div style={{ textAlign: 'center', position: 'relative' }}>
-          <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #C6A04F' }} />
+          <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: winnerIndex === 0 ? '4px solid #C6A04F' : '2px solid #888' }} />
           <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[0]?.name || '—'}</div>
           {/* Arrow and belt for winner */}
           {isCompleted && winnerIndex === 0 && (
@@ -131,7 +132,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
         </div>
         {/* Right participant */}
         <div style={{ textAlign: 'center', position: 'relative' }}>
-          <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #C6A04F' }} />
+          <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: winnerIndex === 1 ? '4px solid #C6A04F' : '2px solid #888' }} />
           <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[1]?.name || '—'}</div>
           {/* Arrow and belt for winner */}
           {isCompleted && winnerIndex === 1 && (
