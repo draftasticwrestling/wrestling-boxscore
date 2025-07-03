@@ -179,7 +179,7 @@ export default function MatchEdit({
   };
 
   // Save commentary line immediately (simulate DB save)
-  const handleAddCommentary = async (e) => {
+  const handleAddCommentary = (e) => {
     e.preventDefault();
     if (!commentaryInput.trim()) return;
     const now = Date.now();
@@ -271,13 +271,18 @@ export default function MatchEdit({
 
   // UI rendering
   return (
-    <form onSubmit={isLive && liveEnd ? handleSave : (isLive ? e => e.preventDefault() : handleSave)} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{ flex: 1, background: '#444', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}
-        >Cancel</button>
+    <form onSubmit={handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
+      {/* Live Match Checkbox always visible */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ color: '#C6A04F', fontWeight: 600 }}>
+          <input
+            type="checkbox"
+            checked={isLive || false}
+            onChange={e => setIsLive(e.target.checked)}
+            style={{ marginRight: 8 }}
+          />
+          Live Match
+        </label>
       </div>
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       <div>
@@ -293,7 +298,8 @@ export default function MatchEdit({
           Examples: "brutus-creed vs montez-ford" or "American Made (brutus-creed & julius-creed) vs Street Profits (montez-ford & angelo-dawkins)"
         </div>
       </div>
-      {status === 'completed' && (
+      {/* Show result fields if status is completed OR (isLive and liveEnd) */}
+      {(status === 'completed' || (isLive && liveEnd)) && (
         <>
           <div>
             <label style={labelStyle}>Result Type:</label>
@@ -421,7 +427,7 @@ export default function MatchEdit({
         <div style={{ marginTop: 24 }}>
           <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
           {!liveEnd && (
-            <form onSubmit={handleAddCommentary} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <form onSubmit={e => { e.preventDefault(); handleAddCommentary(e); }} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input
                 value={commentaryInput}
                 onChange={e => setCommentaryInput(e.target.value)}
@@ -452,7 +458,6 @@ export default function MatchEdit({
           )}
         </div>
       )}
-      {/* After ending match, allow editing result, winner, etc. and saving */}
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
         <button type="button" onClick={onCancel} style={{ flex: 1, background: '#444', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}>Cancel</button>
         <button type="submit" style={{ flex: 1, background: '#e63946', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}>Save</button>
