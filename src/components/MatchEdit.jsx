@@ -51,6 +51,8 @@ export default function MatchEdit({
   const [commentaryInput, setCommentaryInput] = useState("");
   const [liveMode, setLiveMode] = useState(isLive && (liveStart || !status || status === 'upcoming'));
   const [matchDetailsSaved, setMatchDetailsSaved] = useState(false);
+  const [editingCommentIdx, setEditingCommentIdx] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
 
   useEffect(() => {
     setMatch(m => ({ ...m, status }));
@@ -439,7 +441,35 @@ export default function MatchEdit({
             {commentary.map((c, idx) => (
               <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ color: '#C6A04F', minWidth: 32 }}>{formatCommentaryTime(c.timestamp, liveStart, commentary)}</span>
-                <span style={{ color: '#fff' }}>{c.text}</span>
+                {editingCommentIdx === idx ? (
+                  <>
+                    <input
+                      value={editingCommentText}
+                      onChange={e => setEditingCommentText(e.target.value)}
+                      style={{ flex: 1, ...inputStyle, marginBottom: 0 }}
+                      autoFocus
+                    />
+                    <button type="button" onClick={() => {
+                      // Save edit
+                      const updated = commentary.map((item, i) => i === idx ? { ...item, text: editingCommentText } : item);
+                      setCommentary(updated);
+                      setEditingCommentIdx(null);
+                      setEditingCommentText("");
+                    }}>Save</button>
+                    <button type="button" onClick={() => {
+                      setEditingCommentIdx(null);
+                      setEditingCommentText("");
+                    }}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: '#fff', flex: 1 }}>{c.text}</span>
+                    <button type="button" onClick={() => {
+                      setEditingCommentIdx(idx);
+                      setEditingCommentText(c.text);
+                    }}>Edit</button>
+                  </>
+                )}
               </div>
             ))}
             {liveEnd && (
