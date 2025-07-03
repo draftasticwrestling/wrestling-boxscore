@@ -129,16 +129,28 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         {match.title}
       </div>
       {/* Match Card Layout */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
         {/* Left participant */}
-        <div style={{ textAlign: 'center', position: 'relative', minWidth: 160 }}>
+        <div style={{ textAlign: 'center', position: 'relative', minWidth: 200, flex: 1 }}>
           <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: winnerIndex === 0 ? '4px solid #C6A04F' : '2px solid #888' }} />
           <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[0]?.name || '—'}</div>
-        </div>
-        {/* Arrow (if winner) */}
-        <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {isCompleted && winnerIndex === 0 && triangleRight}
-          {isCompleted && winnerIndex === 1 && triangleLeft}
+          {/* Arrow (if winner) */}
+          {isCompleted && winnerIndex === 0 && (
+            <div style={{ marginTop: 4 }}>{triangleRight}</div>
+          )}
+          {/* Belt and title outcome under winner */}
+          {isCompleted && winnerIndex === 0 && isTitleMatch && (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <BeltIcon size={36} />
+              {match.titleOutcome && match.titleOutcome !== 'None' && (
+                <div style={{ fontSize: 13, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
+              )}
+            </div>
+          )}
+          {/* Wrestler Info Block under image/name */}
+          <div style={{ marginTop: 16 }}>
+            <WrestlerInfoBlock wrestler={wrestlers[0]} titleStatus={wrestlers[0]?.titleStatus} last5={wrestlers[0]?.last5Results} />
+          </div>
         </div>
         {/* Center match info */}
         <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
@@ -150,8 +162,17 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           </div>
           <div style={{ color: '#bbb', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
           <div style={{ color: '#bbb', fontSize: 16, textAlign: 'center' }}>{match.time}</div>
-          {/* Belt and title outcome under match info for winner */}
-          {isCompleted && isTitleMatch && (
+        </div>
+        {/* Right participant */}
+        <div style={{ textAlign: 'center', position: 'relative', minWidth: 200, flex: 1 }}>
+          <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: winnerIndex === 1 ? '4px solid #C6A04F' : '2px solid #888' }} />
+          <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[1]?.name || '—'}</div>
+          {/* Arrow (if winner) */}
+          {isCompleted && winnerIndex === 1 && (
+            <div style={{ marginTop: 4 }}>{triangleLeft}</div>
+          )}
+          {/* Belt and title outcome under winner */}
+          {isCompleted && winnerIndex === 1 && isTitleMatch && (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <BeltIcon size={36} />
               {match.titleOutcome && match.titleOutcome !== 'None' && (
@@ -159,17 +180,11 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
               )}
             </div>
           )}
+          {/* Wrestler Info Block under image/name */}
+          <div style={{ marginTop: 16 }}>
+            <WrestlerInfoBlock wrestler={wrestlers[1]} titleStatus={wrestlers[1]?.titleStatus} last5={wrestlers[1]?.last5Results} />
+          </div>
         </div>
-        {/* Right participant */}
-        <div style={{ textAlign: 'center', position: 'relative', minWidth: 160 }}>
-          <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: winnerIndex === 1 ? '4px solid #C6A04F' : '2px solid #888' }} />
-          <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[1]?.name || '—'}</div>
-        </div>
-      </div>
-      {/* Wrestler Info Blocks */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 24, marginTop: 16 }}>
-        <WrestlerInfoBlock wrestler={wrestlers[0]} titleStatus={wrestlers[0]?.titleStatus} last5={wrestlers[0]?.last5Results} />
-        <WrestlerInfoBlock wrestler={wrestlers[1]} titleStatus={wrestlers[1]?.titleStatus} last5={wrestlers[1]?.last5Results} />
       </div>
       <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
         <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
