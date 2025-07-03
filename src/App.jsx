@@ -1386,7 +1386,8 @@ function EditEvent({ events, updateEvent }) {
       date,
       location,
       matches,
-      status: eventStatus
+      status: eventStatus,
+      isLive: eventStatus === 'live'
     });
     navigate('/');
   };
