@@ -571,7 +571,13 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                     {/* Match Info Block */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
                       <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>{match.result && match.result !== 'No winner' ? 'Final' : match.result}</div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+                        {match.isLive ? (
+                          <span style={{ color: '#27ae60' }}>LIVE</span>
+                        ) : (
+                          match.result && match.result !== 'No winner' ? 'Final' : match.result
+                        )}
+                      </div>
                       <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
                       <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
                     </div>
@@ -688,7 +694,13 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                     {/* Center match details */}
                     <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
                       <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>{match.result && match.result !== 'No winner' ? 'Final' : match.result}</div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+                        {match.isLive ? (
+                          <span style={{ color: '#27ae60' }}>LIVE</span>
+                        ) : (
+                          match.result && match.result !== 'No winner' ? 'Final' : match.result
+                        )}
+                      </div>
                       <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
                       <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
                     </div>
