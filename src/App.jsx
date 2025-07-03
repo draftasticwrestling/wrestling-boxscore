@@ -915,6 +915,11 @@ function AddEvent({ addEvent }) {
         alert('Please enter participants.');
         return;
       }
+    } else if (eventStatus === 'live' || match.isLive) {
+      if (!match.participants) {
+        alert('Please enter participants.');
+        return;
+      }
     } else {
       if (!match.participants || !resultType || (resultType === 'Winner' && !winner) || !match.method) {
         alert('Please fill out all required match fields.');
