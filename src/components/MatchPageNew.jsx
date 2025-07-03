@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import BeltIcon from './BeltIcon';
 
 // Utility to calculate age from dob
 function calculateAge(dob) {
@@ -70,6 +71,29 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
     return match.winnerDisplay;
   };
 
+  // Determine winner index (0 or 1)
+  let winnerIndex = -1;
+  if (match.result && match.result.includes(' def. ')) {
+    const winnerSlug = match.result.split(' def. ')[0];
+    if (wrestlers[0]?.name === winnerSlug) winnerIndex = 0;
+    else if (wrestlers[1]?.name === winnerSlug) winnerIndex = 1;
+  }
+
+  // SVG triangle arrows for winner indication
+  const triangleRight = (
+    <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
+      <polygon points="0,8 8,0 8,16" fill="#fff" />
+    </svg>
+  );
+  const triangleLeft = (
+    <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }}>
+      <polygon points="8,8 0,0 0,16" fill="#fff" />
+    </svg>
+  );
+
+  const isTitleMatch = match.title && match.title !== 'None';
+  const isCompleted = match.result && match.result.includes(' def. ');
+
   return (
     <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 1100, margin: '32px auto', padding: 32 }}>
       <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
@@ -78,26 +102,53 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
       <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>
         {match.title}
       </div>
-      <div style={{ textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 32, marginBottom: 2 }}>
-        {match.result && match.result !== 'No winner' ? 'Final' : match.result}
-      </div>
-      <div style={{ textAlign: 'center', color: '#bbb', fontSize: 18, marginBottom: 24 }}>
-        {match.method}
-      </div>
-      {/* Match Card Layout */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, marginBottom: 16 }}>
-        <div style={{ textAlign: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
+        {/* Left participant */}
+        <div style={{ textAlign: 'center', position: 'relative' }}>
           <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #C6A04F' }} />
           <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[0]?.name || '—'}</div>
+          {/* Arrow and belt for winner */}
+          {isCompleted && winnerIndex === 0 && (
+            <>
+              <div style={{ marginTop: 4 }}>{triangleRight}</div>
+              {isTitleMatch && (
+                <div style={{ marginTop: 4 }}><BeltIcon size={36} /></div>
+              )}
+              {match.titleOutcome && match.titleOutcome !== 'None' && (
+                <div style={{ fontSize: 13, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
+              )}
+            </>
+          )}
         </div>
-        <div style={{ fontWeight: 700, fontSize: 32, color: '#C6A04F', margin: '0 24px' }}>vs</div>
-        <div style={{ textAlign: 'center' }}>
+        {/* Center match info */}
+        <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
+          <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 18, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+          <div style={{ fontWeight: 700, color: '#fff', fontSize: 28, marginBottom: 2, textAlign: 'center' }}>
+            {match.result && match.result !== 'No winner' ? 'Final' : match.result}
+          </div>
+          <div style={{ color: '#bbb', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+          <div style={{ color: '#bbb', fontSize: 16, textAlign: 'center' }}>{match.time}</div>
+        </div>
+        {/* Right participant */}
+        <div style={{ textAlign: 'center', position: 'relative' }}>
           <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '3px solid #C6A04F' }} />
           <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[1]?.name || '—'}</div>
+          {/* Arrow and belt for winner */}
+          {isCompleted && winnerIndex === 1 && (
+            <>
+              <div style={{ marginTop: 4 }}>{triangleLeft}</div>
+              {isTitleMatch && (
+                <div style={{ marginTop: 4 }}><BeltIcon size={36} /></div>
+              )}
+              {match.titleOutcome && match.titleOutcome !== 'None' && (
+                <div style={{ fontSize: 13, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
+              )}
+            </>
+          )}
         </div>
       </div>
       {/* Wrestler Info Blocks */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 24, marginTop: 16 }}>
         <WrestlerInfoBlock wrestler={wrestlers[0]} titleStatus={wrestlers[0]?.titleStatus} last5={wrestlers[0]?.last5Results} />
         <WrestlerInfoBlock wrestler={wrestlers[1]} titleStatus={wrestlers[1]?.titleStatus} last5={wrestlers[1]?.last5Results} />
       </div>
