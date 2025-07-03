@@ -420,15 +420,21 @@ export default function MatchEdit({
         <div style={{ marginTop: 24 }}>
           <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
           {!liveEnd && (
-            <form onSubmit={e => { e.preventDefault(); handleAddCommentary(e); }} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input
                 value={commentaryInput}
                 onChange={e => setCommentaryInput(e.target.value)}
                 placeholder="Enter live commentary..."
                 style={{ flex: 1, ...inputStyle, marginBottom: 0 }}
+                onKeyPress={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCommentary(e);
+                  }
+                }}
               />
-              <button type="submit">Submit</button>
-            </form>
+              <button type="button" onClick={handleAddCommentary}>Submit</button>
+            </div>
           )}
           <div style={{ maxHeight: 200, overflowY: 'auto', background: '#181818', borderRadius: 4, padding: 8 }}>
             {commentary.length === 0 && <div style={{ color: '#bbb' }}>No commentary yet.</div>}
