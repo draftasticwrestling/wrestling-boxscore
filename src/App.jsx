@@ -808,9 +808,14 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                   {/* Modern compact details layout */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
                     <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap)}</div>
-                    <div><strong>Winner:</strong> {match.result && match.result.includes(' def. ')
-                      ? match.result.split(' def. ')[0]
-                      : (match.result || 'None')}</div>
+                    <div><strong>Winner:</strong> {(() => {
+                      const winnerSlug = match.result && match.result.includes(' def. ')
+                        ? match.result.split(' def. ')[0]
+                        : (match.result || 'None');
+                      return wrestlerMap && wrestlerMap[winnerSlug]
+                        ? wrestlerMap[winnerSlug].name
+                        : winnerSlug;
+                    })()}</div>
                     <div><strong>Method:</strong> {match.method || 'None'}</div>
                     <div><strong>Time:</strong> {match.time || 'None'}</div>
                     <div><strong>Stipulation:</strong> {match.stipulation || 'None'}</div>

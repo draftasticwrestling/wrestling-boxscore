@@ -113,11 +113,14 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
               ? getParticipantsDisplay(match.participants, wrestlerMap)
               : match.participants}
           </td></tr>
-          <tr><td style={tdStyle}>Winner</td><td style={tdStyle}>{
-            match.result && match.result.includes(' def. ')
+          <tr><td style={tdStyle}>Winner</td><td style={tdStyle}>{(() => {
+            const winnerSlug = match.result && match.result.includes(' def. ')
               ? match.result.split(' def. ')[0]
-              : (match.result || 'None')
-          }</td></tr>
+              : (match.result || 'None');
+            return wrestlerMap && wrestlerMap[winnerSlug]
+              ? wrestlerMap[winnerSlug].name
+              : winnerSlug;
+          })()}</td></tr>
           <tr><td style={tdStyle}>Method</td><td style={tdStyle}>{match.method || 'None'}</td></tr>
           <tr><td style={tdStyle}>Time</td><td style={tdStyle}>{match.time || 'None'}</td></tr>
           <tr><td style={tdStyle}>Stipulation</td><td style={tdStyle}>{match.stipulation || 'None'}</td></tr>
