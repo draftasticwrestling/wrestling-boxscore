@@ -55,29 +55,43 @@ function WrestlerInfoBlock({ wrestler = {}, titleStatus, last5 }) {
   );
 }
 
-export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
+// Helper to get display names for participants from slugs
+function getParticipantsDisplay(participants, wrestlerMap) {
+  if (Array.isArray(participants)) {
+    return participants.map(team => team.map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
+  }
+  if (typeof participants === 'string' && wrestlerMap) {
+    return participants.split(' vs ').map(side =>
+      side.split('&').map(slug => {
+        const s = slug.trim();
+        return wrestlerMap[s]?.name || s;
+      }).join(' & ')
+    ).join(' vs ');
+  }
+  return participants || '';
+}
+
+// Helper to get display name for winner from slug
+function getWinnerDisplay(match, wrestlerMap) {
+  if (match.result && match.result.includes(' def. ')) {
+    const winnerSlug = match.result.split(' def. ')[0];
+    return wrestlerMap && wrestlerMap[winnerSlug] ? wrestlerMap[winnerSlug].name : winnerSlug;
+  }
+  return '';
+}
+
+export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap }) {
   // wrestlers: array of full wrestler objects in match order
   // last5Results: array of arrays, one per wrestler, e.g. [['W','L','W','W','D'], ...]
   // titleStatus: e.g. 'Successful Defense', 'New Champion', etc.
 
-  // Helper to get display names for participants
-  const getParticipantsDisplay = () => {
-    if (!match.participantsDisplay) return match.participants;
-    return match.participantsDisplay;
-  };
-  // Helper to get display name for winner
-  const getWinnerDisplay = () => {
-    if (!match.winnerDisplay) return match.winner;
-    return match.winnerDisplay;
-  };
-
-  // Determine winner index (0 or 1)
+  // Determine winner index (0 or 1) using slug
   let winnerIndex = -1;
-  let winnerName = '';
+  let winnerSlug = '';
   if (match.result && match.result.includes(' def. ')) {
-    winnerName = match.result.split(' def. ')[0];
-    if (wrestlers[0]?.name === winnerName) winnerIndex = 0;
-    else if (wrestlers[1]?.name === winnerName) winnerIndex = 1;
+    winnerSlug = match.result.split(' def. ')[0];
+    if (wrestlers[0]?.id === winnerSlug) winnerIndex = 0;
+    else if (wrestlers[1]?.id === winnerSlug) winnerIndex = 1;
   }
 
   // SVG triangle arrows for winner indication
@@ -155,8 +169,8 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit }) {
       </div>
       <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
         <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
-        <div><b>Participants:</b> {getParticipantsDisplay()}</div>
-        <div><b>Winner:</b> {getWinnerDisplay()}</div>
+        <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap)}</div>
+        <div><b>Winner:</b> {getWinnerDisplay(match, wrestlerMap)}</div>
         <div><b>Method:</b> {match.method}</div>
         <div><b>Time:</b> {match.time}</div>
         <div><b>Stipulation:</b> {match.stipulation}</div>
