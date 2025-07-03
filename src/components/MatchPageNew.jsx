@@ -34,7 +34,6 @@ function Last5Matches({ results }) {
 function WrestlerInfoBlock({ wrestler = {}, titleStatus, last5 }) {
   return (
     <div style={{ flex: 1, minWidth: 180, textAlign: 'center', color: '#fff', margin: '0 12px' }}>
-      <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 2 }}>{wrestler.name || '—'}</div>
       {titleStatus && <div style={{ color: '#FFD700', fontWeight: 600, marginBottom: 8 }}>{titleStatus}</div>}
       <div style={{ fontSize: 14, marginBottom: 2 }}>
         <b>Age:</b> {calculateAge(wrestler.dob)} &nbsp; <b>Nationality:</b> {wrestler.nationality || '—'}
@@ -138,14 +137,16 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           {isCompleted && winnerIndex === 0 && (
             <div style={{ marginTop: 4 }}>{triangleRight}</div>
           )}
-          {/* Belt and title outcome under winner */}
-          {isCompleted && winnerIndex === 0 && isTitleMatch && (
-            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Belt and title outcome under winner, or placeholder for loser */}
+          {isCompleted && winnerIndex === 0 && isTitleMatch ? (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 48 }}>
               <BeltIcon size={36} />
               {match.titleOutcome && match.titleOutcome !== 'None' && (
                 <div style={{ fontSize: 13, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
               )}
             </div>
+          ) : (
+            <div style={{ marginTop: 8, minHeight: 48 }}></div>
           )}
           {/* Wrestler Info Block under image/name */}
           <div style={{ marginTop: 16 }}>
@@ -171,14 +172,16 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           {isCompleted && winnerIndex === 1 && (
             <div style={{ marginTop: 4 }}>{triangleLeft}</div>
           )}
-          {/* Belt and title outcome under winner */}
-          {isCompleted && winnerIndex === 1 && isTitleMatch && (
-            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Belt and title outcome under winner, or placeholder for loser */}
+          {isCompleted && winnerIndex === 1 && isTitleMatch ? (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 48 }}>
               <BeltIcon size={36} />
               {match.titleOutcome && match.titleOutcome !== 'None' && (
                 <div style={{ fontSize: 13, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
               )}
             </div>
+          ) : (
+            <div style={{ marginTop: 8, minHeight: 48 }}></div>
           )}
           {/* Wrestler Info Block under image/name */}
           <div style={{ marginTop: 16 }}>
