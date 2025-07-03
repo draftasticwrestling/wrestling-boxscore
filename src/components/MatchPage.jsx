@@ -48,15 +48,14 @@ export default function MatchPage({ events, onEditMatch }) {
   }
 
   // Helper to format commentary time
-  function formatCommentaryTime(ts, liveStart) {
-    if (liveStart) {
-      const elapsed = Math.max(0, Math.ceil((ts - liveStart) / 60000));
-      return `${elapsed}'`;
-    } else {
-      // Fallback: show actual time
-      const d = new Date(ts);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  function formatCommentaryTime(ts, liveStart, commentary) {
+    let start = liveStart;
+    if (!start && commentary && commentary.length > 0) {
+      // Use the last (oldest) commentary timestamp as start
+      start = commentary[commentary.length - 1].timestamp;
     }
+    const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
+    return `${elapsed}'`;
   }
 
   if (isEditing) {
@@ -134,7 +133,7 @@ export default function MatchPage({ events, onEditMatch }) {
             {match.commentary.map((c, idx) => {
               return (
                 <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: gold, minWidth: 32 }}>{formatCommentaryTime(c.timestamp, match.liveStart)}</span>
+                  <span style={{ color: gold, minWidth: 32 }}>{formatCommentaryTime(c.timestamp, match.liveStart, match.commentary)}</span>
                   <span style={{ color: '#fff' }}>{c.text}</span>
                 </div>
               );

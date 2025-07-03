@@ -116,15 +116,14 @@ export default function MatchEdit({
   }
 
   // Helper to format commentary time
-  function formatCommentaryTime(ts, liveStart) {
-    if (liveStart) {
-      const elapsed = Math.max(0, Math.ceil((ts - liveStart) / 60000));
-      return `${elapsed}'`;
-    } else {
-      // Fallback: show actual time
-      const d = new Date(ts);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  function formatCommentaryTime(ts, liveStart, commentary) {
+    let start = liveStart;
+    if (!start && commentary && commentary.length > 0) {
+      // Use the last (oldest) commentary timestamp as start
+      start = commentary[commentary.length - 1].timestamp;
     }
+    const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
+    return `${elapsed}'`;
   }
 
   // Save match details for live match (before commentary)
@@ -452,7 +451,7 @@ export default function MatchEdit({
             {commentary.length === 0 && <div style={{ color: '#bbb' }}>No commentary yet.</div>}
             {commentary.map((c, idx) => (
               <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#C6A04F', minWidth: 32 }}>{formatCommentaryTime(c.timestamp, liveStart)}</span>
+                <span style={{ color: '#C6A04F', minWidth: 32 }}>{formatCommentaryTime(c.timestamp, liveStart, commentary)}</span>
                 <span style={{ color: '#fff' }}>{c.text}</span>
               </div>
             ))}
