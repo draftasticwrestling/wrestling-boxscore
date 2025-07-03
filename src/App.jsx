@@ -1103,6 +1103,18 @@ function AddEvent({ addEvent }) {
           )}
         </form>
         <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+          {/* Live Match Checkbox always visible */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: gold, fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={match.isLive || false}
+                onChange={e => setMatch({ ...match, isLive: e.target.checked })}
+                style={{ marginRight: 8 }}
+              />
+              Live Match
+            </label>
+          </div>
           <div>
             <label>
               Participants:<br />
@@ -1579,6 +1591,18 @@ function EditEvent({ events, updateEvent }) {
           )}
         </form>
         <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+          {/* Live Match Checkbox always visible */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: gold, fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={match.isLive || false}
+                onChange={e => setMatch({ ...match, isLive: e.target.checked })}
+                style={{ marginRight: 8 }}
+              />
+              Live Match
+            </label>
+          </div>
           <div>
             <label>
               Participants:<br />
