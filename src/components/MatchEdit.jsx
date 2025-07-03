@@ -187,13 +187,14 @@ export default function MatchEdit({
     setCommentary(newCommentary);
     setCommentaryInput("");
     // Optionally, persist commentary to DB here
+    // Only update match in parent if needed, but do NOT exit edit mode
     onSave({
       ...match,
       isLive,
       liveStart,
       liveEnd,
       commentary: newCommentary,
-    });
+    }, { stayInEdit: true }); // Add a flag if needed to parent
   };
 
   // End match handler
@@ -269,167 +270,16 @@ export default function MatchEdit({
   }
 
   // UI rendering
-  if (isLive) {
-    // Show commentary UI
-    return (
-      <div style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{ flex: 1, background: '#444', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}
-          >Cancel</button>
-        </div>
-        <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
-        {!liveEnd && (
-          <form onSubmit={handleAddCommentary} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input
-              value={commentaryInput}
-              onChange={e => setCommentaryInput(e.target.value)}
-              placeholder="Enter live commentary..."
-              style={{ flex: 1, ...inputStyle, marginBottom: 0 }}
-            />
-            <button type="submit">Submit</button>
-          </form>
-        )}
-        <div style={{ maxHeight: 200, overflowY: 'auto', background: '#181818', borderRadius: 4, padding: 8 }}>
-          {commentary.length === 0 && <div style={{ color: '#bbb' }}>No commentary yet.</div>}
-          {commentary.map((c, idx) => (
-            <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#C6A04F', minWidth: 32 }}>{getElapsedMinutes(c.timestamp)}'</span>
-              <span style={{ color: '#fff' }}>{c.text}</span>
-            </div>
-          ))}
-          {liveEnd && (
-            <div style={{ color: '#bbb', marginTop: 8 }}>
-              Match duration: {getElapsedMinutes(liveEnd)} minute{getElapsedMinutes(liveEnd) !== 1 ? 's' : ''}
-            </div>
-          )}
-        </div>
-        {!liveEnd && (
-          <button type="button" onClick={handleEndMatch} style={{ marginTop: 16, background: '#e63946', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}>
-            End Match
-          </button>
-        )}
-        {liveEnd && (
-          <form onSubmit={e => { handleSave(e); if (onCancel) onCancel(); }} style={{ marginTop: 24 }}>
-            <h4 style={{ color: '#C6A04F' }}>Finalize Match Result</h4>
-            <div>
-              <label style={labelStyle}>Result Type:</label>
-              <select
-                style={inputStyle}
-                value={resultType}
-                onChange={e => setResultType(e.target.value)}
-                required
-              >
-                <option value="">Select result type</option>
-                <option value="Winner">Winner</option>
-                <option value="No Winner">No Winner</option>
-              </select>
-            </div>
-            {resultType === 'Winner' && winnerOptions.length >= 2 && (
-              <div>
-                <label style={labelStyle}>Winner:</label>
-                <select
-                  style={inputStyle}
-                  value={winner}
-                  onChange={e => setWinner(e.target.value)}
-                  required
-                >
-                  <option value="">Select winner</option>
-                  {winnerOptions.map(side => (
-                    <option key={side} value={side}>{side}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div>
-              <label style={labelStyle}>Method:</label>
-              <select
-                style={inputStyle}
-                value={match.method}
-                onChange={e => setMatch({ ...match, method: e.target.value })}
-                required={isMethodRequired()}
-              >
-                <option value="">Select method</option>
-                {METHOD_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Time:</label>
-              <input
-                style={inputStyle}
-                value={match.time}
-                onChange={e => setMatch({ ...match, time: e.target.value })}
-                placeholder="Match time (e.g. 12:34)"
-              />
-            </div>
-            <button type="submit" style={{ marginTop: 16, background: '#4a90e2', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}
-              disabled={
-                !resultType ||
-                (resultType === 'Winner' && (!winner || winner.trim() === ''))
-              }
-            >
-              Save Match
-            </button>
-          </form>
-        )}
-      </div>
-    );
-  }
-
-  // Default: show match details form
   return (
-    <form onSubmit={isLive ? handleSaveMatchDetails : handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
+    <form onSubmit={isLive && liveEnd ? handleSave : (isLive ? e => e.preventDefault() : handleSave)} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         <button
           type="button"
-          onClick={() => setStatus('upcoming')}
-          style={{
-            padding: '8px 16px',
-            background: status === 'upcoming' ? '#4a90e2' : '#232323',
-            color: status === 'upcoming' ? 'white' : '#bbb',
-            border: '1px solid #888',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontWeight: status === 'upcoming' ? 'bold' : 'normal'
-          }}
-        >
-          Upcoming
-        </button>
-        <button
-          type="button"
-          onClick={() => setStatus('completed')}
-          style={{
-            padding: '8px 16px',
-            background: status === 'completed' ? '#4a90e2' : '#232323',
-            color: status === 'completed' ? 'white' : '#bbb',
-            border: '1px solid #888',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontWeight: status === 'completed' ? 'bold' : 'normal'
-          }}
-        >
-          Completed
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsLive(live => !live)}
-          style={{
-            padding: '8px 16px',
-            background: isLive ? '#4a90e2' : '#232323',
-            color: isLive ? 'white' : '#bbb',
-            border: '1px solid #888',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontWeight: isLive ? 'bold' : 'normal'
-          }}
-        >
-          Live
-        </button>
+          onClick={onCancel}
+          style={{ flex: 1, background: '#444', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}
+        >Cancel</button>
       </div>
+      <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       <div>
         <label style={labelStyle}>Participants:</label>
         <input
@@ -557,17 +407,52 @@ export default function MatchEdit({
           ))}
         </select>
       </div>
-      {status === 'completed' && (
-        <div>
-          <label style={labelStyle}>Notes (optional):</label>
-          <textarea
-            style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
-            value={match.notes || ''}
-            onChange={e => setMatch({ ...match, notes: e.target.value })}
-            placeholder="Enter any additional notes about the match..."
-          />
+      <div>
+        <label style={labelStyle}>Notes (optional):</label>
+        <textarea
+          style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
+          value={match.notes || ''}
+          onChange={e => setMatch({ ...match, notes: e.target.value })}
+          placeholder="Enter any additional notes about the match..."
+        />
+      </div>
+      {/* Live Commentary UI below notes if isLive */}
+      {isLive && (
+        <div style={{ marginTop: 24 }}>
+          <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
+          {!liveEnd && (
+            <form onSubmit={handleAddCommentary} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <input
+                value={commentaryInput}
+                onChange={e => setCommentaryInput(e.target.value)}
+                placeholder="Enter live commentary..."
+                style={{ flex: 1, ...inputStyle, marginBottom: 0 }}
+              />
+              <button type="submit">Submit</button>
+            </form>
+          )}
+          <div style={{ maxHeight: 200, overflowY: 'auto', background: '#181818', borderRadius: 4, padding: 8 }}>
+            {commentary.length === 0 && <div style={{ color: '#bbb' }}>No commentary yet.</div>}
+            {commentary.map((c, idx) => (
+              <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: '#C6A04F', minWidth: 32 }}>{getElapsedMinutes(c.timestamp)}'</span>
+                <span style={{ color: '#fff' }}>{c.text}</span>
+              </div>
+            ))}
+            {liveEnd && (
+              <div style={{ color: '#bbb', marginTop: 8 }}>
+                Match duration: {getElapsedMinutes(liveEnd)} minute{getElapsedMinutes(liveEnd) !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+          {!liveEnd && (
+            <button type="button" onClick={handleEndMatch} style={{ marginTop: 16, background: '#e63946', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}>
+              End Match
+            </button>
+          )}
         </div>
       )}
+      {/* After ending match, allow editing result, winner, etc. and saving */}
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
         <button type="button" onClick={onCancel} style={{ flex: 1, background: '#444', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}>Cancel</button>
         <button type="submit" style={{ flex: 1, background: '#e63946', color: '#fff', border: 'none', borderRadius: 4, padding: 10 }}>Save</button>
