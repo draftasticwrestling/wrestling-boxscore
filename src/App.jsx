@@ -333,9 +333,18 @@ const getTeams = (participants) => {
 };
 
 // When displaying participants as a string
-const getParticipantsDisplay = (participants) => {
+const getParticipantsDisplay = (participants, wrestlerMap) => {
   if (Array.isArray(participants)) {
-    return participants.map(team => team.join(' & ')).join(' vs ');
+    return participants.map(team => team.map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
+  }
+  if (typeof participants === 'string' && wrestlerMap) {
+    // Split by vs, then by &
+    return participants.split(' vs ').map(side =>
+      side.split('&').map(slug => {
+        const s = slug.trim();
+        return wrestlerMap[s]?.name || s;
+      }).join(' & ')
+    ).join(' vs ');
   }
   return participants || '';
 };
@@ -798,7 +807,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
                 >
                   {/* Modern compact details layout */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
-                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants)}</div>
+                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap)}</div>
                     <div><strong>Winner:</strong> {match.result && match.result.includes(' def. ')
                       ? match.result.split(' def. ')[0]
                       : (match.result || 'None')}</div>
@@ -2016,7 +2025,7 @@ function App() {
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
         <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} wrestlerMap={wrestlerMap} />} />
-        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} onEditMatch={handleEditMatch} />} />
+        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPage events={events} onEditMatch={handleEditMatch} getParticipantsDisplay={getParticipantsDisplay} wrestlerMap={wrestlerMap} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
         {/* <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} /> */}

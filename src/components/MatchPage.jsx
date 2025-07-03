@@ -36,7 +36,7 @@ const tdStyle = {
   verticalAlign: 'top',
 };
 
-export default function MatchPage({ events, onEditMatch }) {
+export default function MatchPage({ events, onEditMatch, getParticipantsDisplay, wrestlerMap }) {
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
   const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
@@ -107,7 +107,12 @@ export default function MatchPage({ events, onEditMatch }) {
           </tr>
         </thead>
         <tbody>
-          <tr><td style={tdStyle}>Participants</td><td style={tdStyle}>{match.participants}</td></tr>
+          <tr><td style={tdStyle}>Participants</td><td style={tdStyle}>{/* Show names, not slugs */}
+            {/* TODO: Wire wrestlerMap prop from parent if not available */}
+            {typeof getParticipantsDisplay === 'function' && typeof wrestlerMap === 'object'
+              ? getParticipantsDisplay(match.participants, wrestlerMap)
+              : match.participants}
+          </td></tr>
           <tr><td style={tdStyle}>Winner</td><td style={tdStyle}>{
             match.result && match.result.includes(' def. ')
               ? match.result.split(' def. ')[0]
