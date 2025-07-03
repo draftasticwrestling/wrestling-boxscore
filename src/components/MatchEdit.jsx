@@ -186,15 +186,8 @@ export default function MatchEdit({
     const newCommentary = [{ timestamp: now, text: commentaryInput.trim() }, ...commentary];
     setCommentary(newCommentary);
     setCommentaryInput("");
-    // Optionally, persist commentary to DB here
-    // Only update match in parent if needed, but do NOT exit edit mode
-    onSave({
-      ...match,
-      isLive,
-      liveStart,
-      liveEnd,
-      commentary: newCommentary,
-    }, { stayInEdit: true }); // Add a flag if needed to parent
+    // Don't call onSave here - just update local state
+    // Commentary will be saved when user clicks "Save" button
   };
 
   // End match handler
