@@ -128,9 +128,9 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         {match.title}
       </div>
       {/* Match Card Layout */}
-      <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 0, marginBottom: 8, minHeight: 260 }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 0, marginBottom: 32, minHeight: 340 }}>
         {/* Left participant */}
-        <div style={{ textAlign: 'center', position: 'relative', minWidth: 200, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 260 }}>
+        <div style={{ textAlign: 'center', position: 'relative', minWidth: 200, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
           <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: winnerIndex === 0 ? '4px solid #C6A04F' : '2px solid #888' }} />
           <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[0]?.name || '—'}</div>
           {/* Belt and title outcome under winner, or placeholder for loser */}
@@ -150,11 +150,11 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           </div>
         </div>
         {/* Left arrow (always reserve space) and center match info, vertically centered */}
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', minWidth: 240, justifyContent: 'center', height: 260 }}>
-          <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260 }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', minWidth: 240, justifyContent: 'center', height: 340 }}>
+          <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 340 }}>
             {isCompleted && winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
           </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 260 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 340 }}>
             {topLabel && (
               <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 18, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{topLabel}</div>
             )}
@@ -164,12 +164,12 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
             <div style={{ color: '#bbb', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
             <div style={{ color: '#bbb', fontSize: 16, textAlign: 'center' }}>{match.time}</div>
           </div>
-          <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260 }}>
+          <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 340 }}>
             {isCompleted && winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
           </div>
         </div>
         {/* Right participant */}
-        <div style={{ textAlign: 'center', position: 'relative', minWidth: 200, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 260 }}>
+        <div style={{ textAlign: 'center', position: 'relative', minWidth: 200, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
           <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: winnerIndex === 1 ? '4px solid #C6A04F' : '2px solid #888' }} />
           <div style={{ fontWeight: 700, fontSize: 22, marginTop: 4 }}>{wrestlers[1]?.name || '—'}</div>
           {/* Belt and title outcome under winner, or placeholder for loser */}
