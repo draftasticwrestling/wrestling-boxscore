@@ -7,6 +7,7 @@ import {
   TITLE_OUTCOME_OPTIONS
 } from '../options';
 import { supabase } from '../supabaseClient';
+import ParticipantsInput from './ParticipantsInput';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };
 const inputStyle = {
@@ -28,6 +29,7 @@ export default function MatchEdit({
   onRealTimeCommentaryUpdate,
   eventId,
   matchOrder,
+  wrestlers = [],
 }) {
   const [match, setMatch] = useState({
     participants: '',
@@ -356,15 +358,14 @@ export default function MatchEdit({
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       <div>
         <label style={labelStyle}>Participants:</label>
-        <input
-          style={inputStyle}
+        <ParticipantsInput
+          wrestlers={wrestlers}
           value={match.participants}
-          onChange={e => setMatch({ ...match, participants: e.target.value })}
-          placeholder="Wrestler 1 vs Wrestler 2 or Team Name (Wrestler 1 & Wrestler 2) vs Team Name (Wrestler 3 & Wrestler 4)"
-          required={status === 'completed'}
+          onChange={val => setMatch({ ...match, participants: val })}
+          mode={match.participants.includes('&') || match.participants.includes('(') ? 'tag' : 'singles'}
         />
         <div style={{ fontSize: '12px', color: '#bbb', marginTop: '4px' }}>
-          Examples: "brutus-creed vs montez-ford" or "American Made (brutus-creed & julius-creed) vs Street Profits (montez-ford & angelo-dawkins)"
+          Select wrestlers for each side. For tag matches, you can add more members and optionally enter a team name.
         </div>
       </div>
       {/* Show result fields if status is completed OR (isLive and liveEnd) */}

@@ -448,6 +448,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
             onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
             eventId={event.id}
             matchOrder={editedMatch.order}
+            wrestlers={wrestlers}
           />
         </div>
       </div>
@@ -1508,6 +1509,7 @@ function EditEvent({ events, updateEvent }) {
                           setEditingMatchIdx(null);
                         }}
                         onCancel={() => setEditingMatchIdx(null)}
+                        wrestlers={wrestlers}
                       />
                     </div>
                   ) : (
@@ -2149,6 +2151,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
           onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
           eventId={event.id}
           matchOrder={match.order}
+          wrestlers={wrestlers}
         />
       </div>
     );
