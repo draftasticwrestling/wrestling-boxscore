@@ -20,7 +20,6 @@ import {
   TITLE_OUTCOME_OPTIONS
 } from './options';
 import SmartParticipantsInput from './components/SmartParticipantsInput';
-import ParticipantsInput from './components/ParticipantsInput';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
@@ -1166,18 +1165,18 @@ function AddEvent({ addEvent, wrestlers }) {
           <div>
             <label>
               Participants:<br />
-              <ParticipantsInput
-                wrestlers={wrestlers}
+              <input
                 value={match.participants}
-                onChange={val => {
-                  setMatch({ ...match, participants: val });
-                  // Reset winner if not in new options
-                  const newOptions = val.includes(' vs ')
-                    ? val.split(' vs ').map(side => side.trim())
+                onChange={e => {
+                  const newParticipants = e.target.value;
+                  const newOptions = newParticipants.includes(' vs ')
+                    ? newParticipants.split(' vs ').map(side => side.trim())
                     : [];
                   if (!newOptions.includes(winner)) setWinner('');
+                  setMatch({ ...match, participants: newParticipants });
                 }}
-                mode={"singles"}
+                required
+                style={{ width: '100%' }}
               />
             </label>
           </div>
@@ -1661,18 +1660,18 @@ function EditEvent({ events, updateEvent }) {
           <div>
             <label>
               Participants:<br />
-              <ParticipantsInput
-                wrestlers={wrestlers}
+              <input
                 value={match.participants}
-                onChange={val => {
-                  setMatch({ ...match, participants: val });
-                  // Reset winner if not in new options
-                  const newOptions = val.includes(' vs ')
-                    ? val.split(' vs ').map(side => side.trim())
+                onChange={e => {
+                  const newParticipants = e.target.value;
+                  const newOptions = newParticipants.includes(' vs ')
+                    ? newParticipants.split(' vs ').map(side => side.trim())
                     : [];
                   if (!newOptions.includes(winner)) setWinner('');
+                  setMatch({ ...match, participants: newParticipants });
                 }}
-                mode={"singles"}
+                required
+                style={{ width: '100%' }}
               />
             </label>
           </div>
