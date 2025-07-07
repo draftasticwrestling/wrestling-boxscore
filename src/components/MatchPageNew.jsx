@@ -79,6 +79,16 @@ function getWinnerDisplay(match, wrestlerMap) {
   return '';
 }
 
+// Helper to format commentary elapsed time (copied from App.jsx)
+function formatCommentaryElapsedTime(ts, liveStart, commentary) {
+  let start = liveStart;
+  if (!start && commentary && commentary.length > 0) {
+    start = commentary[commentary.length - 1].timestamp;
+  }
+  const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
+  return `${elapsed}'`;
+}
+
 export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap }) {
   // wrestlers: array of full wrestler objects in match order
   // last5Results: array of arrays, one per wrestler, e.g. [['W','L','W','W','D'], ...]
@@ -205,7 +215,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {match.commentary.map((c, i) => (
               <li key={i} style={{ marginBottom: 4 }}>
-                <span style={{ color: '#C6A04F', marginRight: 8 }}>{c.time}</span>
+                <span style={{ color: '#C6A04F', marginRight: 8 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
                 {c.text}
               </li>
             ))}

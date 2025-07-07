@@ -106,6 +106,12 @@ export default function MatchEdit({
     }
   }, [initialMatch, winnerOptions, match.participants]);
 
+  // Sync local match state with parent updates (especially commentary)
+  useEffect(() => {
+    setMatch(m => ({ ...m, ...initialMatch }));
+    setCommentary(initialMatch.commentary || []);
+  }, [initialMatch.commentary]);
+
   // Helper to check if method is required
   function isMethodRequired() {
     if (!eventDate) return true;
