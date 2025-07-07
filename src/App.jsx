@@ -2161,6 +2161,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
       match={{ ...match, eventId: event.id }} 
       wrestlers={wrestlers} 
       onEdit={handleEdit}
+      wrestlerMap={wrestlerMap}
     />
   );
 }
