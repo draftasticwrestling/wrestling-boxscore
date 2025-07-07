@@ -70,11 +70,35 @@ function getParticipantsDisplay(participants, wrestlerMap) {
   return participants || '';
 }
 
-// Helper to get display name for winner from slug
+// Helper to get display name for winner from slug or team
 function getWinnerDisplay(match, wrestlerMap) {
-  if (match.result && match.result.includes(' def. ')) {
-    const winnerSlug = match.result.split(' def. ')[0];
-    return wrestlerMap && wrestlerMap[winnerSlug] ? wrestlerMap[winnerSlug].name : winnerSlug;
+  if (!match.result) return '';
+  if (match.result.includes(' def. ')) {
+    const winnerRaw = match.result.split(' def. ')[0];
+    // Try to match as a team (e.g., "Team Name (slug1 & slug2)")
+    const teamMatch = winnerRaw.match(/^([^(]+)\s*\(([^)]+)\)$/);
+    if (teamMatch) {
+      const teamName = teamMatch[1].trim();
+      const slugs = teamMatch[2].split('&').map(s => s.trim());
+      const names = slugs.map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ');
+      return `${teamName} (${names})`;
+    }
+    // Try to match as multiple slugs (e.g., "slug1 & slug2")
+    if (winnerRaw.includes('&')) {
+      return winnerRaw.split('&').map(s => {
+        const slug = s.trim();
+        return wrestlerMap?.[slug]?.name || slug;
+      }).join(' & ');
+    }
+    // Try to match as a single slug
+    if (wrestlerMap && wrestlerMap[winnerRaw]) {
+      return wrestlerMap[winnerRaw].name;
+    }
+    // Try to match as a display name (legacy data)
+    const found = Object.values(wrestlerMap || {}).find(w => w.name === winnerRaw);
+    if (found) return found.name;
+    // Fallback: show as is
+    return winnerRaw;
   }
   return '';
 }
