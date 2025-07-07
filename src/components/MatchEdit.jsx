@@ -6,6 +6,7 @@ import {
   SPECIAL_WINNER_OPTIONS,
   TITLE_OUTCOME_OPTIONS
 } from '../options';
+import { supabase } from '../supabaseClient';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };
 const inputStyle = {
@@ -230,15 +231,43 @@ export default function MatchEdit({
     });
   };
 
+  // Helper to update commentary in Supabase for a match
+  async function updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary) {
+    // Fetch the event
+    const { data: events, error } = await supabase
+      .from('events')
+      .select('matches')
+      .eq('id', eventId)
+      .single();
+    if (error) {
+      console.error('Error fetching event for commentary update:', error);
+      return;
+    }
+    if (!events || !events.matches) return;
+    // Update the correct match's commentary
+    const updatedMatches = events.matches.map(m =>
+      String(m.order) === String(matchOrder)
+        ? { ...m, commentary: newCommentary }
+        : m
+    );
+    // Save back to Supabase
+    const { error: updateError } = await supabase
+      .from('events')
+      .update({ matches: updatedMatches })
+      .eq('id', eventId);
+    if (updateError) {
+      console.error('Error updating commentary in Supabase:', updateError);
+    }
+  }
+
   // Save commentary line immediately and update in real-time
-  const handleAddCommentary = (e) => {
+  const handleAddCommentary = async (e) => {
     e.preventDefault();
     if (!commentaryInput.trim()) return;
     const now = Date.now();
     const newCommentary = [{ timestamp: now, text: commentaryInput.trim() }, ...commentary];
     setCommentary(newCommentary);
     setCommentaryInput("");
-    
     // Update the match in real-time so commentary appears immediately on match cards and pages
     if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
       const updatedMatch = {
@@ -247,6 +276,10 @@ export default function MatchEdit({
         liveStart: liveStart || now
       };
       onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+    }
+    // Persist commentary to Supabase immediately
+    if (eventId && matchOrder) {
+      await updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary);
     }
   };
 
