@@ -60,12 +60,22 @@ function getParticipantsDisplay(participants, wrestlerMap) {
     return participants.map(team => team.map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
-    return participants.split(' vs ').map(side =>
-      side.split('&').map(slug => {
+    // Split by vs, then by &
+    return participants.split(' vs ').map(side => {
+      // Handle team name with slugs in parentheses
+      const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
+      if (teamMatch) {
+        const teamName = teamMatch[1].trim();
+        const slugs = teamMatch[2].split('&').map(s => s.trim());
+        const names = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+        return `${teamName} (${names})`;
+      }
+      // Otherwise, just slugs
+      return side.split('&').map(slug => {
         const s = slug.trim();
         return wrestlerMap[s]?.name || s;
-      }).join(' & ')
-    ).join(' vs ');
+      }).join(' & ');
+    }).join(' vs ');
   }
   return participants || '';
 }
