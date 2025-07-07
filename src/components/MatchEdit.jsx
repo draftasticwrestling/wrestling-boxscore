@@ -24,6 +24,9 @@ export default function MatchEdit({
   onCancel,
   eventStatus,
   eventDate,
+  onRealTimeCommentaryUpdate,
+  eventId,
+  matchOrder,
 }) {
   const [match, setMatch] = useState({
     participants: '',
@@ -133,8 +136,21 @@ export default function MatchEdit({
     e.preventDefault();
     setMatchDetailsSaved(true);
     if (!liveStart) {
-      setLiveStart(Date.now());
-      setCommentary([{ timestamp: Date.now(), text: 'The match begins' }]);
+      const now = Date.now();
+      setLiveStart(now);
+      const newCommentary = [{ timestamp: now, text: 'The match begins' }];
+      setCommentary(newCommentary);
+      
+      // Update in real-time
+      if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+        const updatedMatch = {
+          ...match,
+          commentary: newCommentary,
+          liveStart: now,
+          isLive: true
+        };
+        onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+      }
     }
     // Optionally, persist match details here if needed
   };
@@ -149,6 +165,19 @@ export default function MatchEdit({
     setStatus('completed');
     const newCommentary = [{ timestamp: now, text: 'The match ends' }, ...commentary];
     setCommentary(newCommentary);
+    
+    // Update in real-time
+    if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+      const updatedMatch = {
+        ...match,
+        commentary: newCommentary,
+        liveEnd: now,
+        isLive: false,
+        status: 'completed'
+      };
+      onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+    }
+    
     // Do NOT call onSave or exit edit mode here; let user fill in result fields and click Save
     setMatchDetailsSaved(false); // allow editing winner/method after ending
   };
@@ -195,7 +224,7 @@ export default function MatchEdit({
     });
   };
 
-  // Save commentary line immediately (simulate DB save)
+  // Save commentary line immediately and update in real-time
   const handleAddCommentary = (e) => {
     e.preventDefault();
     if (!commentaryInput.trim()) return;
@@ -203,8 +232,16 @@ export default function MatchEdit({
     const newCommentary = [{ timestamp: now, text: commentaryInput.trim() }, ...commentary];
     setCommentary(newCommentary);
     setCommentaryInput("");
-    // Don't call onSave here - just update local state
-    // Commentary will be saved when user clicks "Save" button
+    
+    // Update the match in real-time so commentary appears immediately on match cards and pages
+    if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+      const updatedMatch = {
+        ...match,
+        commentary: newCommentary,
+        liveStart: liveStart || now
+      };
+      onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+    }
   };
 
   function parseParticipants(input) {
@@ -455,6 +492,15 @@ export default function MatchEdit({
                       setCommentary(updated);
                       setEditingCommentIdx(null);
                       setEditingCommentText("");
+                      
+                      // Update in real-time
+                      if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+                        const updatedMatch = {
+                          ...match,
+                          commentary: updated
+                        };
+                        onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+                      }
                     }}>Save</button>
                     <button type="button" onClick={() => {
                       setEditingCommentIdx(null);

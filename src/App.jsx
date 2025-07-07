@@ -382,7 +382,7 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
 }
 
 // Event Box Score Component (with discreet Edit/Delete below the match card)
-function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
+function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
@@ -445,6 +445,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, wrestlerMap }) {
             onCancel={handleCancelEditMatch}
             eventStatus={event.status}
             eventDate={event.date}
+            onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
+            eventId={event.id}
+            matchOrder={editedMatch.order}
           />
         </div>
       </div>
@@ -1938,6 +1941,20 @@ function App() {
     }
   };
 
+  // New function for real-time commentary updates (doesn't save to database immediately)
+  const handleRealTimeCommentaryUpdate = (eventId, matchOrder, updatedMatch) => {
+    setEvents(events.map(event => 
+      event.id === eventId 
+        ? { 
+            ...event, 
+            matches: event.matches.map(match => 
+              String(match.order) === String(matchOrder) ? updatedMatch : match
+            )
+          }
+        : event
+    ));
+  };
+
   // Function to check for new champions and update championships
   const checkForNewChampions = async (event, matches) => {
     try {
@@ -2030,8 +2047,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
-        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} wrestlerMap={wrestlerMap} />} />
-        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} wrestlerMap={wrestlerMap} />} />
+        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
+        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
         {/* <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} /> */}
@@ -2057,7 +2074,7 @@ function parseTeamString(teamStr) {
 }
 
 // Wrapper component for the new match page design
-function MatchPageNewWrapper({ events, onEditMatch, wrestlerMap }) {
+function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap }) {
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
   const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
@@ -2129,6 +2146,9 @@ function MatchPageNewWrapper({ events, onEditMatch, wrestlerMap }) {
           eventDate={event.date}
           onSave={handleSave}
           onCancel={handleCancel}
+          onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
+          eventId={event.id}
+          matchOrder={match.order}
         />
       </div>
     );
