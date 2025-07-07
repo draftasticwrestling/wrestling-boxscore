@@ -19,6 +19,7 @@ import {
   SPECIAL_WINNER_OPTIONS,
   TITLE_OUTCOME_OPTIONS
 } from './options';
+import ParticipantsInput from './components/ParticipantsInput';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
@@ -904,7 +905,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
 }
 
 // Add Event Form Component (separate forms for event and match)
-function AddEvent({ addEvent }) {
+function AddEvent({ addEvent, wrestlers }) {
   const EVENT_TYPES = [
     "RAW",
     "SmackDown",
@@ -1164,14 +1165,19 @@ function AddEvent({ addEvent }) {
           <div>
             <label>
               Participants:<br />
-              <input value={match.participants} onChange={e => {
-                const newParticipants = e.target.value;
-                const newOptions = newParticipants.includes(' vs ')
-                  ? newParticipants.split(' vs ').map(side => side.trim())
-                  : [];
-                if (!newOptions.includes(winner)) setWinner('');
-                setMatch({ ...match, participants: newParticipants });
-              }} required style={{ width: '100%' }} />
+              <ParticipantsInput
+                wrestlers={wrestlers}
+                value={match.participants}
+                onChange={val => {
+                  setMatch({ ...match, participants: val });
+                  // Reset winner if not in new options
+                  const newOptions = val.includes(' vs ')
+                    ? val.split(' vs ').map(side => side.trim())
+                    : [];
+                  if (!newOptions.includes(winner)) setWinner('');
+                }}
+                mode={"singles"}
+              />
             </label>
           </div>
           {eventStatus === 'completed' && (
@@ -1654,14 +1660,19 @@ function EditEvent({ events, updateEvent }) {
           <div>
             <label>
               Participants:<br />
-              <input value={match.participants} onChange={e => {
-                const newParticipants = e.target.value;
-                const newOptions = newParticipants.includes(' vs ')
-                  ? newParticipants.split(' vs ').map(side => side.trim())
-                  : [];
-                if (!newOptions.includes(winner)) setWinner('');
-                setMatch({ ...match, participants: newParticipants });
-              }} required style={{ width: '100%' }} />
+              <ParticipantsInput
+                wrestlers={wrestlers}
+                value={match.participants}
+                onChange={val => {
+                  setMatch({ ...match, participants: val });
+                  // Reset winner if not in new options
+                  const newOptions = val.includes(' vs ')
+                    ? val.split(' vs ').map(side => side.trim())
+                    : [];
+                  if (!newOptions.includes(winner)) setWinner('');
+                }}
+                mode={"singles"}
+              />
             </label>
           </div>
           {eventStatus === 'completed' && (
@@ -2051,7 +2062,7 @@ function App() {
         <Route path="/" element={<EventList events={events} />} />
         <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
         <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
-        <Route path="/add-event" element={<AddEvent addEvent={addEvent} />} />
+        <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
         {/* <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} /> */}
       </Routes>
