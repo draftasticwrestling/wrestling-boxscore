@@ -23,6 +23,7 @@ export default function SmartParticipantsInput({ wrestlers, value, onChange, pla
           output: (item) => item,
         }
       }}
+      loadingComponent={() => <span style={{ color: '#fff', padding: 4 }}>Loading...</span>}
       style={{
         width: '100%',
         minHeight: 40,
