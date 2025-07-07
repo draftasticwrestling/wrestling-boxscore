@@ -19,7 +19,7 @@ import {
   SPECIAL_WINNER_OPTIONS,
   TITLE_OUTCOME_OPTIONS
 } from './options';
-import ParticipantsInput from './components/ParticipantsInput';
+import SmartParticipantsInput from './components/SmartParticipantsInput';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
@@ -1165,7 +1165,7 @@ function AddEvent({ addEvent, wrestlers }) {
           <div>
             <label>
               Participants:<br />
-              <ParticipantsInput
+              <SmartParticipantsInput
                 wrestlers={wrestlers}
                 value={match.participants}
                 onChange={val => {
@@ -1176,7 +1176,6 @@ function AddEvent({ addEvent, wrestlers }) {
                     : [];
                   if (!newOptions.includes(winner)) setWinner('');
                 }}
-                mode={"singles"}
               />
             </label>
           </div>
@@ -1660,7 +1659,7 @@ function EditEvent({ events, updateEvent }) {
           <div>
             <label>
               Participants:<br />
-              <ParticipantsInput
+              <SmartParticipantsInput
                 wrestlers={wrestlers}
                 value={match.participants}
                 onChange={val => {
@@ -1671,7 +1670,6 @@ function EditEvent({ events, updateEvent }) {
                     : [];
                   if (!newOptions.includes(winner)) setWinner('');
                 }}
-                mode={"singles"}
               />
             </label>
           </div>
