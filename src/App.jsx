@@ -19,7 +19,6 @@ import {
   SPECIAL_WINNER_OPTIONS,
   TITLE_OUTCOME_OPTIONS
 } from './options';
-import SmartParticipantsInput from './components/SmartParticipantsInput';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
