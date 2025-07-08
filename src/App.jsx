@@ -596,21 +596,21 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                       <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
                     </div>
                     {/* Participants Row */}
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 2, width: '100%' }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
                       {teamStrings.map((teamStr, sideIdx) => {
                         const { teamName, slugs } = parseTeamString(teamStr);
                         const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
                         return (
-                          <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
+                          <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
                             {/* Arrow above winner */}
                             <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 14, height: 8 }} />}
+                              {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
                             </div>
-                            <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
+                            <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                               {slugs.map((slug, i) => (
-                                <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
+                                <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
                                   {wrestlerMap[slug]?.image_url
-                                    ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
+                                    ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
                                     : <span role="img" aria-label="wrestler">&#128100;</span>
                                   }
                                 </div>
@@ -630,15 +630,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                                 <>
                                   <BeltIcon />
                                   {match.titleOutcome && match.titleOutcome !== 'None' && (
-                                    <div style={{ 
-                                      fontSize: 10, 
-                                      color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
-                                      fontWeight: 600,
-                                      marginTop: 2,
-                                      textAlign: 'center'
-                                    }}>
-                                      {match.titleOutcome}
-                                    </div>
+                                    <div style={{ fontSize: 10, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                                   )}
                                 </>
                               ) : 
