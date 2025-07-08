@@ -658,32 +658,32 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                       const { teamName, slugs } = parseTeamString(teamStrings[0]);
                       const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
                       return (
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                        <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
+                          <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
                             {slugs.map((slug, i) => (
-                              <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
+                              <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                                 {wrestlerMap[slug]?.image_url
-                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
                                   : <span role="img" aria-label="wrestler">&#128100;</span>
                                 }
                               </div>
                             ))}
                           </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
+                          <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>
                             {teamName ? (
                               <>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === 0 ? gold : '#fff' }}>{teamName}</div>
-                                <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                                <div style={{ fontSize: 18, fontWeight: 800, color: winnerIndex === 0 ? gold : '#fff' }}>{teamName}</div>
+                                <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
                               </>
                             ) : individualNames}
                           </span>
-                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                             {isTitleMatch && winnerIndex === 0 ? (
                               <>
                                 <BeltIcon />
                                 {match.titleOutcome && match.titleOutcome !== 'None' && (
                                   <div style={{ 
-                                    fontSize: 11, 
+                                    fontSize: 9, 
                                     color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
                                     fontWeight: 600,
                                     marginTop: 2,
@@ -696,30 +696,30 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                             ) : 
                              match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
                              getSpecialWinnerIcon(match.specialWinnerType) : 
-                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                             <span style={{ display: 'inline-block', width: 24, height: 12 }} />}
                           </div>
                         </div>
                       );
                     })()}
                     {/* Left arrow (always reserve space) */}
-                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
                     </div>
                     {/* Center match details */}
-                    <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 180, margin: 0, padding: 0 }}>
-                      <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+                    <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120, margin: 0, padding: 0 }}>
+                      <div style={{ fontWeight: 700, color: gold, fontSize: 13, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>
                         {match.isLive ? (
                           <span style={{ color: '#27ae60' }}>LIVE</span>
                         ) : (
                           match.result && match.result !== 'No winner' ? 'Final' : match.result
                         )}
                       </div>
-                      <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-                      <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+                      <div style={{ color: '#bbb', fontSize: 12, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+                      <div style={{ color: '#bbb', fontSize: 12, textAlign: 'center' }}>{match.time}</div>
                     </div>
                     {/* Right arrow (always reserve space) */}
-                    <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
                     </div>
                     {/* Right participant */}
@@ -727,32 +727,32 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                       const { teamName, slugs } = parseTeamString(teamStrings[1]);
                       const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
                       return (
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                        <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
+                          <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
                             {slugs.map((slug, i) => (
-                              <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
+                              <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                                 {wrestlerMap[slug]?.image_url
-                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
                                   : <span role="img" aria-label="wrestler">&#128100;</span>
                                 }
                               </div>
                             ))}
                           </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
+                          <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>
                             {teamName ? (
                               <>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === 1 ? gold : '#fff' }}>{teamName}</div>
-                                <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                                <div style={{ fontSize: 18, fontWeight: 800, color: winnerIndex === 1 ? gold : '#fff' }}>{teamName}</div>
+                                <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
                               </>
                             ) : individualNames}
                           </span>
-                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                             {isTitleMatch && winnerIndex === 1 ? (
                               <>
                                 <BeltIcon />
                                 {match.titleOutcome && match.titleOutcome !== 'None' && (
                                   <div style={{ 
-                                    fontSize: 11, 
+                                    fontSize: 9, 
                                     color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
                                     fontWeight: 600,
                                     marginTop: 2,
@@ -765,7 +765,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                             ) : 
                              match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
                              getSpecialWinnerIcon(match.specialWinnerType) : 
-                             <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                             <span style={{ display: 'inline-block', width: 24, height: 12 }} />}
                           </div>
                         </div>
                       );
