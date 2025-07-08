@@ -2100,25 +2100,18 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   // Prepare wrestler data for the new component
   const getWrestlersForMatch = () => {
     if (!match.participants || !wrestlerMap) return [];
-    
-    // Extract participant slugs from the match
     let participantSlugs = [];
     if (Array.isArray(match.participants)) {
-      // Handle array format: [['wrestler1', 'wrestler2'], ['wrestler3']]
       participantSlugs = match.participants.flat();
     } else if (typeof match.participants === 'string') {
-      // Handle string format: "wrestler1 & wrestler2 vs wrestler3"
       participantSlugs = match.participants.split(' vs ').flatMap(side => 
         side.split('&').map(slug => slug.trim())
       );
     }
-    
-    // Get full wrestler objects and add display properties
     return participantSlugs.slice(0, 2).map(slug => {
       const wrestler = wrestlerMap[slug] || { name: slug, image_url: null };
       return {
         ...wrestler,
-        // Add display properties for the new component
         participantsDisplay: getParticipantsDisplay(match.participants, wrestlerMap),
         winnerDisplay: (() => {
           const winnerSlug = match.result && match.result.includes(' def. ')
@@ -2131,6 +2124,8 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
       };
     });
   };
+
+  const wrestlers = getWrestlersForMatch(); // <-- moved up here
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -2167,8 +2162,6 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
     );
   }
 
-  const wrestlers = getWrestlersForMatch();
-  
   return (
     <MatchPageNew 
       match={{ ...match, eventId: event.id }} 
