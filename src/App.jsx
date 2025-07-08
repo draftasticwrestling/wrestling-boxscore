@@ -382,7 +382,7 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
 }
 
 // Event Box Score Component (with discreet Edit/Delete below the match card)
-function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap }) {
+function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap, wrestlers }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
@@ -1329,7 +1329,7 @@ function AddEvent({ addEvent, wrestlers }) {
 }
 
 // Edit Event Form Component
-function EditEvent({ events, updateEvent }) {
+function EditEvent({ events, updateEvent, wrestlers }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
@@ -2059,10 +2059,10 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
-        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
+        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
         <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
-        <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} />} />
+        <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />} />
         {/* <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} /> */}
       </Routes>
     </Router>
