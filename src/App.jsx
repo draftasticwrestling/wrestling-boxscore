@@ -682,15 +682,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                               <>
                                 <BeltIcon />
                                 {match.titleOutcome && match.titleOutcome !== 'None' && (
-                                  <div style={{ 
-                                    fontSize: 9, 
-                                    color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
-                                    fontWeight: 600,
-                                    marginTop: 2,
-                                    textAlign: 'center'
-                                  }}>
-                                    {match.titleOutcome}
-                                  </div>
+                                  <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                                 )}
                               </>
                             ) : 
@@ -751,15 +743,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                               <>
                                 <BeltIcon />
                                 {match.titleOutcome && match.titleOutcome !== 'None' && (
-                                  <div style={{ 
-                                    fontSize: 9, 
-                                    color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107',
-                                    fontWeight: 600,
-                                    marginTop: 2,
-                                    textAlign: 'center'
-                                  }}>
-                                    {match.titleOutcome}
-                                  </div>
+                                  <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                                 )}
                               </>
                             ) : 
