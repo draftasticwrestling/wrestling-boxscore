@@ -7,7 +7,6 @@ import {
   TITLE_OUTCOME_OPTIONS
 } from '../options';
 import { supabase } from '../supabaseClient';
-import ParticipantsInput from './ParticipantsInput';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };
 const inputStyle = {
@@ -358,15 +357,12 @@ export default function MatchEdit({
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       <div>
         <label style={labelStyle}>Participants:</label>
-        <ParticipantsInput
-          wrestlers={wrestlers}
+        <input
           value={match.participants}
-          onChange={val => setMatch({ ...match, participants: val })}
-          mode={match.participants.includes('&') || match.participants.includes('(') ? 'tag' : 'singles'}
+          onChange={e => setMatch({ ...match, participants: e.target.value })}
+          required
+          style={inputStyle}
         />
-        <div style={{ fontSize: '12px', color: '#bbb', marginTop: '4px' }}>
-          Select wrestlers for each side. For tag matches, you can add more members and optionally enter a team name.
-        </div>
       </div>
       {/* Show result fields if status is completed OR (isLive and liveEnd) */}
       {(status === 'completed' || (isLive && liveEnd)) && (
