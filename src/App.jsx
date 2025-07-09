@@ -292,7 +292,7 @@ function EventList({ events }) {
                   minWidth: 0,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ color: gold, fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+                    <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
                     {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
                     {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
                   </div>
