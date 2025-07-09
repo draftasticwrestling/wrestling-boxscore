@@ -2047,16 +2047,18 @@ function App() {
 
   return (
     <Router>
-      <Route element={<Layout />}>
-        <Route path="/" element={<EventList events={events} />} />
-        <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
-        <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
-        <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
-        <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />} />
-        <Route path="/wrestlers" element={<WrestlersPage />} />
-        <Route path="/about" element={<div style={{color:'#fff',padding:40,maxWidth:600,margin:'0 auto'}}><h2>About Us</h2><p>Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can't watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and key moment—so you're always in the know, no matter where you are.</p></div>} />
-        <Route path="/contact" element={<div style={{color:'#fff',padding:40}}><h2>Contact</h2><p>Contact form coming soon.</p></div>} />
-      </Route>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<EventList events={events} />} />
+          <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
+          <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
+          <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
+          <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />} />
+          <Route path="/wrestlers" element={<WrestlersPage />} />
+          <Route path="/about" element={<div style={{color:'#fff',padding:40,maxWidth:600,margin:'0 auto'}}><h2>About Us</h2><p>Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can't watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and key moment—so you're always in the know, no matter where you are.</p></div>} />
+          <Route path="/contact" element={<div style={{color:'#fff',padding:40}}><h2>Contact</h2><p>Contact form coming soon.</p></div>} />
+        </Route>
+      </Routes>
     </Router>
   );
 }
