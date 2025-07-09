@@ -1,7 +1,8 @@
 import React from 'react';
 import Menu from './Menu';
+import { Outlet } from 'react-router-dom';
 
-export default function Layout({ children }) {
+export default function Layout() {
   return (
     <div style={{ minHeight: '100vh', background: '#181511', color: '#F5E7D0', fontFamily: 'Arial, sans-serif' }}>
       <Menu />
@@ -23,7 +24,7 @@ export default function Layout({ children }) {
       </div>
       {/* Page Content */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 0 48px 0' }}>
-        {children}
+        <Outlet />
       </div>
     </div>
   );
