@@ -163,7 +163,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
   }
 
   return (
-    <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 1100, margin: '32px auto', padding: 32 }}>
+    <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 1200, margin: '32px auto', padding: 32 }}>
       <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
         ← Back to Event
       </Link>

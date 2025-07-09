@@ -13,7 +13,7 @@ export default function Footer() {
       marginTop: 48,
       width: '100%',
     }}>
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ marginBottom: 8 }}>
           © 2025 Wrestling Boxscore. All rights reserved.
         </div>
