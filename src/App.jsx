@@ -227,7 +227,7 @@ function EventList({ events }) {
         {/* WWE Event Results heading */}
         <h1 style={{
           textAlign: 'center',
-          color: gold,
+          color: '#fff',
           fontSize: 40,
           marginBottom: 8,
           marginTop: 0
@@ -495,7 +495,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
             textStyle={{ color: gold }} 
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-            <span style={{ color: gold, fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+            <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
             {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
           </div>
           <div style={{ color: gold, marginTop: 8, fontSize: 18 }}>
@@ -509,7 +509,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
             </p>
           </div>
         )}
-        <h3 style={{ marginTop: 24, color: gold }}>Match Results</h3>
+        <h3 style={{ marginTop: 24, color: '#fff' }}>Match Results</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {matchesWithCardType.map((match, index) => {
             const [expanded, setExpanded] = React.useState(false);
