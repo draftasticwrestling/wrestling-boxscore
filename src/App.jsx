@@ -21,6 +21,7 @@ import {
 } from './options';
 import Menu from './components/Menu';
 import WrestlersPage from './components/WrestlersPage';
+import Layout from './components/Layout';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
@@ -200,112 +201,103 @@ function EventLogoOrText({ name, alt, style, textStyle }) {
 
 function EventList({ events }) {
   return (
-    <div style={appBackground}>
-      <div style={sectionStyle}>
-        {/* Logo centered below title */}
-        <img src="/images/banner.png" alt="Wrestling Boxscore Banner" style={{
-          display: 'block',
-          margin: '24px auto 24px auto',
-          maxWidth: 480,
-          width: '100%',
-        }} />
-        {/* Remove Champions button, only show Add Event */}
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-          <Link
-            to="/add-event"
-            style={{
-              padding: '8px 16px',
-              background: gold,
-              color: '#232323',
-              textDecoration: 'none',
-              borderRadius: 4,
-              fontWeight: 600,
-              fontSize: 14
-            }}
-          >
-            + Add Event
-          </Link>
-        </div>
-        {/* WWE Event Results heading */}
-        <h1 style={{
-          textAlign: 'center',
-          color: '#fff',
-          fontSize: 40,
-          marginBottom: 8,
-          marginTop: 0
-        }}>WWE Event Results</h1>
-        <div style={{ marginTop: 24 }}>
-          {events.map(event => {
-            const isUpcoming = isUpcomingEST(event);
-            return (
-              <Link
-                to={`/event/${event.id}`}
-                key={event.id}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'stretch',
-                  gap: 0,
-                  background: 'rgba(34,34,34,0.98)',
-                  borderRadius: 10,
-                  boxShadow: '0 0 8px #C6A04F22',
-                  padding: '16px 24px',
-                  marginBottom: 18,
-                  textDecoration: 'none',
-                  color: gold,
-                  transition: 'background 0.2s',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  border: '1px solid #333',
-                  minHeight: 64,
-                }}
-              >
-                {/* Logo column */}
-                <div style={{
-                  width: 110,
-                  minWidth: 110,
-                  maxWidth: 110,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingRight: 12,
-                }}>
-                  <EventLogoOrText
-                    name={event.name}
-                    style={{
-                      display: 'block',
-                      margin: '0 auto',
-                      maxHeight: 48,
-                      maxWidth: 96,
-                      height: 'auto',
-                      width: 'auto',
-                      objectFit: 'contain',
-                    }}
-                    textStyle={{ color: gold }}
-                  />
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      {/* Remove Champions button, only show Add Event */}
+      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+        <Link
+          to="/add-event"
+          style={{
+            padding: '8px 16px',
+            background: gold,
+            color: '#232323',
+            textDecoration: 'none',
+            borderRadius: 4,
+            fontWeight: 600,
+            fontSize: 14
+          }}
+        >
+          + Add Event
+        </Link>
+      </div>
+      {/* WWE Event Results heading */}
+      <h1 style={{
+        textAlign: 'center',
+        color: '#fff',
+        fontSize: 40,
+        marginBottom: 8,
+        marginTop: 0
+      }}>WWE Event Results</h1>
+      <div style={{ marginTop: 24 }}>
+        {events.map(event => {
+          const isUpcoming = isUpcomingEST(event);
+          return (
+            <Link
+              to={`/event/${event.id}`}
+              key={event.id}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'stretch',
+                gap: 0,
+                background: 'rgba(34,34,34,0.98)',
+                borderRadius: 10,
+                boxShadow: '0 0 8px #C6A04F22',
+                padding: '16px 24px',
+                marginBottom: 18,
+                textDecoration: 'none',
+                color: gold,
+                transition: 'background 0.2s',
+                cursor: 'pointer',
+                position: 'relative',
+                border: '1px solid #333',
+                minHeight: 64,
+              }}
+            >
+              {/* Logo column */}
+              <div style={{
+                width: 110,
+                minWidth: 110,
+                maxWidth: 110,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingRight: 12,
+              }}>
+                <EventLogoOrText
+                  name={event.name}
+                  style={{
+                    display: 'block',
+                    margin: '0 auto',
+                    maxHeight: 48,
+                    maxWidth: 96,
+                    height: 'auto',
+                    width: 'auto',
+                    objectFit: 'contain',
+                  }}
+                  textStyle={{ color: gold }}
+                />
+              </div>
+              {/* Details column */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                minWidth: 0,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+                  {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
+                  {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
                 </div>
-                {/* Details column */}
-                <div style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'flex-start',
-                  minWidth: 0,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
-                    {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
-                    {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
-                  </div>
-                  <div style={{ color: gold, fontSize: 16, marginTop: 2 }}>
-                    {formatDate(event.date)} — {event.location}
-                  </div>
+                <div style={{ color: gold, fontSize: 16, marginTop: 2 }}>
+                  {formatDate(event.date)} — {event.location}
                 </div>
-              </Link>
-            );
-          })}
-        </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
@@ -2055,8 +2047,7 @@ function App() {
 
   return (
     <Router>
-      <Menu />
-      <Routes>
+      <Route element={<Layout />}>
         <Route path="/" element={<EventList events={events} />} />
         <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
         <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
@@ -2065,7 +2056,7 @@ function App() {
         <Route path="/wrestlers" element={<WrestlersPage />} />
         <Route path="/about" element={<div style={{color:'#fff',padding:40,maxWidth:600,margin:'0 auto'}}><h2>About Us</h2><p>Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can't watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and key moment—so you're always in the know, no matter where you are.</p></div>} />
         <Route path="/contact" element={<div style={{color:'#fff',padding:40}}><h2>Contact</h2><p>Contact form coming soon.</p></div>} />
-      </Routes>
+      </Route>
     </Router>
   );
 }
