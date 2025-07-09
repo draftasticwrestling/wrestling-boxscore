@@ -241,8 +241,9 @@ function EventList({ events }) {
                 key={event.id}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: 24,
+                  flexDirection: 'row',
+                  alignItems: 'stretch',
+                  gap: 0,
                   background: 'rgba(34,34,34,0.98)',
                   borderRadius: 10,
                   boxShadow: '0 0 8px #C6A04F22',
@@ -254,23 +255,42 @@ function EventList({ events }) {
                   cursor: 'pointer',
                   position: 'relative',
                   border: '1px solid #333',
+                  minHeight: 64,
                 }}
               >
-                <EventLogoOrText
-                  name={event.name}
-                  style={{
-                    display: 'inline-block',
-                    verticalAlign: 'middle',
-                    maxHeight: 48,
-                    maxWidth: 96,
-                    height: 'auto',
-                    width: 'auto',
-                    objectFit: 'contain',
-                    marginRight: 12,
-                  }}
-                  textStyle={{ color: gold }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                {/* Logo column */}
+                <div style={{
+                  width: 110,
+                  minWidth: 110,
+                  maxWidth: 110,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingRight: 12,
+                }}>
+                  <EventLogoOrText
+                    name={event.name}
+                    style={{
+                      display: 'block',
+                      margin: '0 auto',
+                      maxHeight: 48,
+                      maxWidth: 96,
+                      height: 'auto',
+                      width: 'auto',
+                      objectFit: 'contain',
+                    }}
+                    textStyle={{ color: gold }}
+                  />
+                </div>
+                {/* Details column */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                  minWidth: 0,
+                }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ color: gold, fontWeight: 600, fontSize: 20 }}>{event.name}</span>
                     {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
