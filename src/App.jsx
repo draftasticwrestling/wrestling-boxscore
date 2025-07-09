@@ -2057,6 +2057,7 @@ function App() {
           <Route path="/wrestlers" element={<WrestlersPage />} />
           <Route path="/about" element={<div style={{color:'#fff',padding:40,maxWidth:600,margin:'0 auto'}}><h2>About Us</h2><p>Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can't watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and key moment—so you're always in the know, no matter where you are.</p></div>} />
           <Route path="/contact" element={<div style={{color:'#fff',padding:40}}><h2>Contact</h2><p>Contact form coming soon.</p></div>} />
+          <Route path="/privacy" element={<div style={{color:'#fff',padding:40,maxWidth:700,margin:'0 auto'}}><h2>Privacy Policy</h2><p>This site does not collect personal information except what you provide via the contact form. Your information will never be sold or shared. For questions, contact wrestlingboxscore@gmail.com.</p></div>} />
         </Route>
       </Routes>
     </Router>
