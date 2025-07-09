@@ -19,6 +19,8 @@ import {
   SPECIAL_WINNER_OPTIONS,
   TITLE_OUTCOME_OPTIONS
 } from './options';
+import Menu from './components/Menu';
+import WrestlersPage from './components/WrestlersPage';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
@@ -2053,13 +2055,16 @@ function App() {
 
   return (
     <Router>
+      <Menu />
       <Routes>
         <Route path="/" element={<EventList events={events} />} />
         <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
         <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
         <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
         <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />} />
-        {/* <Route path="/championships" element={<ChampionshipsDisplay wrestlerMap={wrestlerMap} />} /> */}
+        <Route path="/wrestlers" element={<WrestlersPage />} />
+        <Route path="/about" element={<div style={{color:'#fff',padding:40}}><h2>About</h2><p>This site exists to track wrestling events, results, and stats for fans and historians.</p></div>} />
+        <Route path="/contact" element={<div style={{color:'#fff',padding:40}}><h2>Contact</h2><p>Contact form coming soon.</p></div>} />
       </Routes>
     </Router>
   );
