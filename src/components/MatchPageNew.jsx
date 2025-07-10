@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import BeltIcon from './BeltIcon';
 import { Helmet } from 'react-helmet';
+import { useUser } from '../supabaseClient';
 
 // Utility to calculate age from dob
 function calculateAge(dob) {
@@ -125,6 +126,7 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
 }
 
 export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap }) {
+  const user = useUser();
   // wrestlers: array of full wrestler objects in match order
   // last5Results: array of arrays, one per wrestler, e.g. [['W','L','W','W','D'], ...]
   // titleStatus: e.g. 'Successful Defense', 'New Champion', etc.
@@ -264,12 +266,14 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           ) : <div style={{ color: '#bbb' }}>No commentary yet.</div>}
         </div>
         <div style={{ textAlign: 'center' }}>
-          <button onClick={onEdit} style={{
-            background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4,
-            fontWeight: 700, fontSize: 16, padding: '10px 32px', cursor: 'pointer'
-          }}>
-            Edit Match
-          </button>
+          {user && user.email && (
+            <button onClick={onEdit} style={{
+              background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4,
+              fontWeight: 700, fontSize: 16, padding: '10px 32px', cursor: 'pointer'
+            }}>
+              Edit Match
+            </button>
+          )}
         </div>
       </div>
     </>
