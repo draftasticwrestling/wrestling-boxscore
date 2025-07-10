@@ -85,22 +85,24 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
     <div style={sectionStyle}>
       <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
       <h2 style={{ color: gold, marginTop: 24 }}>Match Details</h2>
-      <button
-        style={{
-          marginBottom: 24,
-          background: gold,
-          color: '#232323',
-          border: 'none',
-          borderRadius: 4,
-          fontWeight: 700,
-          fontSize: 16,
-          padding: '8px 24px',
-          cursor: 'pointer',
-        }}
-        onClick={() => setIsEditing(true)}
-      >
-        Edit Match
-      </button>
+      {user && (
+        <button
+          style={{
+            marginBottom: 24,
+            background: gold,
+            color: '#232323',
+            border: 'none',
+            borderRadius: 4,
+            fontWeight: 700,
+            fontSize: 16,
+            padding: '8px 24px',
+            cursor: 'pointer',
+          }}
+          onClick={() => setIsEditing(true)}
+        >
+          Edit Match
+        </button>
+      )}
       <table style={tableStyle}>
         <thead>
           <tr>
