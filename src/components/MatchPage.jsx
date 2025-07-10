@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MatchEdit from './MatchEdit';
+import { useUser } from '../supabaseClient';
 
 const gold = '#C6A04F';
 const sectionStyle = {
@@ -37,6 +38,7 @@ const tdStyle = {
 };
 
 export default function MatchPage({ events, onEditMatch, getParticipantsDisplay, wrestlerMap }) {
+  const user = useUser();
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
   const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
@@ -58,7 +60,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
     return `${elapsed}'`;
   }
 
-  if (isEditing) {
+  if (isEditing && user) {
     return (
       <div style={sectionStyle}>
         <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
