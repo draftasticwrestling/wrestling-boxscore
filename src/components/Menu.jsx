@@ -22,6 +22,7 @@ export default function Menu() {
   const menuRef = useRef();
   const location = useLocation();
   const user = useUser();
+  console.log('Menu user:', user);
   const [email, setEmail] = useState('');
   const [loginMsg, setLoginMsg] = useState('');
   const [showLogin, setShowLogin] = useState(false);
