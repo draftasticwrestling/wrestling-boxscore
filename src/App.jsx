@@ -1153,6 +1153,32 @@ function AddEvent({ addEvent, wrestlers }) {
           </div>
           <div>
             <label>
+              Stipulation:<br />
+              <select
+                value={match.stipulation}
+                onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
+                style={inputStyle}
+              >
+                {STIPULATION_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {match.stipulation === "Custom/Other" && (
+            <div style={{ marginBottom: 16 }}>
+              <label>
+                Custom Stipulation:<br />
+              </label>
+              <input
+                value={match.customStipulation || ''}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                style={{ width: '100%' }}
+              />
+            </div>
+          )}
+          <div>
+            <label>
               Participants:<br />
               <input
                 value={match.participants}
@@ -1231,32 +1257,6 @@ function AddEvent({ addEvent, wrestlers }) {
                 </label>
               </div>
             </>
-          )}
-          <div>
-            <label>
-              Stipulation:<br />
-              <select
-                value={match.stipulation}
-                onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
-                style={inputStyle}
-              >
-                {STIPULATION_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {match.stipulation === "Custom/Other" && (
-            <div style={{ marginBottom: 16 }}>
-              <label>
-                Custom Stipulation:<br />
-              </label>
-              <input
-                value={match.customStipulation || ''}
-                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                style={{ width: '100%' }}
-              />
-            </div>
           )}
           <div>
             <label>
@@ -1648,6 +1648,32 @@ function EditEvent({ events, updateEvent, wrestlers }) {
           </div>
           <div>
             <label>
+              Stipulation:<br />
+              <select
+                value={match.stipulation}
+                onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
+                style={inputStyle}
+              >
+                {STIPULATION_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {match.stipulation === "Custom/Other" && (
+            <div style={{ marginBottom: 16 }}>
+              <label>
+                Custom Stipulation:<br />
+              </label>
+              <input
+                value={match.customStipulation || ''}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                style={{ width: '100%' }}
+              />
+            </div>
+          )}
+          <div>
+            <label>
               Participants:<br />
               <input
                 value={match.participants}
@@ -1726,32 +1752,6 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 </label>
               </div>
             </>
-          )}
-          <div>
-            <label>
-              Stipulation:<br />
-              <select
-                value={match.stipulation}
-                onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
-                style={inputStyle}
-              >
-                {STIPULATION_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {match.stipulation === "Custom/Other" && (
-            <div style={{ marginBottom: 16 }}>
-              <label>
-                Custom Stipulation:<br />
-              </label>
-              <input
-                value={match.customStipulation || ''}
-                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                style={{ width: '100%' }}
-              />
-            </div>
           )}
           <div>
             <label>
