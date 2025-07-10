@@ -25,6 +25,10 @@ import Layout from './components/Layout';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
+  "None",
+  "Tag Team",
+  "3-way Tag Team",
+  "4-way Tag Team",
   "6-person Tag Team",
   "8-person Tag Team",
   "Battle Royal",
@@ -46,9 +50,6 @@ const CUSTOM_STIPULATION_OPTIONS = [
   "Queen of the Ring qualifier",
   "Street Fight",
   "Tables, Ladders, and Chairs (TLC)",
-  "Tag Team",
-  "3-way Tag Team",
-  "4-way Tag Team",
   "Triple Threat match",
   "Unsanctioned Match",
   "Women's Elimination Chamber qualifier",
