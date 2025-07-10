@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import BeltIcon from './BeltIcon';
+import { Helmet } from 'react-helmet';
 
 // Utility to calculate age from dob
 function calculateAge(dob) {
@@ -163,107 +164,114 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
   }
 
   return (
-    <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 900, margin: '32px auto', padding: 32 }}>
-      <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
-        ← Back to Event
-      </Link>
-      {/* Centered event title */}
-      <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
-        {match.title}
-      </div>
-      {/* Match Card Layout */}
-      <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 0, marginBottom: 24, minHeight: 340 }}>
-        {/* Left participant */}
-        <div style={{ textAlign: 'center', position: 'relative', minWidth: 120, flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
-          <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 95, height: 95, borderRadius: '50%', objectFit: 'cover', marginBottom: 6, border: winnerIndex === 0 ? '4px solid #C6A04F' : '2px solid #888' }} />
-          <div style={{ fontWeight: 700, fontSize: 20, marginTop: 2 }}>{wrestlers[0]?.name || '—'}</div>
-          {/* Belt and title outcome under winner, or placeholder for loser */}
-          {isCompleted && winnerIndex === 0 && isTitleMatch ? (
-            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 40 }}>
-              <BeltIcon size={32} />
-              {match.titleOutcome && match.titleOutcome !== 'None' && (
-                <div style={{ fontSize: 12, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
-              )}
-            </div>
-          ) : (
-            <div style={{ marginTop: 6, minHeight: 40 }}></div>
-          )}
-          {/* Wrestler Info Block under image/name */}
-          <div style={{ marginTop: 10 }}>
-            <WrestlerInfoBlock wrestler={wrestlers[0]} titleStatus={wrestlers[0]?.titleStatus} last5={wrestlers[0]?.last5Results} />
-          </div>
+    <>
+      <Helmet>
+        <title>{match?.eventName || match?.title || 'Event'} Results - {match?.date || ''} | Wrestling Boxscore</title>
+        <meta name="description" content={`Full results and match card for ${match?.eventName || match?.title || 'this event'}${match?.date ? ' on ' + match.date : ''}${match?.location ? ' in ' + match.location : ''}.`} />
+        <link rel="canonical" href={`https://wrestlingboxscore.com/event/${match?.eventId || ''}/match/${match?.order || ''}`} />
+      </Helmet>
+      <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 900, margin: '32px auto', padding: 32 }}>
+        <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
+          ← Back to Event
+        </Link>
+        {/* Centered event title */}
+        <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
+          {match.title}
         </div>
-        {/* Left arrow (always reserve space) and center match info, vertically centered */}
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', minWidth: 140, justifyContent: 'center', height: 340 }}>
-          <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 340 }}>
-            {isCompleted && winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
-          </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 340 }}>
-            {topLabel && (
-              <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 16, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{topLabel}</div>
+        {/* Match Card Layout */}
+        <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 0, marginBottom: 24, minHeight: 340 }}>
+          {/* Left participant */}
+          <div style={{ textAlign: 'center', position: 'relative', minWidth: 120, flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
+            <img src={wrestlers[0]?.image_url} alt={wrestlers[0]?.name} style={{ width: 95, height: 95, borderRadius: '50%', objectFit: 'cover', marginBottom: 6, border: winnerIndex === 0 ? '4px solid #C6A04F' : '2px solid #888' }} />
+            <div style={{ fontWeight: 700, fontSize: 20, marginTop: 2 }}>{wrestlers[0]?.name || '—'}</div>
+            {/* Belt and title outcome under winner, or placeholder for loser */}
+            {isCompleted && winnerIndex === 0 && isTitleMatch ? (
+              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 40 }}>
+                <BeltIcon size={32} />
+                {match.titleOutcome && match.titleOutcome !== 'None' && (
+                  <div style={{ fontSize: 12, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ marginTop: 6, minHeight: 40 }}></div>
             )}
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: 24, marginBottom: 2, textAlign: 'center' }}>
-              {match.result && match.result !== 'No winner' ? 'Final' : match.result}
+            {/* Wrestler Info Block under image/name */}
+            <div style={{ marginTop: 10 }}>
+              <WrestlerInfoBlock wrestler={wrestlers[0]} titleStatus={wrestlers[0]?.titleStatus} last5={wrestlers[0]?.last5Results} />
             </div>
-            <div style={{ color: '#bbb', fontSize: 14, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-            <div style={{ color: '#bbb', fontSize: 14, textAlign: 'center' }}>{match.time}</div>
           </div>
-          <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 340 }}>
-            {isCompleted && winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
-          </div>
-        </div>
-        {/* Right participant */}
-        <div style={{ textAlign: 'center', position: 'relative', minWidth: 120, flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
-          <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 95, height: 95, borderRadius: '50%', objectFit: 'cover', marginBottom: 6, border: winnerIndex === 1 ? '4px solid #C6A04F' : '2px solid #888' }} />
-          <div style={{ fontWeight: 700, fontSize: 20, marginTop: 2 }}>{wrestlers[1]?.name || '—'}</div>
-          {/* Belt and title outcome under winner, or placeholder for loser */}
-          {isCompleted && winnerIndex === 1 && isTitleMatch ? (
-            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 40 }}>
-              <BeltIcon size={32} />
-              {match.titleOutcome && match.titleOutcome !== 'None' && (
-                <div style={{ fontSize: 12, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
+          {/* Left arrow (always reserve space) and center match info, vertically centered */}
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', minWidth: 140, justifyContent: 'center', height: 340 }}>
+            <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 340 }}>
+              {isCompleted && winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 340 }}>
+              {topLabel && (
+                <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 16, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{topLabel}</div>
               )}
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 24, marginBottom: 2, textAlign: 'center' }}>
+                {match.result && match.result !== 'No winner' ? 'Final' : match.result}
+              </div>
+              <div style={{ color: '#bbb', fontSize: 14, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+              <div style={{ color: '#bbb', fontSize: 14, textAlign: 'center' }}>{match.time}</div>
             </div>
-          ) : (
-            <div style={{ marginTop: 6, minHeight: 40 }}></div>
-          )}
-          {/* Wrestler Info Block under image/name */}
-          <div style={{ marginTop: 10 }}>
-            <WrestlerInfoBlock wrestler={wrestlers[1]} titleStatus={wrestlers[1]?.titleStatus} last5={wrestlers[1]?.last5Results} />
+            <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 340 }}>
+              {isCompleted && winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
+            </div>
+          </div>
+          {/* Right participant */}
+          <div style={{ textAlign: 'center', position: 'relative', minWidth: 120, flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
+            <img src={wrestlers[1]?.image_url} alt={wrestlers[1]?.name} style={{ width: 95, height: 95, borderRadius: '50%', objectFit: 'cover', marginBottom: 6, border: winnerIndex === 1 ? '4px solid #C6A04F' : '2px solid #888' }} />
+            <div style={{ fontWeight: 700, fontSize: 20, marginTop: 2 }}>{wrestlers[1]?.name || '—'}</div>
+            {/* Belt and title outcome under winner, or placeholder for loser */}
+            {isCompleted && winnerIndex === 1 && isTitleMatch ? (
+              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 40 }}>
+                <BeltIcon size={32} />
+                {match.titleOutcome && match.titleOutcome !== 'None' && (
+                  <div style={{ fontSize: 12, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2 }}>{match.titleOutcome}</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ marginTop: 6, minHeight: 40 }}></div>
+            )}
+            {/* Wrestler Info Block under image/name */}
+            <div style={{ marginTop: 10 }}>
+              <WrestlerInfoBlock wrestler={wrestlers[1]} titleStatus={wrestlers[1]?.titleStatus} last5={wrestlers[1]?.last5Results} />
+            </div>
           </div>
         </div>
+        <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
+          <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
+          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap)}</div>
+          <div><b>Winner:</b> {getWinnerDisplay(match, wrestlerMap)}</div>
+          <div><b>Method:</b> {match.method}</div>
+          <div><b>Time:</b> {match.time}</div>
+          <div><b>Stipulation:</b> {match.stipulation}</div>
+          <div><b>Title:</b> {match.title}</div>
+          <div><b>Title Outcome:</b> {match.titleOutcome}</div>
+        </div>
+        <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
+          <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Commentary</div>
+          {match.commentary && match.commentary.length > 0 ? (
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {match.commentary.map((c, i) => (
+                <li key={i} style={{ marginBottom: 4 }}>
+                  <span style={{ color: '#C6A04F', marginRight: 8 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
+                  {c.text}
+                </li>
+              ))}
+            </ul>
+          ) : <div style={{ color: '#bbb' }}>No commentary yet.</div>}
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <button onClick={onEdit} style={{
+            background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4,
+            fontWeight: 700, fontSize: 16, padding: '10px 32px', cursor: 'pointer'
+          }}>
+            Edit Match
+          </button>
+        </div>
       </div>
-      <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
-        <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
-        <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap)}</div>
-        <div><b>Winner:</b> {getWinnerDisplay(match, wrestlerMap)}</div>
-        <div><b>Method:</b> {match.method}</div>
-        <div><b>Time:</b> {match.time}</div>
-        <div><b>Stipulation:</b> {match.stipulation}</div>
-        <div><b>Title:</b> {match.title}</div>
-        <div><b>Title Outcome:</b> {match.titleOutcome}</div>
-      </div>
-      <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
-        <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Commentary</div>
-        {match.commentary && match.commentary.length > 0 ? (
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {match.commentary.map((c, i) => (
-              <li key={i} style={{ marginBottom: 4 }}>
-                <span style={{ color: '#C6A04F', marginRight: 8 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
-                {c.text}
-              </li>
-            ))}
-          </ul>
-        ) : <div style={{ color: '#bbb' }}>No commentary yet.</div>}
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <button onClick={onEdit} style={{
-          background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4,
-          fontWeight: 700, fontSize: 16, padding: '10px 32px', cursor: 'pointer'
-        }}>
-          Edit Match
-        </button>
-      </div>
-    </div>
+    </>
   );
 } 
