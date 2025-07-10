@@ -87,5 +87,5 @@ export const TITLE_OUTCOME_OPTIONS = [
   "Successful Defense",
   "New Champion",
   "Vacant",
-  "No. 1 Contender Match"
+  "No. 1 Contender"
 ]; 
