@@ -1187,6 +1187,20 @@ function AddEvent({ addEvent, wrestlers }) {
           )}
           <div>
             <label>
+              Title:<br />
+              <select
+                value={match.title}
+                onChange={e => setMatch({ ...match, title: e.target.value })}
+                style={inputStyle}
+              >
+                {TITLE_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>
               Participants:<br />
               <input
                 value={match.participants}
@@ -1266,20 +1280,6 @@ function AddEvent({ addEvent, wrestlers }) {
               </div>
             </>
           )}
-          <div>
-            <label>
-              Title:<br />
-              <select
-                value={match.title}
-                onChange={e => setMatch({ ...match, title: e.target.value })}
-                style={inputStyle}
-              >
-                {TITLE_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </label>
-          </div>
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>
               Special Match Winner:
@@ -1682,6 +1682,20 @@ function EditEvent({ events, updateEvent, wrestlers }) {
           )}
           <div>
             <label>
+              Title:<br />
+              <select
+                value={match.title}
+                onChange={e => setMatch({ ...match, title: e.target.value })}
+                style={inputStyle}
+              >
+                {TITLE_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>
               Participants:<br />
               <input
                 value={match.participants}
@@ -1761,20 +1775,6 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               </div>
             </>
           )}
-          <div>
-            <label>
-              Title:<br />
-              <select
-                value={match.title}
-                onChange={e => setMatch({ ...match, title: e.target.value })}
-                style={inputStyle}
-              >
-                {TITLE_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </label>
-          </div>
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>
               Special Match Winner:

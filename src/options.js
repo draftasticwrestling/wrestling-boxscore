@@ -19,6 +19,7 @@ export const STIPULATION_OPTIONS = [
   "Men's Elimination Chamber qualifier",
   "Men's Money in the Bank qualifier",
   "Men's Survivor Series Qualifier",
+  "No. 1 Contender Match",
   "Non-Title Match",
   "Queen of the Ring finalist",
   "Queen of the Ring qualifier",
@@ -84,5 +85,7 @@ export const SPECIAL_WINNER_OPTIONS = [
 export const TITLE_OUTCOME_OPTIONS = [
   "None",
   "Successful Defense",
-  "New Champion"
+  "New Champion",
+  "Vacant",
+  "No. 1 Contender Match"
 ]; 
