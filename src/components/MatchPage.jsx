@@ -85,7 +85,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
     <div style={sectionStyle}>
       <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
       <h2 style={{ color: gold, marginTop: 24 }}>Match Details</h2>
-      {user && (
+      {user && user.email && (
         <button
           style={{
             marginBottom: 24,
