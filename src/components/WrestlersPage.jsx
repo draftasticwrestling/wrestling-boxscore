@@ -1,5 +1,8 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
+import BeltIcon from './BeltIcon';
+import MedicalCrossIcon from './MedicalCrossIcon';
+import InactiveIcon from './InactiveIcon';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'Unassigned'];
 const BRAND_LABELS = {
@@ -61,11 +64,26 @@ export default function WrestlersPage({ wrestlers = [] }) {
                     padding: '12px 8px',
                     boxShadow: '0 0 8px #C6A04F11',
                   }}>
-                    <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#444', marginBottom: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {w.image_url
-                        ? <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
-                        : <span role="img" aria-label="wrestler" style={{ fontSize: 40, color: '#7da2c1' }}>&#128100;</span>
-                      }
+                    <div style={{ position: 'relative', width: 72, height: 72 }}>
+                      <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
+                      {/* Belt icon if currentTitle is not empty */}
+                      {w.currentTitle && (
+                        <div style={{ position: 'absolute', top: -10, left: -10 }}>
+                          <BeltIcon size={32} />
+                        </div>
+                      )}
+                      {/* Medical cross if status is Injured */}
+                      {w.status === 'Injured' && (
+                        <div style={{ position: 'absolute', top: -10, right: -10 }}>
+                          <MedicalCrossIcon size={28} />
+                        </div>
+                      )}
+                      {/* Inactive TV icon if status is Inactive */}
+                      {w.status === 'Inactive' && (
+                        <div style={{ position: 'absolute', bottom: -10, right: -10 }}>
+                          <InactiveIcon size={28} />
+                        </div>
+                      )}
                     </div>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', textAlign: 'center', wordBreak: 'break-word' }}>{w.name}</div>
                   </div>
