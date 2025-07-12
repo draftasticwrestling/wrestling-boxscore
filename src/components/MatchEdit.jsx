@@ -364,6 +364,18 @@ export default function MatchEdit({
           style={inputStyle}
         />
       </div>
+      <div>
+        <label style={labelStyle}>Match Status:</label>
+        <select
+          style={inputStyle}
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+        >
+          <option value="upcoming">Upcoming</option>
+          <option value="live">Live</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
       {/* Show result fields if status is completed OR (isLive and liveEnd) */}
       {(status === 'completed' || (isLive && liveEnd)) && (
         <>
