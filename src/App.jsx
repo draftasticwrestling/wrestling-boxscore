@@ -23,6 +23,8 @@ import Menu from './components/Menu';
 import WrestlersPage from './components/WrestlersPage';
 import Layout from './components/Layout';
 import { Helmet } from 'react-helmet';
+import WrestlerMultiSelect from './components/WrestlerMultiSelect';
+import WrestlerAutocomplete from './components/WrestlerAutocomplete';
 
 // Place these at the top level, after imports
 const CUSTOM_STIPULATION_OPTIONS = [
@@ -946,6 +948,9 @@ function AddEvent({ addEvent, wrestlers }) {
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [eventStatus, setEventStatus] = useState('completed'); // 'upcoming' or 'completed'
+  const [numParticipants, setNumParticipants] = useState(10);
+  const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
+  const [brWinner, setBrWinner] = useState('');
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -957,19 +962,18 @@ function AddEvent({ addEvent, wrestlers }) {
     e.preventDefault();
     // --- Battle Royal branch ---
     if (match.stipulation === 'Battle Royal') {
-      // Assume participants is an array and winner is a slug (from Battle Royal UI)
-      const brParticipants = Array.isArray(match.participants) ? match.participants.filter(Boolean) : [];
-      const brWinner = match.winner || '';
+      const brPart = brParticipants.filter(Boolean);
+      const brWin = brWinner;
       let brResult = '';
-      if (eventStatus === 'completed' && brWinner && brParticipants.length >= 2) {
-        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
+      if (eventStatus === 'completed' && brWin && brPart.length >= 2) {
+        const winnerName = wrestlers.find(w => w.id === brWin)?.name || brWin;
         brResult = `${winnerName} won the Battle Royal`;
       } else if (eventStatus === 'completed') {
         brResult = 'No winner';
       }
       setMatches([
         ...matches,
-        { ...match, participants: brParticipants, winner: brWinner, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
+        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
       ]);
       setMatch({
         participants: '',
@@ -985,6 +989,9 @@ function AddEvent({ addEvent, wrestlers }) {
       });
       setResultType('');
       setWinner('');
+      setNumParticipants(10);
+      setBrParticipants(Array(10).fill(''));
+      setBrWinner('');
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -1233,24 +1240,56 @@ function AddEvent({ addEvent, wrestlers }) {
               </select>
             </label>
           </div>
-          <div>
-            <label>
-              Participants:<br />
-              <input
-                value={match.participants}
-                onChange={e => {
-                  const newParticipants = e.target.value;
-                  const newOptions = newParticipants.includes(' vs ')
-                    ? newParticipants.split(' vs ').map(side => side.trim())
-                    : [];
-                  if (!newOptions.includes(winner)) setWinner('');
-                  setMatch({ ...match, participants: newParticipants });
-                }}
-                required
-                style={{ width: '100%' }}
-              />
-            </label>
-          </div>
+          {match.stipulation === 'Battle Royal' ? (
+            <>
+              <div>
+                <label style={{ color: gold, fontWeight: 600 }}>Number of Participants:</label>
+                <select value={numParticipants} onChange={e => {
+                  const n = parseInt(e.target.value, 10);
+                  setNumParticipants(n);
+                  setBrParticipants(prev => {
+                    const arr = prev.slice(0, n);
+                    while (arr.length < n) arr.push('');
+                    return arr;
+                  });
+                }} style={inputStyle}>
+                  {Array.from({length: 21}, (_, i) => i + 10).map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              {brParticipants.map((slug, i) => (
+                <WrestlerAutocomplete
+                  key={i}
+                  wrestlers={wrestlers}
+                  value={slug}
+                  onChange={val => setBrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+                  placeholder={`Participant ${i+1}`}
+                />
+              ))}
+              <div>
+                <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
+                <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
+                  <option value="">Select winner</option>
+                  {brParticipants.filter(Boolean).map((slug, i) => (
+                    <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label>
+                Participants:<br />
+                <input
+                  value={match.participants}
+                  onChange={e => setMatch({ ...match, participants: e.target.value })}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </label>
+            </div>
+          )}
           {eventStatus === 'completed' && (
             <>
               <div>
@@ -1392,6 +1431,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [eventStatus, setEventStatus] = useState(event.status || 'completed');
   const [editingMatchIdx, setEditingMatchIdx] = useState(null);
   const [expanded, setExpanded] = React.useState(false);
+  const [numParticipants, setNumParticipants] = useState(10);
+  const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
+  const [brWinner, setBrWinner] = useState('');
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -1403,18 +1445,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     e.preventDefault();
     // --- Battle Royal branch ---
     if (match.stipulation === 'Battle Royal') {
-      const brParticipants = Array.isArray(match.participants) ? match.participants.filter(Boolean) : [];
-      const brWinner = match.winner || '';
+      const brPart = brParticipants.filter(Boolean);
+      const brWin = brWinner;
       let brResult = '';
-      if (eventStatus === 'completed' && brWinner && brParticipants.length >= 2) {
-        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
+      if (eventStatus === 'completed' && brWin && brPart.length >= 2) {
+        const winnerName = wrestlers.find(w => w.id === brWin)?.name || brWin;
         brResult = `${winnerName} won the Battle Royal`;
       } else if (eventStatus === 'completed') {
         brResult = 'No winner';
       }
       setMatches([
         ...matches,
-        { ...match, participants: brParticipants, winner: brWinner, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
+        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
       ]);
       setMatch({
         participants: '',
@@ -1430,6 +1472,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       });
       setResultType('');
       setWinner('');
+      setNumParticipants(10);
+      setBrParticipants(Array(10).fill(''));
+      setBrWinner('');
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -1762,24 +1807,56 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 </select>
               </label>
             </div>
-            <div>
-              <label>
-                Participants:<br />
-                <input
-                  value={match.participants}
-                  onChange={e => {
-                    const newParticipants = e.target.value;
-                    const newOptions = newParticipants.includes(' vs ')
-                      ? newParticipants.split(' vs ').map(side => side.trim())
-                      : [];
-                    if (!newOptions.includes(winner)) setWinner('');
-                    setMatch({ ...match, participants: newParticipants });
-                  }}
-                  required
-                  style={{ width: '100%' }}
-                />
-              </label>
-            </div>
+            {match.stipulation === 'Battle Royal' ? (
+              <>
+                <div>
+                  <label style={{ color: gold, fontWeight: 600 }}>Number of Participants:</label>
+                  <select value={numParticipants} onChange={e => {
+                    const n = parseInt(e.target.value, 10);
+                    setNumParticipants(n);
+                    setBrParticipants(prev => {
+                      const arr = prev.slice(0, n);
+                      while (arr.length < n) arr.push('');
+                      return arr;
+                    });
+                  }} style={inputStyle}>
+                    {Array.from({length: 21}, (_, i) => i + 10).map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                {brParticipants.map((slug, i) => (
+                  <WrestlerAutocomplete
+                    key={i}
+                    wrestlers={wrestlers}
+                    value={slug}
+                    onChange={val => setBrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+                    placeholder={`Participant ${i+1}`}
+                  />
+                ))}
+                <div>
+                  <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
+                  <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
+                    <option value="">Select winner</option>
+                    {brParticipants.filter(Boolean).map((slug, i) => (
+                      <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <div>
+                <label>
+                  Participants:<br />
+                  <input
+                    value={match.participants}
+                    onChange={e => setMatch({ ...match, participants: e.target.value })}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </label>
+              </div>
+            )}
             {eventStatus === 'completed' && (
               <>
                 <div>
