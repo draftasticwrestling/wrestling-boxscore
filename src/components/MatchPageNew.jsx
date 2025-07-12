@@ -184,7 +184,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           <div>
             <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Battle Royal Participants</div>
             <ul style={{ columns: 2, color: '#fff', fontSize: 16, marginBottom: 16, listStyle: 'none', padding: 0 }}>
-              {Array.isArray(match.participants) && match.participants.map(slug => (
+              {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
                 <li key={slug} style={{ marginBottom: 4 }}>{wrestlerMap[slug]?.name || slug}</li>
               ))}
             </ul>

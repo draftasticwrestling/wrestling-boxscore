@@ -363,7 +363,7 @@ const getTeams = (participants) => {
 // When displaying participants as a string
 const getParticipantsDisplay = (participants, wrestlerMap) => {
   if (Array.isArray(participants)) {
-    return participants.map(team => team.map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
+    return (Array.isArray(participants) ? participants : []).map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
     // Split by vs, then by &
