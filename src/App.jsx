@@ -1269,7 +1269,8 @@ function AddEvent({ addEvent, wrestlers }) {
               ))}
               <div>
                 <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
-                <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
+                <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} 
+                  required={eventStatus === 'completed'}>
                   <option value="">Select winner</option>
                   {brParticipants.filter(Boolean).map((slug, i) => (
                     <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
@@ -1836,7 +1837,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 ))}
                 <div>
                   <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
-                  <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
+                  <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} 
+                    required={eventStatus === 'completed'}>
                     <option value="">Select winner</option>
                     {brParticipants.filter(Boolean).map((slug, i) => (
                       <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
