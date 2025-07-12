@@ -7,6 +7,8 @@ import {
   TITLE_OUTCOME_OPTIONS
 } from '../options';
 import { supabase } from '../supabaseClient';
+import WrestlerMultiSelect from './WrestlerMultiSelect';
+import WrestlerAutocomplete from './WrestlerAutocomplete';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };
 const inputStyle = {
@@ -339,6 +341,11 @@ export default function MatchEdit({
     return { participants: [], tagTeams: {} };
   }
 
+  const isBattleRoyal = match.stipulation === 'Battle Royal';
+  const [numParticipants, setNumParticipants] = useState(match.participants?.length || 10);
+  const [brParticipants, setBrParticipants] = useState(match.participants || Array(numParticipants).fill(''));
+  const [brWinner, setBrWinner] = useState(match.winner || '');
+
   // UI rendering
   return (
     <form onSubmit={handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
@@ -355,151 +362,201 @@ export default function MatchEdit({
         </label>
       </div>
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
-      <div>
-        <label style={labelStyle}>Participants:</label>
-        <input
-          value={match.participants}
-          onChange={e => setMatch({ ...match, participants: e.target.value })}
-          required
-          style={inputStyle}
-        />
-      </div>
-      <div>
-        <label style={labelStyle}>Match Status:</label>
-        <select
-          style={inputStyle}
-          value={status}
-          onChange={e => setStatus(e.target.value)}
-        >
-          <option value="upcoming">Upcoming</option>
-          <option value="live">Live</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-      {/* Show result fields if status is completed OR (isLive and liveEnd) */}
-      {(status === 'completed' || (isLive && liveEnd)) && (
-        <>
+      {isBattleRoyal ? (
+        status === 'upcoming' ? (
           <div>
-            <label style={labelStyle}>Result Type:</label>
-            <select
-              style={inputStyle}
-              value={resultType}
-              onChange={e => setResultType(e.target.value)}
-              required
-            >
-              <option value="">Select result type</option>
-              <option value="Winner">Winner</option>
-              <option value="No Winner">No Winner</option>
+            <label style={labelStyle}>Participants (add known):</label>
+            {/* Use your existing multi-select or autocomplete for partial list, show up to 8 images */}
+            <WrestlerMultiSelect
+              value={brParticipants}
+              onChange={setBrParticipants}
+              wrestlers={wrestlers}
+              maxDisplay={8}
+            />
+          </div>
+        ) : (
+          <div>
+            <label style={labelStyle}>Number of Participants:</label>
+            <select value={numParticipants} onChange={e => {
+              const n = parseInt(e.target.value, 10);
+              setNumParticipants(n);
+              setBrParticipants(prev => {
+                const arr = prev.slice(0, n);
+                while (arr.length < n) arr.push('');
+                return arr;
+              });
+            }} style={inputStyle}>
+              {Array.from({length: 21}, (_, i) => i + 10).map(n => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            {brParticipants.map((slug, i) => (
+              <WrestlerAutocomplete
+                key={i}
+                wrestlers={wrestlers}
+                value={slug}
+                onChange={val => setBrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+                placeholder={`Participant ${i+1}`}
+              />
+            ))}
+            <label style={labelStyle}>Winner:</label>
+            <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
+              <option value="">Select winner</option>
+              {brParticipants.filter(Boolean).map((slug, i) => (
+                <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+              ))}
             </select>
           </div>
-          {resultType === 'Winner' && winnerOptions.length >= 2 && (
+        )
+      ) : (
+        <>
+          <div>
+            <label style={labelStyle}>Participants:</label>
+            <input
+              value={match.participants}
+              onChange={e => setMatch({ ...match, participants: e.target.value })}
+              required
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Match Status:</label>
+            <select
+              style={inputStyle}
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+            >
+              <option value="upcoming">Upcoming</option>
+              <option value="live">Live</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          {/* Show result fields if status is completed OR (isLive and liveEnd) */}
+          {(status === 'completed' || (isLive && liveEnd)) && (
+            <>
+              <div>
+                <label style={labelStyle}>Result Type:</label>
+                <select
+                  style={inputStyle}
+                  value={resultType}
+                  onChange={e => setResultType(e.target.value)}
+                  required
+                >
+                  <option value="">Select result type</option>
+                  <option value="Winner">Winner</option>
+                  <option value="No Winner">No Winner</option>
+                </select>
+              </div>
+              {resultType === 'Winner' && winnerOptions.length >= 2 && (
+                <div>
+                  <label style={labelStyle}>Winner:</label>
+                  <select
+                    style={inputStyle}
+                    value={winner}
+                    onChange={e => setWinner(e.target.value)}
+                    required
+                  >
+                    <option value="">Select winner</option>
+                    {winnerOptions.map(side => (
+                      <option key={side} value={side}>{side}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label style={labelStyle}>Method:</label>
+                <select
+                  style={inputStyle}
+                  value={match.method}
+                  onChange={e => setMatch({ ...match, method: e.target.value })}
+                  required={isMethodRequired()}
+                >
+                  <option value="">Select method</option>
+                  {METHOD_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Time:</label>
+                <input
+                  style={inputStyle}
+                  value={match.time}
+                  onChange={e => setMatch({ ...match, time: e.target.value })}
+                  placeholder="Match time (e.g. 12:34)"
+                />
+              </div>
+            </>
+          )}
+          <div>
+            <label style={labelStyle}>Stipulation:</label>
+            <select
+              style={inputStyle}
+              value={match.stipulation}
+              onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
+            >
+              {STIPULATION_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          {match.stipulation === 'Custom/Other' && (
             <div>
-              <label style={labelStyle}>Winner:</label>
-              <select
+              <label style={labelStyle}>Custom Stipulation:</label>
+              <input
                 style={inputStyle}
-                value={winner}
-                onChange={e => setWinner(e.target.value)}
-                required
-              >
-                <option value="">Select winner</option>
-                {winnerOptions.map(side => (
-                  <option key={side} value={side}>{side}</option>
-                ))}
-              </select>
+                value={match.customStipulation || ''}
+                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+              />
             </div>
           )}
           <div>
-            <label style={labelStyle}>Method:</label>
+            <label style={labelStyle}>Title:</label>
             <select
               style={inputStyle}
-              value={match.method}
-              onChange={e => setMatch({ ...match, method: e.target.value })}
-              required={isMethodRequired()}
+              value={match.title || ''}
+              onChange={e => setMatch({ ...match, title: e.target.value })}
             >
-              <option value="">Select method</option>
-              {METHOD_OPTIONS.map(opt => (
+              {TITLE_OPTIONS.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Time:</label>
-            <input
+            <label style={labelStyle}>Special Match Winner:</label>
+            <select
               style={inputStyle}
-              value={match.time}
-              onChange={e => setMatch({ ...match, time: e.target.value })}
-              placeholder="Match time (e.g. 12:34)"
+              value={match.specialWinnerType || 'None'}
+              onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+            >
+              {SPECIAL_WINNER_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Title Outcome:</label>
+            <select
+              style={inputStyle}
+              value={match.titleOutcome || ''}
+              onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
+            >
+              {TITLE_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Notes (optional):</label>
+            <textarea
+              style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
+              value={match.notes || ''}
+              onChange={e => setMatch({ ...match, notes: e.target.value })}
+              placeholder="Enter any additional notes about the match..."
             />
           </div>
         </>
       )}
-      <div>
-        <label style={labelStyle}>Stipulation:</label>
-        <select
-          style={inputStyle}
-          value={match.stipulation}
-          onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
-        >
-          {STIPULATION_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
-      {match.stipulation === 'Custom/Other' && (
-        <div>
-          <label style={labelStyle}>Custom Stipulation:</label>
-          <input
-            style={inputStyle}
-            value={match.customStipulation || ''}
-            onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-          />
-        </div>
-      )}
-      <div>
-        <label style={labelStyle}>Title:</label>
-        <select
-          style={inputStyle}
-          value={match.title || ''}
-          onChange={e => setMatch({ ...match, title: e.target.value })}
-        >
-          {TITLE_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>Special Match Winner:</label>
-        <select
-          style={inputStyle}
-          value={match.specialWinnerType || 'None'}
-          onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-        >
-          {SPECIAL_WINNER_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>Title Outcome:</label>
-        <select
-          style={inputStyle}
-          value={match.titleOutcome || ''}
-          onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
-        >
-          {TITLE_OUTCOME_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>Notes (optional):</label>
-        <textarea
-          style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
-          value={match.notes || ''}
-          onChange={e => setMatch({ ...match, notes: e.target.value })}
-          placeholder="Enter any additional notes about the match..."
-        />
-      </div>
       {/* Commentary UI: always show if there is commentary or if live match is active */}
       {(isLive || commentary.length > 0) && (
         <div style={{ marginTop: 24 }}>

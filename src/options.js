@@ -68,6 +68,7 @@ export const TITLE_OPTIONS = [
 
 export const SPECIAL_WINNER_OPTIONS = [
   "None",
+  "Battle Royal Winner",
   "Women's Money in the Bank winner",
   "Men's Money in the Bank winner",
   "Men's Royal Rumble winner",
