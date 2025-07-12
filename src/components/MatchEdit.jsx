@@ -206,6 +206,31 @@ export default function MatchEdit({
       ? match.customStipulation
       : match.stipulation === 'None' ? '' : match.stipulation;
     let result = '';
+    // --- Battle Royal branch ---
+    if (isBattleRoyal) {
+      // Save participants as array, winner as slug, and result as a string
+      let brResult = '';
+      if (finalStatus === 'completed' && brWinner && brParticipants.filter(Boolean).length >= 2) {
+        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
+        brResult = `${winnerName} won the Battle Royal`;
+      } else if (finalStatus === 'completed') {
+        brResult = 'No winner';
+      }
+      onSave({
+        ...match,
+        participants: brParticipants.filter(Boolean),
+        winner: brWinner,
+        result: brResult,
+        stipulation: finalStipulation,
+        status: finalStatus,
+        isLive: finalIsLive,
+        liveStart,
+        liveEnd,
+        commentary,
+      });
+      return;
+    }
+    // --- Default (non-Battle Royal) branch ---
     if (finalStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
       const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
       const winnerIndex = winnerOptions.indexOf(winner);

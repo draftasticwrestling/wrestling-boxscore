@@ -955,6 +955,39 @@ function AddEvent({ addEvent, wrestlers }) {
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
+    // --- Battle Royal branch ---
+    if (match.stipulation === 'Battle Royal') {
+      // Assume participants is an array and winner is a slug (from Battle Royal UI)
+      const brParticipants = Array.isArray(match.participants) ? match.participants.filter(Boolean) : [];
+      const brWinner = match.winner || '';
+      let brResult = '';
+      if (eventStatus === 'completed' && brWinner && brParticipants.length >= 2) {
+        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
+        brResult = `${winnerName} won the Battle Royal`;
+      } else if (eventStatus === 'completed') {
+        brResult = 'No winner';
+      }
+      setMatches([
+        ...matches,
+        { ...match, participants: brParticipants, winner: brWinner, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
+      ]);
+      setMatch({
+        participants: '',
+        result: '',
+        method: '',
+        time: '',
+        stipulation: '',
+        customStipulation: '',
+        title: '',
+        titleOutcome: '',
+        notes: '',
+        isLive: false
+      });
+      setResultType('');
+      setWinner('');
+      return;
+    }
+    // --- Default (non-Battle Royal) branch ---
     if (eventStatus === 'upcoming') {
       if (!match.participants) {
         alert('Please enter participants.');
@@ -1368,6 +1401,38 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
+    // --- Battle Royal branch ---
+    if (match.stipulation === 'Battle Royal') {
+      const brParticipants = Array.isArray(match.participants) ? match.participants.filter(Boolean) : [];
+      const brWinner = match.winner || '';
+      let brResult = '';
+      if (eventStatus === 'completed' && brWinner && brParticipants.length >= 2) {
+        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
+        brResult = `${winnerName} won the Battle Royal`;
+      } else if (eventStatus === 'completed') {
+        brResult = 'No winner';
+      }
+      setMatches([
+        ...matches,
+        { ...match, participants: brParticipants, winner: brWinner, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
+      ]);
+      setMatch({
+        participants: '',
+        result: '',
+        method: '',
+        time: '',
+        stipulation: '',
+        customStipulation: '',
+        title: '',
+        titleOutcome: '',
+        notes: '',
+        isLive: false
+      });
+      setResultType('');
+      setWinner('');
+      return;
+    }
+    // --- Default (non-Battle Royal) branch ---
     let finalStipulation = match.stipulation === "Custom/Other"
       ? match.customStipulation
       : match.stipulation === "None" ? "" : match.stipulation;
