@@ -7,7 +7,7 @@ import {
   TITLE_OUTCOME_OPTIONS
 } from '../options';
 import { supabase } from '../supabaseClient';
-import WrestlerMultiSelect from './WrestlerMultiSelect';
+
 import WrestlerAutocomplete from './WrestlerAutocomplete';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };

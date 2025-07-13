@@ -1,20 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
 
-export default function WrestlerMultiSelect({ onChange, label = 'Select Wrestlers', placeholder = 'Type to search...' }) {
-  const [wrestlers, setWrestlers] = useState([]);
+export default function WrestlerMultiSelect({ onChange, label = 'Select Wrestlers', placeholder = 'Type to search...', wrestlers = [] }) {
   const [query, setQuery] = useState('');
   const [filtered, setFiltered] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selected, setSelected] = useState([]);
-
-  useEffect(() => {
-    async function fetchWrestlers() {
-      const { data, error } = await supabase.from('wrestlers').select('id, name');
-      if (!error) setWrestlers(data);
-    }
-    fetchWrestlers();
-  }, []);
 
   useEffect(() => {
     if (query.trim() === '') {
