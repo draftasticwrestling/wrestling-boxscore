@@ -183,15 +183,39 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         {isBattleRoyal ? (
           <div>
             <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Battle Royal Participants</div>
-            <ul style={{ columns: 2, color: '#fff', fontSize: 16, marginBottom: 16, listStyle: 'none', padding: 0 }}>
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              justifyContent: 'center',
+              marginBottom: 16,
+              maxWidth: 600,
+              marginLeft: 'auto',
+              marginRight: 'auto',
+            }}>
               {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
-                <li key={slug} style={{ marginBottom: 4 }}>{wrestlerMap[slug]?.name || slug}</li>
+                <img
+                  key={slug}
+                  src={wrestlerMap[slug]?.image_url}
+                  alt={wrestlerMap[slug]?.name}
+                  title={wrestlerMap[slug]?.name}
+                  style={{
+                    width: match.winner === slug && isCompleted ? 100 : 44,
+                    height: match.winner === slug && isCompleted ? 100 : 44,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: match.winner === slug && isCompleted ? '4px solid #C6A04F' : '2px solid #888',
+                    boxShadow: match.winner === slug && isCompleted ? '0 0 16px #C6A04F88' : undefined,
+                    background: '#222',
+                    margin: 2,
+                    transition: 'all 0.2s',
+                  }}
+                />
               ))}
-            </ul>
+            </div>
             {isCompleted && match.winner && (
-              <div style={{ textAlign: 'center', marginTop: 24 }}>
-                <img src={wrestlerMap[match.winner]?.image_url} alt={wrestlerMap[match.winner]?.name} style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', marginBottom: 8 }} />
-                <div style={{ fontWeight: 800, fontSize: 22, color: '#C6A04F' }}>{wrestlerMap[match.winner]?.name || match.winner}</div>
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <div style={{ fontWeight: 800, fontSize: 22, color: '#C6A04F', marginBottom: 4 }}>{wrestlerMap[match.winner]?.name || match.winner}</div>
                 <div style={{ color: '#fff', fontSize: 16 }}>Winner</div>
               </div>
             )}
