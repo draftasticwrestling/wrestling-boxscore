@@ -182,6 +182,10 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         </div>
         {isBattleRoyal ? (
           <div>
+            {(() => {
+              console.log('Battle Royal participants:', match.participants);
+              console.log('wrestlerMap keys:', Object.keys(wrestlerMap || {}));
+            })()}
             <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Battle Royal Participants</div>
             <div style={{
               display: 'flex',
@@ -194,23 +198,25 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
               marginRight: 'auto',
             }}>
               {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
-                <img
-                  key={slug}
-                  src={wrestlerMap[slug]?.image_url}
-                  alt={wrestlerMap[slug]?.name}
-                  title={wrestlerMap[slug]?.name}
-                  style={{
-                    width: match.winner === slug && isCompleted ? 100 : 44,
-                    height: match.winner === slug && isCompleted ? 100 : 44,
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: match.winner === slug && isCompleted ? '4px solid #C6A04F' : '2px solid #888',
-                    boxShadow: match.winner === slug && isCompleted ? '0 0 16px #C6A04F88' : undefined,
-                    background: '#222',
-                    margin: 2,
-                    transition: 'all 0.2s',
-                  }}
-                />
+                <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
+                  <img
+                    src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                    alt={wrestlerMap[slug]?.name || slug}
+                    title={wrestlerMap[slug]?.name || slug}
+                    style={{
+                      width: match.winner === slug && isCompleted ? 100 : 44,
+                      height: match.winner === slug && isCompleted ? 100 : 44,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: match.winner === slug && isCompleted ? '4px solid #C6A04F' : '2px solid #888',
+                      boxShadow: match.winner === slug && isCompleted ? '0 0 16px #C6A04F88' : undefined,
+                      background: '#222',
+                      margin: 2,
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                  {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
+                </div>
               ))}
             </div>
             {isCompleted && match.winner && (
