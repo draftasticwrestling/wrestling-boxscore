@@ -116,6 +116,14 @@ export default function MatchEdit({
     setCommentary(initialMatch.commentary || []);
   }, [initialMatch.commentary]);
 
+  useEffect(() => {
+    // When match.participants changes (e.g., when opening the edit form), sync state
+    if (isBattleRoyal && Array.isArray(match.participants)) {
+      setNumParticipants(match.participants.length);
+      setBrParticipants(normalizeBrParticipants(match.participants, match.participants.length));
+    }
+  }, [match.participants, isBattleRoyal]);
+
   // Helper to check if method is required
   function isMethodRequired() {
     if (!eventDate) return true;
@@ -394,6 +402,19 @@ export default function MatchEdit({
           Live Match
         </label>
       </div>
+      {/* Always show Match Status for all match types */}
+      <div>
+        <label style={labelStyle}>Match Status:</label>
+        <select
+          style={inputStyle}
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+        >
+          <option value="upcoming">Upcoming</option>
+          <option value="live">Live</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       {isBattleRoyal ? (
         <div>
@@ -444,18 +465,6 @@ export default function MatchEdit({
               required
               style={inputStyle}
             />
-          </div>
-          <div>
-            <label style={labelStyle}>Match Status:</label>
-            <select
-              style={inputStyle}
-              value={status}
-              onChange={e => setStatus(e.target.value)}
-            >
-              <option value="upcoming">Upcoming</option>
-              <option value="live">Live</option>
-              <option value="completed">Completed</option>
-            </select>
           </div>
           {/* Show result fields if status is completed OR (isLive and liveEnd) */}
           {(status === 'completed' || (isLive && liveEnd)) && (
