@@ -59,7 +59,12 @@ function WrestlerInfoBlock({ wrestler = {}, titleStatus, last5 }) {
 // Helper to get display names for participants from slugs
 function getParticipantsDisplay(participants, wrestlerMap, stipulation) {
   if (Array.isArray(participants)) {
-    return participants.map(team => team.map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
+    // Battle Royal: flat array of slugs
+    if (stipulation === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
+      return participants.map(slug => wrestlerMap?.[slug]?.name || slug).join(', ');
+    }
+    // Tag/singles: array of arrays
+    return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
     // Split by vs, then by &
