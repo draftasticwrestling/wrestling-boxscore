@@ -367,8 +367,16 @@ export default function MatchEdit({
   }
 
   const isBattleRoyal = match.stipulation === 'Battle Royal';
-  const [numParticipants, setNumParticipants] = useState(match.participants?.length || 10);
-  const [brParticipants, setBrParticipants] = useState(match.participants || Array(numParticipants).fill(''));
+  // --- PATCH: Ensure brParticipants is always an array of strings ---
+  function normalizeBrParticipants(val, n) {
+    if (Array.isArray(val) && val.every(x => typeof x === 'string')) return val.slice(0, n).concat(Array(Math.max(0, n - val.length)).fill(''));
+    return Array(n).fill('');
+  }
+  const [numParticipants, setNumParticipants] = useState(Array.isArray(match.participants) ? match.participants.length : 10);
+  const [brParticipants, setBrParticipants] = useState(() => normalizeBrParticipants(match.participants, Array.isArray(match.participants) ? match.participants.length : 10));
+  useEffect(() => {
+    setBrParticipants(prev => normalizeBrParticipants(prev, numParticipants));
+  }, [numParticipants]);
   const [brWinner, setBrWinner] = useState(match.winner || '');
 
   // UI rendering
