@@ -127,6 +127,14 @@ export default function MatchEdit({
     }
   }, [match.participants, isBattleRoyal]);
 
+  // --- PATCH: Sync brParticipants and numParticipants with match.participants on form open or when match.participants changes ---
+  useEffect(() => {
+    if (isBattleRoyal && Array.isArray(match.participants) && match.participants.length > 0) {
+      setNumParticipants(match.participants.length);
+      setBrParticipants(normalizeBrParticipants(match.participants, match.participants.length));
+    }
+  }, [isBattleRoyal, match.participants]);
+
   // Helper to check if method is required
   function isMethodRequired() {
     if (!eventDate) return true;
