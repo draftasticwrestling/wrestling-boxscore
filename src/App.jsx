@@ -361,9 +361,14 @@ const getTeams = (participants) => {
 };
 
 // When displaying participants as a string
-const getParticipantsDisplay = (participants, wrestlerMap) => {
+const getParticipantsDisplay = (participants, wrestlerMap, stipulation) => {
   if (Array.isArray(participants)) {
-    return (Array.isArray(participants) ? participants : []).map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
+    // Battle Royal: flat array of slugs
+    if (stipulation === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
+      return participants.map(slug => wrestlerMap?.[slug]?.name || slug).join(', ');
+    }
+    // Tag/singles: array of arrays
+    return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
     // Split by vs, then by &
@@ -816,7 +821,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                 >
                   {/* Modern compact details layout */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
-                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap)}</div>
+                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation)}</div>
                     <div><strong>Winner:</strong> {(() => {
                       const winnerSlug = match.result && match.result.includes(' def. ')
                         ? match.result.split(' def. ')[0]
@@ -2273,7 +2278,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
       const wrestler = wrestlerMap[slug] || { name: slug, image_url: null };
       return {
         ...wrestler,
-        participantsDisplay: getParticipantsDisplay(match.participants, wrestlerMap),
+        participantsDisplay: getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation),
         winnerDisplay: (() => {
           const winnerSlug = match.result && match.result.includes(' def. ')
             ? match.result.split(' def. ')[0]

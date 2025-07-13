@@ -57,7 +57,7 @@ function WrestlerInfoBlock({ wrestler = {}, titleStatus, last5 }) {
 }
 
 // Helper to get display names for participants from slugs
-function getParticipantsDisplay(participants, wrestlerMap) {
+function getParticipantsDisplay(participants, wrestlerMap, stipulation) {
   if (Array.isArray(participants)) {
     return participants.map(team => team.map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
@@ -262,7 +262,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         )}
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
-          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap)}</div>
+          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation)}</div>
           <div><b>Winner:</b> {getWinnerDisplay(match, wrestlerMap)}</div>
           <div><b>Method:</b> {match.method}</div>
           <div><b>Time:</b> {match.time}</div>
