@@ -389,14 +389,6 @@ export default function MatchEdit({
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       {isBattleRoyal ? (
         <div>
-          <label style={labelStyle}>Participants (add known):</label>
-          {/* Use your existing multi-select or autocomplete for partial list, show up to 8 images */}
-          <WrestlerMultiSelect
-            value={brParticipants}
-            onChange={setBrParticipants}
-            wrestlers={wrestlers}
-            maxDisplay={8}
-          />
           <div>
             <label style={labelStyle}>Number of Participants:</label>
             <select value={numParticipants} onChange={e => {
@@ -412,7 +404,7 @@ export default function MatchEdit({
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            {brParticipants.map((slug, i) => (
+            {brParticipants.slice(0, numParticipants).map((slug, i) => (
               <WrestlerAutocomplete
                 key={i}
                 wrestlers={wrestlers}
@@ -422,7 +414,7 @@ export default function MatchEdit({
               />
             ))}
           </div>
-          {status === 'completed' && (
+          {status === 'completed' && brParticipants.filter(Boolean).length >= 2 && (
             <div>
               <label style={labelStyle}>Winner:</label>
               <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
