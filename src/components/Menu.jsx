@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { supabase, useUser } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
+import { useUser } from '../hooks/useUser';
 
 const menuIcon = (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import BeltIcon from './BeltIcon';
 import { Helmet } from 'react-helmet';
-import { useUser } from '../supabaseClient';
+import { useUser } from '../hooks/useUser';
 
 // Utility to calculate age from dob
 function calculateAge(dob) {

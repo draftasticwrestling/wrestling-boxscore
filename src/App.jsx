@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { events as initialEvents } from './events';
-import { supabase, useUser } from './supabaseClient';
+import { supabase } from './supabaseClient';
+import { useUser } from './hooks/useUser';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
 import MatchPageNew from './components/MatchPageNew';

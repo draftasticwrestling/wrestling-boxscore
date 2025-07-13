@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MatchEdit from './MatchEdit';
-import { useUser } from '../supabaseClient';
+import { useUser } from '../hooks/useUser';
 
 const gold = '#C6A04F';
 const sectionStyle = {
