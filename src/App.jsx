@@ -612,8 +612,41 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                     textOverflow: 'ellipsis',
                   }}>{topLabel}</div>
                 )}
-                {/* For 3+ sides, center match info above participants */}
-                {isMultiSide ? (
+                {/* Battle Royal participant image grid */}
+                {match.stipulation === 'Battle Royal' && Array.isArray(match.participants) ? (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    justifyContent: 'center',
+                    marginBottom: 16,
+                    maxWidth: 600,
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                  }}>
+                    {match.participants.map(slug => (
+                      <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
+                        <img
+                          src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                          alt={wrestlerMap[slug]?.name || slug}
+                          title={wrestlerMap[slug]?.name || slug}
+                          style={{
+                            width: match.winner === slug ? 64 : 32,
+                            height: match.winner === slug ? 64 : 32,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: match.winner === slug ? '3px solid #C6A04F' : '1.5px solid #888',
+                            boxShadow: match.winner === slug ? '0 0 8px #C6A04F88' : undefined,
+                            background: '#222',
+                            margin: 2,
+                            transition: 'all 0.2s',
+                          }}
+                        />
+                        {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
+                      </div>
+                    ))}
+                  </div>
+                ) : isMultiSide ? (
                   <>
                     {/* Match Info Block */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
