@@ -388,18 +388,15 @@ export default function MatchEdit({
       </div>
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       {isBattleRoyal ? (
-        status === 'upcoming' ? (
-          <div>
-            <label style={labelStyle}>Participants (add known):</label>
-            {/* Use your existing multi-select or autocomplete for partial list, show up to 8 images */}
-            <WrestlerMultiSelect
-              value={brParticipants}
-              onChange={setBrParticipants}
-              wrestlers={wrestlers}
-              maxDisplay={8}
-            />
-          </div>
-        ) : (
+        <div>
+          <label style={labelStyle}>Participants (add known):</label>
+          {/* Use your existing multi-select or autocomplete for partial list, show up to 8 images */}
+          <WrestlerMultiSelect
+            value={brParticipants}
+            onChange={setBrParticipants}
+            wrestlers={wrestlers}
+            maxDisplay={8}
+          />
           <div>
             <label style={labelStyle}>Number of Participants:</label>
             <select value={numParticipants} onChange={e => {
@@ -424,15 +421,19 @@ export default function MatchEdit({
                 placeholder={`Participant ${i+1}`}
               />
             ))}
-            <label style={labelStyle}>Winner:</label>
-            <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
-              <option value="">Select winner</option>
-              {brParticipants.filter(Boolean).map((slug, i) => (
-                <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
-              ))}
-            </select>
           </div>
-        )
+          {status === 'completed' && (
+            <div>
+              <label style={labelStyle}>Winner:</label>
+              <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
+                <option value="">Select winner</option>
+                {brParticipants.filter(Boolean).map((slug, i) => (
+                  <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       ) : (
         <>
           <div>
