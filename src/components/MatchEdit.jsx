@@ -61,6 +61,9 @@ export default function MatchEdit({
   const [editingCommentIdx, setEditingCommentIdx] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState("");
 
+  // Define isBattleRoyal early to avoid "Cannot access before initialization" error
+  const isBattleRoyal = match.stipulation === 'Battle Royal';
+
   useEffect(() => {
     setMatch(m => ({ ...m, status }));
   }, [status]);
@@ -374,7 +377,6 @@ export default function MatchEdit({
     return { participants: [], tagTeams: {} };
   }
 
-  const isBattleRoyal = match.stipulation === 'Battle Royal';
   // --- PATCH: Ensure brParticipants is always an array of strings ---
   function normalizeBrParticipants(val, n) {
     if (Array.isArray(val) && val.every(x => typeof x === 'string')) return val.slice(0, n).concat(Array(Math.max(0, n - val.length)).fill(''));
