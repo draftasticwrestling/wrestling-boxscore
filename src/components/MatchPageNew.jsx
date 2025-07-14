@@ -187,47 +187,118 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         </div>
         {isBattleRoyal ? (
           <div>
-            {(() => {
-              console.log('Battle Royal participants:', match.participants);
-              console.log('wrestlerMap keys:', Object.keys(wrestlerMap || {}));
-            })()}
             <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Battle Royal Participants</div>
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-              justifyContent: 'center',
-              marginBottom: 16,
-              maxWidth: 600,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-            }}>
-              {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
-                <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
+            {isCompleted && match.winner ? (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                position: 'relative',
+                minHeight: 180,
+              }}>
+                {/* Winner in center */}
+                <div style={{ position: 'relative', zIndex: 2 }}>
                   <img
-                    src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
-                    alt={wrestlerMap[slug]?.name || slug}
-                    title={wrestlerMap[slug]?.name || slug}
+                    src={wrestlerMap[match.winner]?.image_url || '/images/placeholder.png'}
+                    alt={wrestlerMap[match.winner]?.name || match.winner}
+                    title={wrestlerMap[match.winner]?.name || match.winner}
                     style={{
-                      width: match.winner === slug && isCompleted ? 100 : 44,
-                      height: match.winner === slug && isCompleted ? 100 : 44,
+                      width: 110,
+                      height: 110,
                       borderRadius: '50%',
                       objectFit: 'cover',
-                      border: match.winner === slug && isCompleted ? '4px solid #C6A04F' : '2px solid #888',
-                      boxShadow: match.winner === slug && isCompleted ? '0 0 16px #C6A04F88' : undefined,
+                      border: '5px solid #C6A04F',
+                      boxShadow: '0 0 24px #C6A04F88',
                       background: '#222',
                       margin: 2,
                       transition: 'all 0.2s',
                     }}
                   />
-                  {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
+                  <div style={{ fontWeight: 800, fontSize: 22, color: '#C6A04F', marginTop: 8, textAlign: 'center' }}>{wrestlerMap[match.winner]?.name || match.winner}</div>
+                  <div style={{ color: '#fff', fontSize: 16, textAlign: 'center' }}>Winner</div>
                 </div>
-              ))}
-            </div>
-            {isCompleted && match.winner && (
-              <div style={{ textAlign: 'center', marginTop: 16 }}>
-                <div style={{ fontWeight: 800, fontSize: 22, color: '#C6A04F', marginBottom: 4 }}>{wrestlerMap[match.winner]?.name || match.winner}</div>
-                <div style={{ color: '#fff', fontSize: 16 }}>Winner</div>
+                {/* Other participants in a ring/arc around winner */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: 180,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}>
+                  <div style={{
+                    position: 'relative',
+                    width: 260,
+                    height: 180,
+                  }}>
+                    {match.participants.filter(slug => slug !== match.winner).map((slug, i, arr) => {
+                      const angle = (i / arr.length) * 2 * Math.PI;
+                      const radiusX = 110;
+                      const radiusY = 70;
+                      const x = Math.cos(angle) * radiusX + 120;
+                      const y = Math.sin(angle) * radiusY + 80;
+                      return (
+                        <img
+                          key={slug}
+                          src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                          alt={wrestlerMap[slug]?.name || slug}
+                          title={wrestlerMap[slug]?.name || slug}
+                          style={{
+                            position: 'absolute',
+                            left: x,
+                            top: y,
+                            width: 44,
+                            height: 44,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid #888',
+                            background: '#222',
+                            margin: 2,
+                            boxShadow: '0 0 8px #0008',
+                            transition: 'all 0.2s',
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                justifyContent: 'center',
+                marginBottom: 16,
+                maxWidth: 600,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              }}>
+                {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
+                  <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
+                    <img
+                      src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                      alt={wrestlerMap[slug]?.name || slug}
+                      title={wrestlerMap[slug]?.name || slug}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #888',
+                        background: '#222',
+                        margin: 2,
+                        transition: 'all 0.2s',
+                      }}
+                    />
+                    {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
+                  </div>
+                ))}
               </div>
             )}
           </div>
