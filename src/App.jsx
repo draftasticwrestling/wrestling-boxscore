@@ -6,13 +6,7 @@ import { useUser } from './hooks/useUser';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
 import MatchPageNew from './components/MatchPageNew';
-import BeltIcon from './components/BeltIcon';
-import BriefcaseIcon from './components/BriefcaseIcon';
-import CrownIcon from './components/CrownIcon';
-import TrophyIcon from './components/TrophyIcon';
-import ChamberIcon from './components/ChamberIcon';
-import WarGamesIcon from './components/WarGamesIcon';
-import SurvivorIcon from './components/SurvivorIcon';
+import MatchCard from './components/MatchCard';
 import {
   STIPULATION_OPTIONS,
   METHOD_OPTIONS,
@@ -324,31 +318,7 @@ function formatResult(winner, others) {
   return `${winner} def. ${others.slice(0, -1).join(', ')} and ${others[others.length - 1]}`;
 }
 
-// Function to get the appropriate special winner icon
-function getSpecialWinnerIcon(specialWinnerType) {
-  switch (specialWinnerType) {
-    case "Women's Money in the Bank winner":
-    case "Men's Money in the Bank winner":
-      return <BriefcaseIcon size={32} />;
-    case "King of the Ring winner":
-    case "Queen of the Ring winner":
-      return <CrownIcon size={32} />;
-    case "Men's Royal Rumble winner":
-    case "Women's Royal Rumble winner":
-      return <TrophyIcon size={32} />;
-    case "Men's Elimination Chamber winner":
-    case "Women's Elimination Chamber winner":
-      return <ChamberIcon size={32} />;
-    case "Men's War Games winner":
-    case "Women's War Games winner":
-      return <WarGamesIcon size={32} />;
-    case "Men's Ultimate Survivor":
-    case "Women's Ultimate Survivor":
-      return <SurvivorIcon size={32} />;
-    default:
-      return null;
-  }
-}
+
 
 // Replace all occurrences of splitting participants as a string with array logic
 // Example: parsing teams for rendering
@@ -527,294 +497,14 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {matchesWithCardType.map((match, index) => {
             const [expanded, setExpanded] = React.useState(false);
-            // Parse participants into sides (split by 'vs')
-            const teams = getTeams(match.participants);
-            // For each side, split by '&' for tag teams
-            const teamStrings = (typeof match.participants === 'string')
-              ? match.participants.split(' vs ').map(s => s.trim())
-              : [];
-            // Winner logic
-            const winner = match.result && match.result.includes(' def. ')
-              ? match.result.split(' def. ')[0]
-              : (match.result ? match.result : '');
-            // Robust normalization function
-            function normalize(str) {
-              return (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
-            }
-            let winnerIndex = -1;
-            teamStrings.forEach((teamStr, idx) => {
-              const { teamName, slugs } = parseTeamString(teamStr);
-              const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
-              if (
-                (teamName && normalize(winner) === normalize(teamName)) ||
-                normalize(winner) === normalize(individualNames)
-              ) {
-                winnerIndex = idx;
-              }
-            });
-            const isTitleMatch = match.title && match.title !== 'None';
-            // SVG triangle arrows for winner indication
-            const triangleRight = (
-              <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
-                <polygon points="0,8 8,0 8,16" fill="#fff" />
-              </svg>
-            );
-            const triangleLeft = (
-              <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }}>
-                <polygon points="8,8 0,0 0,16" fill="#fff" />
-              </svg>
-            );
-            const triangleDown = (
-              <svg width="16" height="8" viewBox="0 0 16 8" style={{ display: 'block', margin: '0 auto 2px auto' }}>
-                <polygon points="8,8 0,0 16,0" fill="#fff" />
-              </svg>
-            );
-            // Top label: stipulation and/or title
-            let topLabel = '';
-            if (isTitleMatch && match.stipulation && match.stipulation !== 'None') {
-              topLabel = `${match.stipulation} — ${match.title}`;
-            } else if (isTitleMatch) {
-              topLabel = match.title;
-            } else if (match.stipulation && match.stipulation !== 'None') {
-              topLabel = match.stipulation;
-            }
-            // Layout for 2+ sides
-            const isMultiSide = teams.length > 2;
-            const isTwoSide = teams.length === 2;
             return (
-              <div
-                key={match.order}
-                onClick={() => navigate(`/event/${event.id}/match/${match.order}`)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: '#232323',
-                  borderRadius: 12,
-                  boxShadow: '0 0 12px #C6A04F22',
-                  padding: '18px 24px',
-                  cursor: 'pointer',
-                  border: '1px solid #444',
-                  transition: 'background 0.2s',
-                  position: 'relative',
-                  minHeight: 120,
-                  marginBottom: 2,
-                }}
-              >
-                {/* Top label: stipulation/title */}
-                {topLabel && (
-                  <div style={{
-                    color: gold,
-                    fontWeight: 700,
-                    fontSize: 15,
-                    marginBottom: 8,
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>{topLabel}</div>
-                )}
-                {/* Battle Royal participant image grid */}
-                {match.stipulation === 'Battle Royal' && Array.isArray(match.participants) ? (
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                    justifyContent: 'center',
-                    marginBottom: 16,
-                    maxWidth: 600,
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                  }}>
-                    {match.participants.map(slug => (
-                      <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
-                        <img
-                          src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
-                          alt={wrestlerMap[slug]?.name || slug}
-                          title={wrestlerMap[slug]?.name || slug}
-                          style={{
-                            width: match.winner === slug ? 64 : 32,
-                            height: match.winner === slug ? 64 : 32,
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: match.winner === slug ? '3px solid #C6A04F' : '1.5px solid #888',
-                            boxShadow: match.winner === slug ? '0 0 8px #C6A04F88' : undefined,
-                            background: '#222',
-                            margin: 2,
-                            transition: 'all 0.2s',
-                          }}
-                        />
-                        {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
-                      </div>
-                    ))}
-                  </div>
-                ) : isMultiSide ? (
-                  <>
-                    {/* Match Info Block */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-                      <div style={{ fontWeight: 700, color: gold, fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
-                        {match.isLive ? (
-                          <span style={{ color: '#27ae60' }}>LIVE</span>
-                        ) : (
-                          match.result && match.result !== 'No winner' ? 'Final' : match.result
-                        )}
-                      </div>
-                      <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-                      <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
-                    </div>
-                    {/* Participants Row */}
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
-                      {teamStrings.map((teamStr, sideIdx) => {
-                        const { teamName, slugs } = parseTeamString(teamStr);
-                        const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
-                        return (
-                          <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                            {/* Arrow above winner */}
-                            <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
-                            </div>
-                            <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                              {slugs.map((slug, i) => (
-                                <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
-                                  {wrestlerMap[slug]?.image_url
-                                    ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-                                    : <span role="img" aria-label="wrestler">&#128100;</span>
-                                  }
-                                </div>
-                              ))}
-                            </div>
-                            <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
-                              {teamName ? (
-                                <>
-                                  <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === sideIdx ? gold : '#fff' }}>{teamName}</div>
-                                  <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
-                                </>
-                              ) : individualNames}
-                            </span>
-                            {/* Belt icon under winner if title match */}
-                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                              {isTitleMatch && winnerIndex === sideIdx ? (
-                                <>
-                                  <BeltIcon />
-                                  {match.titleOutcome && match.titleOutcome !== 'None' && (
-                                    <div style={{ fontSize: 10, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
-                                  )}
-                                </>
-                              ) : 
-                               match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
-                               getSpecialWinnerIcon(match.specialWinnerType) : 
-                               <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : !isMultiSide ? (
-                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-                    {/* Left participant */}
-                    {(() => {
-                      const { teamName, slugs } = parseTeamString(teamStrings[0]);
-                      const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
-                      return (
-                        <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
-                          <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
-                            {slugs.map((slug, i) => (
-                              <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
-                                {wrestlerMap[slug]?.image_url
-                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
-                                  : <span role="img" aria-label="wrestler">&#128100;</span>
-                                }
-                              </div>
-                            ))}
-                          </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === 0 ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>
-                            {teamName ? (
-                              <>
-                                <div style={{ fontSize: 18, fontWeight: 800, color: winnerIndex === 0 ? gold : '#fff' }}>{teamName}</div>
-                                <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
-                              </>
-                            ) : individualNames}
-                          </span>
-                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                            {isTitleMatch && winnerIndex === 0 ? (
-                              <>
-                                <BeltIcon />
-                                {match.titleOutcome && match.titleOutcome !== 'None' && (
-                                  <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
-                                )}
-                              </>
-                            ) : 
-                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
-                             getSpecialWinnerIcon(match.specialWinnerType) : 
-                             <span style={{ display: 'inline-block', width: 24, height: 12 }} />}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    {/* Left arrow (always reserve space) */}
-                    <div style={{ width: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
-                    </div>
-                    {/* Center match details */}
-                    <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120, margin: 0, padding: 0 }}>
-                      <div style={{ fontWeight: 700, color: gold, fontSize: 13, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
-                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>
-                        {match.isLive ? (
-                          <span style={{ color: '#27ae60' }}>LIVE</span>
-                        ) : (
-                          match.result && match.result !== 'No winner' ? 'Final' : match.result
-                        )}
-                      </div>
-                      <div style={{ color: '#bbb', fontSize: 12, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-                      <div style={{ color: '#bbb', fontSize: 12, textAlign: 'center' }}>{match.time}</div>
-                    </div>
-                    {/* Right arrow (always reserve space) */}
-                    <div style={{ width: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
-                    </div>
-                    {/* Right participant */}
-                    {(() => {
-                      const { teamName, slugs } = parseTeamString(teamStrings[1]);
-                      const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
-                      return (
-                        <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
-                          <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
-                            {slugs.map((slug, i) => (
-                              <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
-                                {wrestlerMap[slug]?.image_url
-                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
-                                  : <span role="img" aria-label="wrestler">&#128100;</span>
-                                }
-                              </div>
-                            ))}
-                          </div>
-                          <span style={{ fontWeight: 700, color: winnerIndex === 1 ? gold : '#fff', fontSize: 16, textAlign: 'center', marginBottom: 2 }}>
-                            {teamName ? (
-                              <>
-                                <div style={{ fontSize: 18, fontWeight: 800, color: winnerIndex === 1 ? gold : '#fff' }}>{teamName}</div>
-                                <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
-                              </>
-                            ) : individualNames}
-                          </span>
-                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                            {isTitleMatch && winnerIndex === 1 ? (
-                              <>
-                                <BeltIcon />
-                                {match.titleOutcome && match.titleOutcome !== 'None' && (
-                                  <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
-                                )}
-                              </>
-                            ) : 
-                             match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
-                             getSpecialWinnerIcon(match.specialWinnerType) : 
-                             <span style={{ display: 'inline-block', width: 24, height: 12 }} />}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : null}
+              <div key={match.order}>
+                <MatchCard 
+                  match={match} 
+                  event={event} 
+                  wrestlerMap={wrestlerMap} 
+                  isClickable={true}
+                />
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
                   <button
                     onClick={e => { e.stopPropagation(); setExpanded(exp => !exp); }}
@@ -2254,7 +1944,7 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<EventList events={events} />} />
             <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
-            <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} />} />
+            <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
             <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
             <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />} />
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
@@ -2285,7 +1975,7 @@ function parseTeamString(teamStr) {
 }
 
 // Wrapper component for the new match page design
-function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap }) {
+function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap, wrestlers }) {
   const user = useUser();
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
@@ -2296,36 +1986,6 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   if (!event || !match) {
     return <div style={{ padding: 24 }}>Match not found.</div>;
   }
-
-  // Prepare wrestler data for the new component
-  const getWrestlersForMatch = () => {
-    if (!match.participants || !wrestlerMap) return [];
-    let participantSlugs = [];
-    if (Array.isArray(match.participants)) {
-      participantSlugs = match.participants.flat();
-    } else if (typeof match.participants === 'string') {
-      participantSlugs = match.participants.split(' vs ').flatMap(side => 
-        side.split('&').map(slug => slug.trim())
-      );
-    }
-    return participantSlugs.slice(0, 2).map(slug => {
-      const wrestler = wrestlerMap[slug] || { name: slug, image_url: null };
-      return {
-        ...wrestler,
-        participantsDisplay: getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation),
-        winnerDisplay: (() => {
-          const winnerSlug = match.result && match.result.includes(' def. ')
-            ? match.result.split(' def. ')[0]
-            : (match.result || 'None');
-          return wrestlerMap && wrestlerMap[winnerSlug]
-            ? wrestlerMap[winnerSlug].name
-            : winnerSlug;
-        })()
-      };
-    });
-  };
-
-  const wrestlers = getWrestlersForMatch(); // <-- moved up here
 
   const handleEdit = () => {
     setIsEditing(true);

@@ -127,11 +127,23 @@ export default function MatchEdit({
     }
   }, [match.participants, isBattleRoyal]);
 
-  // --- PATCH: Sync brParticipants and numParticipants with match.participants on form open or when match.participants changes ---
+  // --- PATCH: Always initialize brParticipants and numParticipants from match.participants on edit ---
   useEffect(() => {
     if (isBattleRoyal && Array.isArray(match.participants) && match.participants.length > 0) {
       setNumParticipants(match.participants.length);
       setBrParticipants(normalizeBrParticipants(match.participants, match.participants.length));
+    }
+  }, [isBattleRoyal, match.participants]);
+
+  // --- PATCH: Enhanced sync for Battle Royal participants on edit ---
+  useEffect(() => {
+    if (isBattleRoyal) {
+      const participantsArray = ensureParticipantsArray(match.participants);
+      console.log('Battle Royal edit - original participants:', match.participants, 'converted to array:', participantsArray);
+      if (participantsArray.length > 0) {
+        setNumParticipants(participantsArray.length);
+        setBrParticipants(normalizeBrParticipants(participantsArray, participantsArray.length));
+      }
     }
   }, [isBattleRoyal, match.participants]);
 
@@ -211,12 +223,11 @@ export default function MatchEdit({
     setMatchDetailsSaved(false); // allow editing winner/method after ending
   };
 
-  // Save handler for completed match
+  // --- PATCH: Save full participants array and winner slug for Battle Royal ---
   const handleSave = (e) => {
     e.preventDefault();
     let finalStatus = status;
     let finalIsLive = isLive;
-    // If match is not live and has a winner/result, always set status to 'completed'
     if (!isLive && (resultType === 'Winner' || resultType === 'No Winner')) {
       finalStatus = 'completed';
       finalIsLive = false;
@@ -225,11 +236,12 @@ export default function MatchEdit({
       ? match.customStipulation
       : match.stipulation === 'None' ? '' : match.stipulation;
     let result = '';
-    // --- Battle Royal branch ---
     if (isBattleRoyal) {
-      // Save participants as array, winner as slug, and result as a string
       let brResult = '';
-      if (finalStatus === 'completed' && brWinner && brParticipants.filter(Boolean).length >= 2) {
+      const validParticipants = brParticipants.filter(Boolean);
+      console.log('Battle Royal save - participants:', validParticipants, 'winner:', brWinner);
+      
+      if (finalStatus === 'completed' && brWinner && validParticipants.length >= 2) {
         const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
         brResult = `${winnerName} won the Battle Royal`;
       } else if (finalStatus === 'completed') {
@@ -237,8 +249,8 @@ export default function MatchEdit({
       }
       onSave({
         ...match,
-        participants: brParticipants.filter(Boolean),
-        winner: brWinner,
+        participants: validParticipants, // Save all valid participants
+        winner: brWinner, // Save winner slug
         result: brResult,
         stipulation: finalStipulation,
         status: finalStatus,
@@ -390,6 +402,22 @@ export default function MatchEdit({
     if (Array.isArray(val) && val.every(x => typeof x === 'string')) return val.slice(0, n).concat(Array(Math.max(0, n - val.length)).fill(''));
     return Array(n).fill('');
   }
+
+  // --- PATCH: Utility to always convert participants to array of slugs ---
+  function ensureParticipantsArray(participants) {
+    if (Array.isArray(participants)) {
+      return participants.filter(Boolean);
+    }
+    if (typeof participants === 'string') {
+      // Split by commas, spaces, or other common separators
+      return participants
+        .split(/[,\s&]+/)
+        .map(slug => slug.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }
+
   const [numParticipants, setNumParticipants] = useState(Array.isArray(match.participants) ? match.participants.length : 10);
   const [brParticipants, setBrParticipants] = useState(() => normalizeBrParticipants(match.participants, Array.isArray(match.participants) ? match.participants.length : 10));
   useEffect(() => {
