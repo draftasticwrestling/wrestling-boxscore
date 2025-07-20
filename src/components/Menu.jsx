@@ -14,6 +14,7 @@ const menuIcon = (
 const menuItems = [
   { label: 'Events', path: '/' },
   { label: 'Wrestlers', path: '/wrestlers' },
+  { label: 'Participant Demo', path: '/participant-demo' },
   { label: 'About', path: '/about' },
   { label: 'Contact', path: '/contact' },
 ];
