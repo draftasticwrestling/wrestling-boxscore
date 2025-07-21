@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import ImprovedParticipantsInput from './ImprovedParticipantsInput';
+import VisualMatchBuilder from './VisualMatchBuilder';
 
 export default function ParticipantSelectionDemo({ wrestlers }) {
   const [participants, setParticipants] = useState('');
   const [matchType, setMatchType] = useState('singles');
+  const [selectedComponent, setSelectedComponent] = useState('visual'); // 'visual' or 'improved'
 
   const handleParticipantsChange = (value) => {
     setParticipants(value);
@@ -24,6 +26,7 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ marginBottom: 16 }}>Features</h2>
         <ul style={{ lineHeight: 1.6 }}>
+          <li>✅ <strong>Visual match builder</strong> - Build matches visually with opponents and teammates</li>
           <li>✅ <strong>Visual wrestler selection</strong> - Click to add wrestlers with images and names</li>
           <li>✅ <strong>Search functionality</strong> - Type to find wrestlers quickly</li>
           <li>✅ <strong>Multiple match formats</strong> - Singles, Tag Team, Multi-Way, Battle Royal</li>
@@ -32,6 +35,32 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
           <li>✅ <strong>Real-time preview</strong> - See exactly how the match will be formatted</li>
           <li>✅ <strong>Easy management</strong> - Add, remove, and reorganize participants</li>
         </ul>
+      </div>
+
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ marginBottom: 16 }}>Component Selection</h2>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {[
+            { key: 'visual', label: 'Visual Match Builder' },
+            { key: 'improved', label: 'Improved Input' }
+          ].map(component => (
+            <button
+              key={component.key}
+              onClick={() => setSelectedComponent(component.key)}
+              style={{
+                padding: '8px 16px',
+                background: selectedComponent === component.key ? '#C6A04F' : '#333',
+                color: selectedComponent === component.key ? '#232323' : '#fff',
+                border: '1px solid #555',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: selectedComponent === component.key ? 'bold' : 'normal'
+              }}
+            >
+              {component.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ marginBottom: 32 }}>
@@ -64,13 +93,23 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
 
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ marginBottom: 16 }}>Participant Selection</h2>
-        <ImprovedParticipantsInput
-          wrestlers={wrestlers}
-          value={participants}
-          onChange={handleParticipantsChange}
-          matchType={matchType}
-          maxParticipants={30}
-        />
+        {selectedComponent === 'visual' ? (
+          <VisualMatchBuilder
+            wrestlers={wrestlers}
+            value={participants}
+            onChange={handleParticipantsChange}
+            matchType={matchType}
+            maxParticipants={30}
+          />
+        ) : (
+          <ImprovedParticipantsInput
+            wrestlers={wrestlers}
+            value={participants}
+            onChange={handleParticipantsChange}
+            matchType={matchType}
+            maxParticipants={30}
+          />
+        )}
       </div>
 
       <div style={{ marginBottom: 32 }}>
@@ -91,7 +130,10 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ marginBottom: 16 }}>How It Works</h2>
         <div style={{ background: '#1a1a1a', padding: 20, borderRadius: '8px' }}>
-          <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Singles Match</h3>
+          <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Visual Match Builder</h3>
+          <p>Click "+ Opponent" to add a new side, then "+ Teammate" to add wrestlers to that side. Each wrestler gets their own card with image, name, and brand. Use "VS" separators to see the match structure visually.</p>
+          
+          <h3 style={{ color: '#C6A04F', marginBottom: 12, marginTop: 16 }}>Singles Match</h3>
           <p>Select one wrestler per side. Format: "wrestler1 vs wrestler2"</p>
           
           <h3 style={{ color: '#C6A04F', marginBottom: 12, marginTop: 16 }}>Tag Team Match</h3>
