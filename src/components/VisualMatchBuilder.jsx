@@ -69,7 +69,6 @@ export default function VisualMatchBuilder({
   wrestlers, 
   value, 
   onChange, 
-  matchType = 'singles',
   maxParticipants = 30
 }) {
   const [matchStructure, setMatchStructure] = useState([]);
@@ -203,7 +202,11 @@ export default function VisualMatchBuilder({
 
   // Update parent component value
   const updateParentValue = (structure) => {
-    if (matchType === 'battle-royal') {
+    // Determine match type based on structure
+    const totalParticipants = structure.flatMap(side => side.participants).filter(Boolean).length;
+    const isBattleRoyal = totalParticipants > 8; // If more than 8 participants, treat as battle royal
+    
+    if (isBattleRoyal) {
       // Battle Royal: array of slugs
       const allParticipants = structure.flatMap(side => side.participants).filter(Boolean);
       onChange(allParticipants);
@@ -370,20 +373,7 @@ export default function VisualMatchBuilder({
           />
         )}
 
-        {/* Team/Individual toggle */}
-        <div style={{ marginBottom: '8px' }}>
-          <button
-            type="button"
-            onClick={() => isTeam ? convertToIndividual(sideIndex) : convertToTeam(sideIndex)}
-            style={{
-              ...buttonStyle,
-              fontSize: '12px',
-              padding: '4px 8px'
-            }}
-          >
-            {isTeam ? 'Convert to Individual' : 'Convert to Team'}
-          </button>
-        </div>
+
 
         {/* Participants */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -447,15 +437,21 @@ export default function VisualMatchBuilder({
   const renderPreview = () => {
     if (matchStructure.length === 0) return null;
 
-    const previewValue = matchType === 'battle-royal' 
+    const totalParticipants = matchStructure.flatMap(side => side.participants).filter(Boolean).length;
+    const isBattleRoyal = totalParticipants > 8;
+    
+    const previewValue = isBattleRoyal 
       ? matchStructure.flatMap(side => side.participants).filter(Boolean)
       : matchStructure.map(side => {
-          if (side.type === 'team' && side.name) {
-            return `${side.name} (${side.participants.join(' & ')})`;
+          const validParticipants = side.participants.filter(Boolean);
+          if (side.type === 'team' && side.name && validParticipants.length > 0) {
+            return `${side.name} (${validParticipants.join(' & ')})`;
+          } else if (validParticipants.length > 0) {
+            return validParticipants.join(' & ');
           } else {
-            return side.participants.join(' & ');
+            return '';
           }
-        }).join(' vs ');
+        }).filter(Boolean).join(' vs ');
 
     return (
       <div style={{ marginTop: '24px', padding: '16px', background: '#1a1a1a', borderRadius: '8px', border: '1px solid #555' }}>

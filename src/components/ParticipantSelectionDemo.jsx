@@ -63,54 +63,60 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ marginBottom: 16 }}>Match Type</h2>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {[
-            { key: 'singles', label: 'Singles' },
-            { key: 'tag', label: 'Tag Team' },
-            { key: 'multi-way', label: 'Multi-Way' },
-            { key: 'battle-royal', label: 'Battle Royal' }
-          ].map(type => (
-            <button
-              key={type.key}
-              onClick={() => handleMatchTypeChange(type.key)}
-              style={{
-                padding: '8px 16px',
-                background: matchType === type.key ? '#C6A04F' : '#333',
-                color: matchType === type.key ? '#232323' : '#fff',
-                border: '1px solid #555',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: matchType === type.key ? 'bold' : 'normal'
-              }}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ marginBottom: 16 }}>Participant Selection</h2>
-        {selectedComponent === 'visual' ? (
+
+      {selectedComponent === 'visual' ? (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ marginBottom: 16 }}>Visual Match Builder</h2>
           <VisualMatchBuilder
             wrestlers={wrestlers}
             value={participants}
             onChange={handleParticipantsChange}
-            matchType={matchType}
             maxParticipants={30}
           />
-        ) : (
-          <ImprovedParticipantsInput
-            wrestlers={wrestlers}
-            value={participants}
-            onChange={handleParticipantsChange}
-            matchType={matchType}
-            maxParticipants={30}
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ marginBottom: 16 }}>Match Type</h2>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {[
+                { key: 'singles', label: 'Singles' },
+                { key: 'tag', label: 'Tag Team' },
+                { key: 'multi-way', label: 'Multi-Way' },
+                { key: 'battle-royal', label: 'Battle Royal' }
+              ].map(type => (
+                <button
+                  key={type.key}
+                  onClick={() => handleMatchTypeChange(type.key)}
+                  style={{
+                    padding: '8px 16px',
+                    background: matchType === type.key ? '#C6A04F' : '#333',
+                    color: matchType === type.key ? '#232323' : '#fff',
+                    border: '1px solid #555',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: matchType === type.key ? 'bold' : 'normal'
+                  }}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ marginBottom: 16 }}>Participant Selection</h2>
+            <ImprovedParticipantsInput
+              wrestlers={wrestlers}
+              value={participants}
+              onChange={handleParticipantsChange}
+              matchType={matchType}
+              maxParticipants={30}
+            />
+          </div>
+        </>
+      )}
 
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ marginBottom: 16 }}>Current Value</h2>
