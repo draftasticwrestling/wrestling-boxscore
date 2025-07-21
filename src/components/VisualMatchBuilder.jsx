@@ -128,7 +128,7 @@ export default function VisualMatchBuilder({
 
   // Add a new opponent (new side)
   const addOpponent = () => {
-    const newStructure = [...matchStructure, { type: 'individual', participants: [] }];
+    const newStructure = [...matchStructure, { type: 'individual', participants: [''] }];
     setMatchStructure(newStructure);
     updateParentValue(newStructure);
   };
@@ -210,12 +210,15 @@ export default function VisualMatchBuilder({
     } else {
       // Regular match: string format
       const sides = structure.map(side => {
-        if (side.type === 'team' && side.name) {
-          return `${side.name} (${side.participants.join(' & ')})`;
+        const validParticipants = side.participants.filter(Boolean);
+        if (side.type === 'team' && side.name && validParticipants.length > 0) {
+          return `${side.name} (${validParticipants.join(' & ')})`;
+        } else if (validParticipants.length > 0) {
+          return validParticipants.join(' & ');
         } else {
-          return side.participants.join(' & ');
+          return '';
         }
-      });
+      }).filter(Boolean); // Remove empty sides
       onChange(sides.join(' vs '));
     }
   };
@@ -281,61 +284,64 @@ export default function VisualMatchBuilder({
 
   // Render participant card
   const renderParticipantCard = (wrestlerSlug, sideIndex, participantIndex) => {
-    const wrestlerName = getWrestlerName(wrestlerSlug);
-    const wrestlerBrand = getWrestlerBrand(wrestlerSlug);
-    const wrestlerImage = getWrestlerImage(wrestlerSlug);
+    const hasWrestler = wrestlerSlug && wrestlerSlug.trim() !== '';
+    const wrestlerName = hasWrestler ? getWrestlerName(wrestlerSlug) : '';
+    const wrestlerBrand = hasWrestler ? getWrestlerBrand(wrestlerSlug) : '';
+    const wrestlerImage = hasWrestler ? getWrestlerImage(wrestlerSlug) : null;
 
     return (
       <div key={participantIndex} style={participantCardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-          {wrestlerImage && (
-            <img
-              src={wrestlerImage}
-              alt={wrestlerName}
+        {hasWrestler && (
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+            {wrestlerImage && (
+              <img
+                src={wrestlerImage}
+                alt={wrestlerName}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  marginRight: '12px',
+                  objectFit: 'cover'
+                }}
+              />
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ color: '#fff', fontWeight: '500', fontSize: '14px' }}>
+                {wrestlerName}
+              </div>
+              <div style={{ color: '#bbb', fontSize: '12px' }}>
+                {wrestlerBrand}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => removeParticipant(sideIndex, participantIndex)}
               style={{
-                width: '32px',
-                height: '32px',
+                background: '#dc3545',
+                color: '#fff',
+                border: 'none',
                 borderRadius: '50%',
-                marginRight: '12px',
-                objectFit: 'cover'
+                width: '24px',
+                height: '24px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
-            />
-          )}
-          <div style={{ flex: 1 }}>
-            <div style={{ color: '#fff', fontWeight: '500', fontSize: '14px' }}>
-              {wrestlerName}
-            </div>
-            <div style={{ color: '#bbb', fontSize: '12px' }}>
-              {wrestlerBrand}
-            </div>
+            >
+              ×
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => removeParticipant(sideIndex, participantIndex)}
-            style={{
-              background: '#dc3545',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            ×
-          </button>
-        </div>
+        )}
         
         {/* Wrestler selector */}
         <WrestlerAutocomplete
           wrestlers={wrestlers}
-          value={wrestlerSlug}
+          value={wrestlerSlug || ''}
           onChange={(value) => updateParticipant(sideIndex, participantIndex, value)}
-          placeholder="Select wrestler..."
+          placeholder="Search and select wrestler..."
         />
       </div>
     );
