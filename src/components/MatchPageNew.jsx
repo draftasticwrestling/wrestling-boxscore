@@ -95,9 +95,11 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
   return `${elapsed}'`;
 }
 
-export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap }) {
+export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {} }) {
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
+  // Ensure wrestlerMap is always an object
+  const safeWrestlerMap = wrestlerMap || {};
   const user = useUser();
   
   // Debug logging
@@ -129,16 +131,16 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
-          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation, match.matchType)}</div>
-          {match.matchType === 'Gauntlet Match' && match.gauntletProgression && (
+          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, safeWrestlerMap, match.stipulation, match.matchType)}</div>
+          {match.matchType === 'Gauntlet Match' && Array.isArray(match.gauntletProgression) && match.gauntletProgression.length > 0 && (
             <div style={{ marginTop: 8, marginBottom: 8 }}>
               <b>Gauntlet Progression:</b>
               <div style={{ marginLeft: 16, marginTop: 4 }}>
                 {match.gauntletProgression.map((matchResult, index) => {
                   if (matchResult.winner && matchResult.method) {
-                    const winnerName = wrestlerMap[matchResult.winner]?.name || matchResult.winner;
-                    const participant1Name = wrestlerMap[matchResult.participant1]?.name || matchResult.participant1;
-                    const participant2Name = wrestlerMap[matchResult.participant2]?.name || matchResult.participant2;
+                    const winnerName = safeWrestlerMap[matchResult.winner]?.name || matchResult.winner;
+                    const participant1Name = safeWrestlerMap[matchResult.participant1]?.name || matchResult.participant1;
+                    const participant2Name = safeWrestlerMap[matchResult.participant2]?.name || matchResult.participant2;
                     return (
                       <div key={index} style={{ marginBottom: 2 }}>
                         {winnerName} def. {winnerName === participant1Name ? participant2Name : participant1Name} ({matchResult.method})
@@ -151,7 +153,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
               </div>
             </div>
           )}
-          <div><b>Winner:</b> {getWinnerDisplay(match, wrestlerMap)}</div>
+          <div><b>Winner:</b> {getWinnerDisplay(match, safeWrestlerMap)}</div>
           <div><b>Method:</b> {match.method}</div>
           <div><b>Time:</b> {match.time}</div>
           <div><b>Stipulation:</b> {match.stipulation}</div>
@@ -160,7 +162,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         </div>
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Commentary</div>
-          {match.commentary && match.commentary.length > 0 ? (
+          {Array.isArray(match.commentary) && match.commentary.length > 0 ? (
             <ul style={{ listStyle: 'none', padding: 0 }}>
               {match.commentary.map((c, i) => (
                 <li key={i} style={{ marginBottom: 4 }}>
