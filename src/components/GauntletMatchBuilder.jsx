@@ -67,11 +67,13 @@ const resultStyle = {
 };
 
 export default function GauntletMatchBuilder({ 
-  wrestlers, 
+  wrestlers = [], 
   value, 
   onChange, 
   onResultChange 
 }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [participants, setParticipants] = useState([]);
   const [matchResults, setMatchResults] = useState([]);
   const [currentWinner, setCurrentWinner] = useState('');
