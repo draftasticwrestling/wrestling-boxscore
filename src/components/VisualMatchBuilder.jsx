@@ -164,6 +164,8 @@ export default function VisualMatchBuilder({
   // Fetch tag team data from database
   const fetchTagTeamData = async () => {
     try {
+      console.log('Fetching tag team data...');
+      
       const { data: tagTeams, error } = await supabase
         .from('tag_teams')
         .select('*');
@@ -173,14 +175,18 @@ export default function VisualMatchBuilder({
         return;
       }
 
+      console.log('Tag teams fetched:', tagTeams);
+
       const { data: tagTeamMembers, error: membersError } = await supabase
         .from('tag_team_members')
         .select('*');
       
       if (membersError) {
-        console.error('Error fetching tag team members:', error);
+        console.error('Error fetching tag team members:', membersError);
         return;
       }
+
+      console.log('Tag team members fetched:', tagTeamMembers);
 
       // Build tag team data structure
       const teamData = {};
@@ -193,6 +199,7 @@ export default function VisualMatchBuilder({
         };
       });
 
+      console.log('Built tag team data structure:', teamData);
       setTagTeamData(teamData);
     } catch (error) {
       console.error('Error fetching tag team data:', error);
@@ -201,27 +208,29 @@ export default function VisualMatchBuilder({
 
   // Get tag team suggestions for a wrestler
   const getTagTeamSuggestions = (wrestlerSlug) => {
-    // Only show tag team suggestions for tag team match types
-    const tagTeamMatchTypes = [
-      'Tag Team',
-      '3-way Tag Team', 
-      '4-way Tag Team',
-      '6-person Tag Team',
-      '8-person Tag Team'
-    ];
+    console.log('getTagTeamSuggestions called with wrestlerSlug:', wrestlerSlug);
+    console.log('Current tagTeamData:', tagTeamData);
+    console.log('Current matchStructure:', matchStructure);
     
-    // Check if the initial structure indicates a tag team match
-    const isTagTeamMatch = Array.isArray(matchStructure) && matchStructure.some(side => side.type === 'team');
+    // Always show tag team suggestions unless it's explicitly a Gauntlet Match
+    // Don't restrict based on current structure when editing
+    const isGauntletMatch = Array.isArray(matchStructure) && matchStructure.length >= 5 && 
+      matchStructure.every(side => side.type === 'individual' && side.participants.length === 1);
     
-    // Don't show tag team suggestions for individual match types like Gauntlet Match
-    if (!isTagTeamMatch) {
+    console.log('isGauntletMatch:', isGauntletMatch);
+    
+    if (isGauntletMatch) {
+      console.log('Returning empty suggestions due to Gauntlet Match');
       return [];
     }
     
     const suggestions = [];
     
+    console.log('Checking teams for wrestler slug:', wrestlerSlug);
     Object.values(tagTeamData).forEach(team => {
+      console.log('Checking team:', team.name, 'with members:', team.members);
       const isMember = Array.isArray(team.members) && team.members.some(member => member.wrestler_slug === wrestlerSlug);
+      console.log('Is member?', isMember);
       if (isMember) {
         const otherMembers = team.members
           .filter(member => member.wrestler_slug !== wrestlerSlug)
@@ -231,9 +240,11 @@ export default function VisualMatchBuilder({
           teamId: team.id,
           members: otherMembers
         });
+        console.log('Added suggestion:', team.name, 'with other members:', otherMembers);
       }
     });
     
+    console.log('Final suggestions:', suggestions);
     return suggestions;
   };
 
@@ -397,6 +408,21 @@ export default function VisualMatchBuilder({
         ...prev,
         [`${sideIndex}-${participantIndex}`]: suggestions
       }));
+    }
+    
+    // Check if the current side now forms a complete tag team
+    const currentSide = newStructure[sideIndex];
+    const validParticipants = currentSide.participants.filter(p => p && p.trim() !== '');
+    
+    if (validParticipants.length >= 2) {
+      // Check if these wrestlers form a complete tag team
+      const tagTeam = getTagTeamForWrestlers(validParticipants);
+      if (tagTeam && !currentSide.name) {
+        // Auto-fill the team name
+        newStructure[sideIndex].name = tagTeam.name;
+        newStructure[sideIndex].type = 'team';
+        console.log('Auto-filled team name:', tagTeam.name);
+      }
     }
     
     setMatchStructure(newStructure);
@@ -694,7 +720,7 @@ export default function VisualMatchBuilder({
 
   // Render side (opponent/team)
   const renderSide = (side, sideIndex) => {
-    const isTeam = side.participants.length > 1;
+    const isTeam = side.type === 'team' || side.participants.length > 1;
     const canAddTeammate = side.participants.length < 4; // Max 4 per team
 
     return (
@@ -737,6 +763,31 @@ export default function VisualMatchBuilder({
             >
               + Add Teammate
             </button>
+          )}
+          
+          {/* Convert to team button */}
+          {side.participants.length > 1 && side.type === 'individual' && (
+            <button
+              type="button"
+              onClick={() => convertToTeam(sideIndex)}
+              style={{
+                ...buttonStyle,
+                marginTop: '2px',
+                fontSize: '9px',
+                padding: '2px 4px',
+                background: '#C6A04F',
+                borderColor: '#C6A04F'
+              }}
+            >
+              Make Team
+            </button>
+          )}
+          
+          {/* Debug info */}
+          {process.env.NODE_ENV === 'development' && (
+            <div style={{ fontSize: '8px', color: '#666', marginTop: '2px' }}>
+              Type: {side.type}, Participants: {side.participants.length}
+            </div>
           )}
         </div>
       </div>

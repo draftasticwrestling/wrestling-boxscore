@@ -349,7 +349,9 @@ export default function MatchEdit({
 
   // Parse existing match participants into VisualMatchBuilder structure
   const parseExistingMatchStructure = (match) => {
+    console.log('parseExistingMatchStructure called with match:', match);
     if (!match.participants) {
+      console.log('No participants found, returning null');
       return null;
     }
 
@@ -377,12 +379,15 @@ export default function MatchEdit({
 
       // Regular match format: side1 vs side2
       const sides = participants.split(' vs ').filter(s => s.trim());
-      return sides.map(side => {
+      console.log('Split sides:', sides);
+      
+      const result = sides.map(side => {
         const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
         if (teamMatch) {
           // Tag team with name
           const teamName = teamMatch[1].trim();
           const wrestlerSlugs = teamMatch[2].split('&').filter(s => s.trim()).map(s => s.trim());
+          console.log('Found team with name:', teamName, 'wrestlers:', wrestlerSlugs);
           return { type: 'team', name: teamName, participants: wrestlerSlugs };
         } else {
           // Individual wrestlers - check if this should be a team based on match type
@@ -397,14 +402,21 @@ export default function MatchEdit({
             match.matchType.includes('Survivor Series')
           );
           
+          console.log('Side wrestlers:', wrestlerSlugs, 'isTagTeamMatch:', isTagTeamMatch);
+          
           if (isTagTeamMatch && wrestlerSlugs.length > 1) {
             // Convert to team structure but without a name (user can add one)
+            console.log('Converting to team structure without name');
             return { type: 'team', name: '', participants: wrestlerSlugs };
           } else {
+            console.log('Keeping as individual structure');
             return { type: 'individual', participants: wrestlerSlugs };
           }
         }
       });
+      
+      console.log('Final parsed structure:', result);
+      return result;
     }
 
     return null;
