@@ -38,6 +38,8 @@ export default function MatchEdit({
   matchOrder,
   wrestlers = [],
 }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [match, setMatch] = useState({
     participants: '',
     result: '',
@@ -441,7 +443,7 @@ export default function MatchEdit({
           {brParticipants.slice(0, numParticipants).map((slug, i) => (
             <WrestlerAutocomplete
               key={i}
-              wrestlers={wrestlers}
+              wrestlers={safeWrestlers}
               value={slug}
               onChange={val => setBrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
               placeholder={`Participant ${i+1}`}
@@ -454,7 +456,7 @@ export default function MatchEdit({
                 required={status === 'completed'}>
                 <option value="">Select winner</option>
                 {brParticipants.filter(Boolean).map((slug, i) => (
-                  <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                  <option key={i} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
                 ))}
               </select>
             </div>
@@ -482,7 +484,7 @@ export default function MatchEdit({
               </label>
               {match.matchType === 'Gauntlet Match' ? (
                 <GauntletMatchBuilder
-                  wrestlers={wrestlers}
+                  wrestlers={safeWrestlers}
                   value={match.participants}
                   onChange={value => {
                     console.log('GauntletMatchBuilder onChange called with value:', value);
@@ -492,7 +494,7 @@ export default function MatchEdit({
                   onResultChange={gauntletResult => {
                     console.log('Gauntlet result:', gauntletResult);
                     // Store the gauntlet progression data
-                    const winnerName = wrestlers.find(w => w.id === gauntletResult.winner)?.name || gauntletResult.winner;
+                    const winnerName = safeWrestlers.find(w => w.id === gauntletResult.winner)?.name || gauntletResult.winner;
                     setMatch(prev => ({
                       ...prev,
                       gauntletProgression: gauntletResult.progression,
@@ -503,7 +505,7 @@ export default function MatchEdit({
                 />
               ) : match.matchType === '2 out of 3 Falls' ? (
                 <TwoOutOfThreeFallsBuilder
-                  wrestlers={wrestlers}
+                  wrestlers={safeWrestlers}
                   value={match.participants}
                   onChange={value => {
                     console.log('TwoOutOfThreeFallsBuilder onChange called with value:', value);
@@ -524,7 +526,7 @@ export default function MatchEdit({
                 />
               ) : (
                 <VisualMatchBuilder
-                  wrestlers={wrestlers}
+                  wrestlers={safeWrestlers}
                   value={match.participants}
                   onChange={value => {
                     console.log('VisualMatchBuilder onChange called with value:', value);
