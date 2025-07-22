@@ -30,7 +30,9 @@ function groupWrestlersByBrand(wrestlers) {
 }
 
 export default function WrestlersPage({ wrestlers = [] }) {
-  const grouped = groupWrestlersByBrand(wrestlers);
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
+  const grouped = groupWrestlersByBrand(safeWrestlers);
   return (
     <>
       <Helmet>

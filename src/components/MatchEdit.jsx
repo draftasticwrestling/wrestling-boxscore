@@ -183,9 +183,9 @@ export default function MatchEdit({
     // --- Battle Royal branch ---
     if (isBattleRoyal) {
       if (status === 'completed' && brWinner) {
-        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
+        const winnerName = safeWrestlers.find(w => w.id === brWinner)?.name || brWinner;
         const participants = brParticipants.filter(Boolean).map(slug => 
-          wrestlers.find(w => w.id === slug)?.name || slug
+          safeWrestlers.find(w => w.id === slug)?.name || slug
         );
         result = `${winnerName} won the Battle Royal (${participants.join(', ')})`;
       }

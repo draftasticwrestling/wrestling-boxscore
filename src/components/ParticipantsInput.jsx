@@ -1,7 +1,9 @@
 import React from 'react';
 import WrestlerAutocomplete from './WrestlerAutocomplete';
 
-export default function ParticipantsInput({ wrestlers, value, onChange, mode = 'singles' }) {
+export default function ParticipantsInput({ wrestlers = [], value, onChange, mode = 'singles' }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   // Parse initial value
   const parseValue = () => {
     if (!value) {
@@ -94,7 +96,7 @@ export default function ParticipantsInput({ wrestlers, value, onChange, mode = '
             {participants[sideIdx].map((slug, memberIdx) => (
               <WrestlerAutocomplete
                 key={memberIdx}
-                wrestlers={wrestlers}
+                wrestlers={safeWrestlers}
                 value={slug}
                 onChange={val => handleParticipantChange(sideIdx, memberIdx, val)}
                 placeholder={`Select wrestler ${memberIdx + 1}`}

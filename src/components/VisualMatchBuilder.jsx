@@ -103,12 +103,14 @@ const dismissButtonHoverStyle = {
 };
 
 export default function VisualMatchBuilder({ 
-  wrestlers, 
+  wrestlers = [], 
   value, 
   onChange, 
   maxParticipants = 30,
   initialStructure = null
 }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   // Note: For Gauntlet Matches, participants are displayed in order of entry
   // The first participant starts, then each subsequent participant enters after the previous match ends
   // The winner of the final match wins the entire Gauntlet Match
@@ -252,9 +254,9 @@ export default function VisualMatchBuilder({
   // Filter wrestlers based on search term
   useEffect(() => {
     if (!searchTerm) {
-      setFilteredWrestlers(wrestlers.slice(0, 20));
+      setFilteredWrestlers(safeWrestlers.slice(0, 20));
     } else {
-      const filtered = wrestlers
+      const filtered = safeWrestlers
         .filter(w => 
           w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           w.id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -262,7 +264,7 @@ export default function VisualMatchBuilder({
         .slice(0, 10);
       setFilteredWrestlers(filtered);
     }
-  }, [wrestlers, searchTerm]);
+  }, [safeWrestlers, searchTerm]);
 
   // Parse the initial value from string format
   const parseInitialValue = (initialValue) => {
@@ -505,21 +507,21 @@ export default function VisualMatchBuilder({
   // Get wrestler name from slug
   const getWrestlerName = (slug) => {
     console.log('getWrestlerName called with slug:', slug);
-    console.log('wrestlers array sample:', wrestlers.slice(0, 3));
-    const wrestler = wrestlers.find(w => w.id === slug || w.slug === slug);
+    console.log('wrestlers array sample:', safeWrestlers.slice(0, 3));
+    const wrestler = safeWrestlers.find(w => w.id === slug || w.slug === slug);
     console.log('Found wrestler:', wrestler);
     return wrestler ? wrestler.name : slug;
   };
 
   // Get wrestler brand from slug
   const getWrestlerBrand = (slug) => {
-    const wrestler = wrestlers.find(w => w.id === slug);
+    const wrestler = safeWrestlers.find(w => w.id === slug);
     return wrestler ? wrestler.brand : 'Unassigned';
   };
 
   // Get wrestler image from slug
   const getWrestlerImage = (slug) => {
-    const wrestler = wrestlers.find(w => w.id === slug);
+    const wrestler = safeWrestlers.find(w => w.id === slug);
     return wrestler ? wrestler.image_url : null;
   };
 
@@ -628,7 +630,7 @@ export default function VisualMatchBuilder({
         {/* Wrestler selector */}
         <WrestlerAutocomplete
           key={`${sideIndex}-${participantIndex}`}
-          wrestlers={wrestlers}
+          wrestlers={safeWrestlers}
           value={wrestlerSlug || ''}
           onChange={(value) => {
             console.log(`WrestlerAutocomplete onChange for side ${sideIndex}, participant ${participantIndex}:`, value);

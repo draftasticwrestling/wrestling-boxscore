@@ -2,9 +2,11 @@ import React from 'react';
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
 import '@webscopeio/react-textarea-autocomplete/style.css';
 
-export default function SmartParticipantsInput({ wrestlers, value, onChange, placeholder = "Type participants, e.g. Aleister Black vs Seth Rollins & Buddy Murphy" }) {
+export default function SmartParticipantsInput({ wrestlers = [], value, onChange, placeholder = "Type participants, e.g. Aleister Black vs Seth Rollins & Buddy Murphy" }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   // Wrestler names for autocomplete
-  const wrestlerNames = wrestlers.map(w => w.name);
+  const wrestlerNames = safeWrestlers.map(w => w.name);
 
   return (
     <ReactTextareaAutocomplete

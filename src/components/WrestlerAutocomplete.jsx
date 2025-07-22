@@ -1,9 +1,11 @@
 import React from 'react';
 import Select from 'react-select';
 
-export default function WrestlerAutocomplete({ wrestlers, value, onChange, placeholder = 'Select wrestler...' }) {
+export default function WrestlerAutocomplete({ wrestlers = [], value, onChange, placeholder = 'Select wrestler...' }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   // Map wrestlers to react-select options
-  const options = wrestlers.map(w => ({ value: w.id || w.slug, label: w.name }));
+  const options = safeWrestlers.map(w => ({ value: w.id || w.slug, label: w.name }));
   // Find the selected option
   const selected = options.find(opt => opt.value === value) || null;
 

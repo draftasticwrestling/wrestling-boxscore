@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import WrestlerAutocomplete from './WrestlerAutocomplete';
 
-export default function TwoOutOfThreeFallsBuilder({ wrestlers, value, onChange, onResultChange }) {
+export default function TwoOutOfThreeFallsBuilder({ wrestlers = [], value, onChange, onResultChange }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [participants, setParticipants] = useState(['', '']); // 2 participants
   const [matchResults, setMatchResults] = useState([
     { winner: '', method: '', time: '' },
@@ -120,7 +122,7 @@ export default function TwoOutOfThreeFallsBuilder({ wrestlers, value, onChange, 
               Participant 1:
             </label>
             <WrestlerAutocomplete
-              wrestlers={wrestlers}
+              wrestlers={safeWrestlers}
               value={participants[0]}
               onChange={value => updateParticipant(0, value)}
               placeholder="Select wrestler..."
@@ -131,7 +133,7 @@ export default function TwoOutOfThreeFallsBuilder({ wrestlers, value, onChange, 
               Participant 2:
             </label>
             <WrestlerAutocomplete
-              wrestlers={wrestlers}
+              wrestlers={safeWrestlers}
               value={participants[1]}
               onChange={value => updateParticipant(1, value)}
               placeholder="Select wrestler..."

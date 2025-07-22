@@ -181,12 +181,12 @@ export default function GauntletMatchBuilder({
   };
 
   const getWrestlerName = (slug) => {
-    const wrestler = wrestlers.find(w => w.id === slug);
+    const wrestler = safeWrestlers.find(w => w.id === slug);
     return wrestler ? wrestler.name : slug;
   };
 
   const getWrestlerImage = (slug) => {
-    const wrestler = wrestlers.find(w => w.id === slug);
+    const wrestler = safeWrestlers.find(w => w.id === slug);
     return wrestler ? wrestler.image_url : null;
   };
 
@@ -211,7 +211,7 @@ export default function GauntletMatchBuilder({
           <div key={index} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ color: '#fff', minWidth: '60px' }}>#{index + 1}:</span>
             <WrestlerAutocomplete
-              wrestlers={wrestlers}
+              wrestlers={safeWrestlers}
               value={participant}
               onChange={(value) => updateParticipant(index, value)}
               placeholder={`Participant ${index + 1}`}

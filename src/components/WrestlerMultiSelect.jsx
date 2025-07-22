@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 export default function WrestlerMultiSelect({ onChange, label = 'Select Wrestlers', placeholder = 'Type to search...', wrestlers = [] }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [query, setQuery] = useState('');
   const [filtered, setFiltered] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -14,12 +16,12 @@ export default function WrestlerMultiSelect({ onChange, label = 'Select Wrestler
     }
     const q = query.toLowerCase();
     setFiltered(
-      wrestlers.filter(
+      safeWrestlers.filter(
         w => w.name.toLowerCase().includes(q) && !selected.some(sel => sel.id === w.id)
       )
     );
     setShowDropdown(true);
-  }, [query, wrestlers, selected]);
+  }, [query, safeWrestlers, selected]);
 
   const handleSelect = (wrestler) => {
     setSelected([...selected, wrestler]);
