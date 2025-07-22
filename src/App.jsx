@@ -590,6 +590,39 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                       ))}
                     </div>
                   )}
+                  
+                  {/* Edit Match Button */}
+                  {user && (
+                    <div style={{ marginTop: 12, textAlign: 'center' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditMatch(match, index);
+                        }}
+                        style={{
+                          fontSize: 14,
+                          padding: '8px 16px',
+                          border: '1px solid #C6A04F',
+                          borderRadius: 6,
+                          background: '#C6A04F',
+                          color: '#000',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseOver={e => {
+                          e.currentTarget.style.background = '#D4B05F';
+                          e.currentTarget.style.borderColor = '#D4B05F';
+                        }}
+                        onMouseOut={e => {
+                          e.currentTarget.style.background = '#C6A04F';
+                          e.currentTarget.style.borderColor = '#C6A04F';
+                        }}
+                      >
+                        Edit Match
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

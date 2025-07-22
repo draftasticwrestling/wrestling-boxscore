@@ -111,6 +111,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     
     return (
       <div
+        onClick={handleClick}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -118,10 +119,12 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           borderRadius: 12,
           boxShadow: '0 0 12px #C6A04F22',
           padding: '18px 24px',
+          cursor: isClickable ? 'pointer' : 'default',
           border: match.cardType === 'Main Event' ? '2px solid #C6A04F' : '1px solid #444',
           position: 'relative',
           minHeight: 120,
           marginBottom: 2,
+          transition: 'background 0.2s',
         }}
       >
         {/* Main Event Banner */}
