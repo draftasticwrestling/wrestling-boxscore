@@ -347,6 +347,54 @@ export default function MatchEdit({
     }
   };
 
+  // Parse existing match participants into VisualMatchBuilder structure
+  const parseExistingMatchStructure = (match) => {
+    if (!match.participants) {
+      return null;
+    }
+
+    // If participants is already an array (Battle Royal), return as is
+    if (Array.isArray(match.participants)) {
+      return [{ type: 'battle-royal', participants: match.participants }];
+    }
+
+    // If participants is a string, parse it
+    if (typeof match.participants === 'string') {
+      const participants = match.participants.trim();
+      
+      if (!participants) {
+        return null;
+      }
+
+      // Check if it's a Gauntlet Match (contains arrows)
+      if (participants.includes(' → ')) {
+        const participantList = participants.split(' → ').filter(s => s.trim()).map(s => s.trim());
+        return participantList.map(participant => ({
+          type: 'individual',
+          participants: [participant]
+        }));
+      }
+
+      // Regular match format: side1 vs side2
+      const sides = participants.split(' vs ').filter(s => s.trim());
+      return sides.map(side => {
+        const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
+        if (teamMatch) {
+          // Tag team with name
+          const teamName = teamMatch[1].trim();
+          const wrestlerSlugs = teamMatch[2].split('&').filter(s => s.trim()).map(s => s.trim());
+          return { type: 'team', name: teamName, participants: wrestlerSlugs };
+        } else {
+          // Individual wrestlers
+          const wrestlerSlugs = side.split('&').filter(s => s.trim()).map(s => s.trim());
+          return { type: 'individual', participants: wrestlerSlugs };
+        }
+      });
+    }
+
+    return null;
+  };
+
   // UI rendering
   return (
     <form onSubmit={handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
@@ -536,7 +584,7 @@ export default function MatchEdit({
                     setMatch(newMatch);
                   }}
                   maxParticipants={30}
-                  initialStructure={getMatchStructureFromMatchType(match.matchType)}
+                  initialStructure={parseExistingMatchStructure(match) || getMatchStructureFromMatchType(match.matchType)}
                 />
               )}
             </div>
