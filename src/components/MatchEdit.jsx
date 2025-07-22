@@ -90,7 +90,7 @@ export default function MatchEdit({
   }, [status]);
 
   useEffect(() => {
-    if (match.participants.includes(' vs ')) {
+    if (typeof match.participants === 'string' && match.participants.includes(' vs ')) {
       // Parse participants to get team names for winner selection
       const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
       const teamNames = participants.map((team, index) => {
@@ -111,7 +111,7 @@ export default function MatchEdit({
   useEffect(() => {
     if (initialMatch && initialMatch.result) {
       setResultType(initialMatch.result.includes('def.') ? 'Winner' : 'No Winner');
-      if (winnerOptions.length && initialMatch.result) {
+      if (winnerOptions.length && initialMatch.result && typeof match.participants === 'string') {
         // Try to find the winner by matching against tag team names first, then individual names
         const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
         let found = null;
