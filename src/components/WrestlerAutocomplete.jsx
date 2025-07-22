@@ -2,10 +2,22 @@ import React from 'react';
 import Select from 'react-select';
 
 export default function WrestlerAutocomplete({ wrestlers = [], value, onChange, placeholder = 'Select wrestler...' }) {
-  // Ensure wrestlers is always an array
+  // Ensure wrestlers is always an array with additional safety
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
-  // Map wrestlers to react-select options
-  const options = safeWrestlers.map(w => ({ value: w.id || w.slug, label: w.name }));
+  
+  // Add debugging
+  console.log('WrestlerAutocomplete wrestlers:', wrestlers);
+  console.log('WrestlerAutocomplete safeWrestlers:', safeWrestlers);
+  
+  // Map wrestlers to react-select options with additional safety
+  const options = safeWrestlers.map(w => {
+    if (!w || typeof w !== 'object') {
+      console.warn('Invalid wrestler object:', w);
+      return { value: '', label: 'Invalid wrestler' };
+    }
+    return { value: w.id || w.slug || '', label: w.name || 'Unknown wrestler' };
+  });
+  
   // Find the selected option
   const selected = options.find(opt => opt.value === value) || null;
 
