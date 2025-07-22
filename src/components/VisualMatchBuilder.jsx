@@ -443,16 +443,16 @@ export default function VisualMatchBuilder({
     }
     
     // Determine match type based on structure
-    const totalParticipants = structure.flatMap(side => side.participants).filter(Boolean).length;
+    const totalParticipants = Array.isArray(structure) ? structure.flatMap(side => side.participants).filter(Boolean).length : 0;
     const isBattleRoyal = totalParticipants > 8; // If more than 8 participants, treat as battle royal
-    const isGauntletMatch = structure.length >= 5 && structure.every(side => side.type === 'individual');
+    const isGauntletMatch = Array.isArray(structure) && structure.length >= 5 && structure.every(side => side.type === 'individual');
     
     console.log('updateParentValue called with structure:', structure);
     console.log('totalParticipants:', totalParticipants, 'isBattleRoyal:', isBattleRoyal, 'isGauntletMatch:', isGauntletMatch);
     
     if (isBattleRoyal) {
       // Battle Royal: array of slugs
-      const allParticipants = structure.flatMap(side => side.participants).filter(Boolean);
+      const allParticipants = Array.isArray(structure) ? structure.flatMap(side => side.participants).filter(Boolean) : [];
       onChange(allParticipants);
     } else if (isGauntletMatch) {
       // Gauntlet Match: participants in order with arrows
@@ -760,15 +760,15 @@ export default function VisualMatchBuilder({
 
   // Render preview
   const renderPreview = () => {
-    const totalParticipants = matchStructure.flatMap(side => side.participants).filter(Boolean).length;
+    const totalParticipants = Array.isArray(matchStructure) ? matchStructure.flatMap(side => side.participants).filter(Boolean).length : 0;
     const isBattleRoyal = totalParticipants > 8;
-    const isGauntletMatch = matchStructure.length >= 5 && matchStructure.every(side => side.type === 'individual');
+    const isGauntletMatch = Array.isArray(matchStructure) && matchStructure.length >= 5 && matchStructure.every(side => side.type === 'individual');
     
     let previewValue;
     if (totalParticipants === 0) {
       previewValue = 'No participants selected';
     } else if (isBattleRoyal) {
-      previewValue = matchStructure.flatMap(side => side.participants).filter(Boolean);
+      previewValue = Array.isArray(matchStructure) ? matchStructure.flatMap(side => side.participants).filter(Boolean) : [];
     } else if (isGauntletMatch) {
       // Gauntlet Match: participants in order with arrows
       previewValue = matchStructure.map(side => {
