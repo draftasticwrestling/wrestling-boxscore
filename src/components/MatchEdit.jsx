@@ -62,7 +62,7 @@ export default function MatchEdit({
   const [isLive, setIsLive] = useState(match.isLive || false);
   const [liveStart, setLiveStart] = useState(match.liveStart || null);
   const [liveEnd, setLiveEnd] = useState(match.liveEnd || null);
-  const [commentary, setCommentary] = useState(match.commentary || []);
+  const [commentary, setCommentary] = useState(Array.isArray(match.commentary) ? match.commentary : []);
   const [commentaryInput, setCommentaryInput] = useState("");
   const [liveMode, setLiveMode] = useState(isLive && (liveStart || !status || status === 'upcoming'));
   const [matchDetailsSaved, setMatchDetailsSaved] = useState(false);
@@ -251,7 +251,7 @@ export default function MatchEdit({
       timestamp: Date.now()
     };
 
-    const updatedCommentary = [...commentary, newComment];
+    const updatedCommentary = [...(Array.isArray(commentary) ? commentary : []), newComment];
     setCommentary(updatedCommentary);
     setCommentaryInput("");
 
@@ -581,7 +581,7 @@ export default function MatchEdit({
                   required
                 >
                   <option value="">Select winner</option>
-                  {winnerOptions.map(side => (
+                  {Array.isArray(winnerOptions) && winnerOptions.map(side => (
                     <option key={side} value={side}>{side}</option>
                   ))}
                 </select>
@@ -647,7 +647,7 @@ export default function MatchEdit({
         </select>
       </div>
       {/* Commentary UI: always show if there is commentary or if live match is active */}
-      {(isLive || commentary.length > 0) && (
+      {(isLive || (Array.isArray(commentary) && commentary.length > 0)) && (
         <div style={{ marginTop: 24 }}>
           <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
           {isLive && !liveEnd && (
@@ -668,8 +668,8 @@ export default function MatchEdit({
             </div>
           )}
           <div style={{ maxHeight: 200, overflowY: 'auto', background: '#181818', borderRadius: 4, padding: 8 }}>
-            {commentary.length === 0 && <div style={{ color: '#bbb' }}>No commentary yet.</div>}
-            {commentary.map((c, idx) => (
+            {(!Array.isArray(commentary) || commentary.length === 0) && <div style={{ color: '#bbb' }}>No commentary yet.</div>}
+            {Array.isArray(commentary) && commentary.map((c, idx) => (
               <div key={idx} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ color: '#C6A04F', minWidth: 32 }}>{formatCommentaryTime(c.timestamp, liveStart, commentary)}</span>
                 {editingCommentIdx === idx ? (
