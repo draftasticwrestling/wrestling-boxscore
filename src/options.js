@@ -1,16 +1,22 @@
-export const STIPULATION_OPTIONS = [
-  "None",
+export const MATCH_TYPE_OPTIONS = [
+  "Singles Match",
   "Tag Team",
   "3-way Tag Team",
   "4-way Tag Team",
   "6-person Tag Team",
   "8-person Tag Team",
   "Battle Royal",
+  "Fatal Four-way match",
+  "Triple Threat match",
+  "Gauntlet Match",
+  "2 out of 3 Falls"
+];
+
+export const STIPULATION_OPTIONS = [
+  "None",
   "Bakersfield Brawl",
   "Bloodline Rules",
   "Cage Match",
-  "Custom/Other",
-  "Fatal Four-way match",
   "Hell in a Cell",
   "King of the Ring finalist",
   "King of the Ring qualifier",
@@ -25,11 +31,11 @@ export const STIPULATION_OPTIONS = [
   "Queen of the Ring qualifier",
   "Street Fight",
   "Tables, Ladders, and Chairs (TLC)",
-  "Triple Threat match",
   "Unsanctioned Match",
   "Women's Elimination Chamber qualifier",
   "Women's Money in the Bank qualifier",
-  "Women's Survivor Series qualifier"
+  "Women's Survivor Series qualifier",
+  "Custom/Other"
 ];
 
 export const METHOD_OPTIONS = [

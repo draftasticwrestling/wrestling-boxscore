@@ -7,16 +7,27 @@ import MatchEdit from './MatchEdit';
 import MatchCard from './MatchCard';
 
 // Helper to get display names for participants from slugs
-function getParticipantsDisplay(participants, wrestlerMap, stipulation) {
+function getParticipantsDisplay(participants, wrestlerMap, stipulation, matchType) {
   if (Array.isArray(participants)) {
     // Battle Royal: flat array of slugs
-    if (stipulation === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
+    if ((matchType || stipulation) === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
       return participants.map(slug => wrestlerMap?.[slug]?.name || slug).join(', ');
+    }
+    // Gauntlet Match and 2 out of 3 Falls: array of individual participants
+    if (matchType === 'Gauntlet Match' || matchType === '2 out of 3 Falls') {
+      return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join('')).join(' → ');
     }
     // Tag/singles: array of arrays
     return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
+    // Handle Gauntlet Matches and 2 out of 3 Falls with → separators
+    if (matchType === 'Gauntlet Match' || matchType === '2 out of 3 Falls') {
+      return participants.split(' → ').map(slug => {
+        const s = slug.trim();
+        return wrestlerMap[s]?.name || s;
+      }).join(' → ');
+    }
     // Split by vs, then by &
     return participants.split(' vs ').map(side => {
       // Handle team name with slugs in parentheses
@@ -112,7 +123,28 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
-          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation)}</div>
+          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation, match.matchType)}</div>
+          {match.matchType === 'Gauntlet Match' && match.gauntletProgression && (
+            <div style={{ marginTop: 8, marginBottom: 8 }}>
+              <b>Gauntlet Progression:</b>
+              <div style={{ marginLeft: 16, marginTop: 4 }}>
+                {match.gauntletProgression.map((matchResult, index) => {
+                  if (matchResult.winner && matchResult.method) {
+                    const winnerName = wrestlerMap[matchResult.winner]?.name || matchResult.winner;
+                    const participant1Name = wrestlerMap[matchResult.participant1]?.name || matchResult.participant1;
+                    const participant2Name = wrestlerMap[matchResult.participant2]?.name || matchResult.participant2;
+                    return (
+                      <div key={index} style={{ marginBottom: 2 }}>
+                        {winnerName} def. {winnerName === participant1Name ? participant2Name : participant1Name} ({matchResult.method})
+                        {index < match.gauntletProgression.length - 1 && ' →'}
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+          )}
           <div><b>Winner:</b> {getWinnerDisplay(match, wrestlerMap)}</div>
           <div><b>Method:</b> {match.method}</div>
           <div><b>Time:</b> {match.time}</div>

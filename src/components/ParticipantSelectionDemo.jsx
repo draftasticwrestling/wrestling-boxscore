@@ -26,7 +26,7 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ marginBottom: 16 }}>Features</h2>
         <ul style={{ lineHeight: 1.6 }}>
-          <li>✅ <strong>Visual match builder</strong> - Build matches visually with opponents and teammates</li>
+          <li>✅ <strong>Smart Visual Match Builder</strong> - Automatically configures based on stipulation selection</li>
           <li>✅ <strong>Visual wrestler selection</strong> - Click to add wrestlers with images and names</li>
           <li>✅ <strong>Search functionality</strong> - Type to find wrestlers quickly</li>
           <li>✅ <strong>Multiple match formats</strong> - Singles, Tag Team, Multi-Way, Battle Royal</li>
@@ -34,6 +34,7 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
           <li>✅ <strong>Error prevention</strong> - No more manual slug entry or typos</li>
           <li>✅ <strong>Real-time preview</strong> - See exactly how the match will be formatted</li>
           <li>✅ <strong>Easy management</strong> - Add, remove, and reorganize participants</li>
+          <li>✅ <strong>Dismiss suggestions</strong> - Decline tag team partners for individual matches</li>
         </ul>
       </div>
 
@@ -136,7 +137,10 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ marginBottom: 16 }}>How It Works</h2>
         <div style={{ background: '#1a1a1a', padding: 20, borderRadius: '8px' }}>
-          <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Visual Match Builder</h3>
+          <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Smart Visual Match Builder</h3>
+          <p>When you select a stipulation in the main app, the Visual Match Builder automatically configures the layout. For example, selecting "Tag Team" creates 2 team slots, "Fatal Four-way" creates 4 individual slots, and "8-person Tag Team" creates 2 teams with 4 participants each.</p>
+          
+          <h3 style={{ color: '#C6A04F', marginBottom: 12, marginTop: 16 }}>Manual Building</h3>
           <p>Click "+ Opponent" to add a new side, then "+ Teammate" to add wrestlers to that side. Each wrestler gets their own card with image, name, and brand. Use "VS" separators to see the match structure visually.</p>
           
           <h3 style={{ color: '#C6A04F', marginBottom: 12, marginTop: 16 }}>Singles Match</h3>

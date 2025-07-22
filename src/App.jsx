@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
@@ -8,6 +8,7 @@ import MatchPage from './components/MatchPage';
 import MatchPageNew from './components/MatchPageNew';
 import MatchCard from './components/MatchCard';
 import {
+  MATCH_TYPE_OPTIONS,
   STIPULATION_OPTIONS,
   METHOD_OPTIONS,
   TITLE_OPTIONS,
@@ -21,40 +22,11 @@ import { Helmet } from 'react-helmet';
 import WrestlerMultiSelect from './components/WrestlerMultiSelect';
 import WrestlerAutocomplete from './components/WrestlerAutocomplete';
 import ParticipantSelectionDemo from './components/ParticipantSelectionDemo';
+import VisualMatchBuilder from './components/VisualMatchBuilder';
+import GauntletMatchBuilder from './components/GauntletMatchBuilder';
+import TwoOutOfThreeFallsBuilder from './components/TwoOutOfThreeFallsBuilder';
 
 // Place these at the top level, after imports
-const CUSTOM_STIPULATION_OPTIONS = [
-  "None",
-  "Tag Team",
-  "3-way Tag Team",
-  "4-way Tag Team",
-  "6-person Tag Team",
-  "8-person Tag Team",
-  "Battle Royal",
-  "Bakersfield Brawl",
-  "Bloodline Rules",
-  "Cage Match",
-  "Custom/Other",
-  "Fatal Four-way match",
-  "Hell in a Cell",
-  "King of the Ring finalist",
-  "King of the Ring qualifier",
-  "Last Man Standing",
-  "Last Woman Standing",
-  "Men's Elimination Chamber qualifier",
-  "Men's Money in the Bank qualifier",
-  "Men's Survivor Series Qualifier",
-  "Non-Title Match",
-  "Queen of the Ring finalist",
-  "Queen of the Ring qualifier",
-  "Street Fight",
-  "Tables, Ladders, and Chairs (TLC)",
-  "Triple Threat match",
-  "Unsanctioned Match",
-  "Women's Elimination Chamber qualifier",
-  "Women's Money in the Bank qualifier",
-  "Women's Survivor Series qualifier"
-];
 
 // Update color variables to match new banner
 const gold = '#C6A04F'; // new gold from banner
@@ -319,6 +291,46 @@ function formatResult(winner, others) {
   return `${winner} def. ${others.slice(0, -1).join(', ')} and ${others[others.length - 1]}`;
 }
 
+// Format Gauntlet Match results with progression
+function formatGauntletResult(participants, winner, wrestlerMap) {
+  if (!participants || participants.length < 2) {
+    return winner ? `${winner} won the Gauntlet Match` : 'No winner';
+  }
+  
+  // Parse participants if they're in string format
+  let participantList = participants;
+  if (typeof participants === 'string') {
+    participantList = participants.split(' → ').map(p => p.trim());
+  }
+  
+  // Convert slugs to names
+  const participantNames = participantList.map(slug => {
+    const wrestler = wrestlerMap[slug];
+    return wrestler ? wrestler.name : slug;
+  });
+  
+  const winnerName = wrestlerMap[winner] ? wrestlerMap[winner].name : winner;
+  
+  // Build the progression
+  const progression = [];
+  let currentWinner = participantNames[0]; // First participant starts
+  
+  for (let i = 1; i < participantNames.length; i++) {
+    const nextParticipant = participantNames[i];
+    
+    if (nextParticipant === winnerName) {
+      // This participant won against the current winner
+      progression.push(`${nextParticipant} def. ${currentWinner}`);
+      currentWinner = nextParticipant;
+    } else {
+      // Current winner defeated this participant
+      progression.push(`${currentWinner} def. ${nextParticipant}`);
+    }
+  }
+  
+  return progression.join(' → ');
+}
+
 
 
 // Replace all occurrences of splitting participants as a string with array logic
@@ -333,11 +345,15 @@ const getTeams = (participants) => {
 };
 
 // When displaying participants as a string
-const getParticipantsDisplay = (participants, wrestlerMap, stipulation) => {
+const getParticipantsDisplay = (participants, wrestlerMap, stipulation, matchType) => {
   if (Array.isArray(participants)) {
     // Battle Royal: flat array of slugs
-    if (stipulation === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
+    if ((matchType || stipulation) === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
       return participants.map(slug => wrestlerMap?.[slug]?.name || slug).join(', ');
+    }
+    // Gauntlet Match: array of individual participants
+    if ((matchType || stipulation) === 'Gauntlet Match') {
+      return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join('')).join(' → ');
     }
     // Tag/singles: array of arrays
     return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
@@ -546,7 +562,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                 >
                   {/* Modern compact details layout */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
-                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation)}</div>
+                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation, match.matchType)}</div>
                     <div><strong>Winner:</strong> {(() => {
                       const winnerSlug = match.result && match.result.includes(' def. ')
                         ? match.result.split(' def. ')[0]
@@ -666,7 +682,8 @@ function AddEvent({ addEvent, wrestlers }) {
     result: '',
     method: '',
     time: '',
-    stipulation: '',
+    matchType: 'Singles Match', // Set default to Singles Match
+    stipulation: 'None', // Set default to None
     customStipulation: '',
     title: '',
     titleOutcome: '',
@@ -681,6 +698,7 @@ function AddEvent({ addEvent, wrestlers }) {
   const [numParticipants, setNumParticipants] = useState(10);
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
+  const [useVisualBuilder, setUseVisualBuilder] = useState(false); // Toggle for Visual Match Builder
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -710,7 +728,7 @@ function AddEvent({ addEvent, wrestlers }) {
         result: '',
         method: '',
         time: '',
-        stipulation: '',
+        stipulation: 'Singles Match', // Reset to default
         customStipulation: '',
         title: '',
         titleOutcome: '',
@@ -736,9 +754,32 @@ function AddEvent({ addEvent, wrestlers }) {
         return;
       }
     } else {
-      if (!match.participants || !resultType || (resultType === 'Winner' && !winner) || !match.method) {
-        alert('Please fill out all required match fields.');
+      if (!match.participants) {
+        alert('Please enter participants.');
         return;
+      }
+      
+      // For Gauntlet Matches and 2 out of 3 Falls, validate progression data instead of traditional fields
+      if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
+        if (!match.gauntletProgression || match.gauntletProgression.length === 0) {
+          const matchTypeText = match.matchType === 'Gauntlet Match' ? 'Gauntlet Match' : '2 out of 3 Falls';
+          alert(`Please complete the ${matchTypeText} progression by selecting winners for each match`);
+          return;
+        }
+        
+        // Check that all matches have winners and methods
+        const incompleteMatches = match.gauntletProgression.filter(prog => !prog.winner || !prog.method);
+        if (incompleteMatches.length > 0) {
+          const matchTypeText = match.matchType === 'Gauntlet Match' ? 'Gauntlet' : '2 out of 3 Falls';
+          alert(`Please select a winner and method for each match in the ${matchTypeText}`);
+          return;
+        }
+      } else {
+        // For non-Gauntlet matches, require traditional fields
+        if (!resultType || (resultType === 'Winner' && !winner) || !match.method) {
+          alert('Please fill out all required match fields.');
+          return;
+        }
       }
     }
     let finalStipulation = match.stipulation === "Custom/Other" 
@@ -746,9 +787,30 @@ function AddEvent({ addEvent, wrestlers }) {
       : match.stipulation === "None" ? "" : match.stipulation;
     
     let result = '';
-    if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-      const others = winnerOptions.filter(name => name !== winner);
-      result = formatResult(winner, others);
+    if (eventStatus === 'completed') {
+      if ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') && match.gauntletProgression) {
+        // For Gauntlet Matches and 2 out of 3 Falls with progression data, format each match result
+        const progressionResults = match.gauntletProgression
+          .filter(prog => prog.winner && prog.method)
+          .map(prog => {
+            const winnerName = wrestlers.find(w => w.id === prog.winner)?.name || prog.winner;
+            const participant1Name = wrestlers.find(w => w.id === prog.participant1)?.name || prog.participant1;
+            const participant2Name = wrestlers.find(w => w.id === prog.participant2)?.name || prog.participant2;
+            return `${winnerName} def. ${winnerName === participant1Name ? participant2Name : participant1Name} (${prog.method}${prog.time ? `, ${prog.time}` : ''})`;
+          });
+        result = progressionResults.join(' → ');
+      } else if (resultType === 'Winner' && winner && winnerOptions.length >= 2) {
+        if (match.matchType === 'Gauntlet Match') {
+          // Fallback for Gauntlet Matches without progression data
+          result = formatGauntletResult(match.participants, winner, wrestlers.reduce((map, w) => {
+            map[w.id] = w;
+            return map;
+          }, {}));
+        } else {
+          const others = winnerOptions.filter(name => name !== winner);
+          result = formatResult(winner, others);
+        }
+      }
     }
     setMatches([
       ...matches,
@@ -759,7 +821,7 @@ function AddEvent({ addEvent, wrestlers }) {
       result: '',
       method: '',
       time: '',
-      stipulation: '',
+      stipulation: 'Singles Match', // Reset to default
       customStipulation: '',
       title: '',
       titleOutcome: '',
@@ -785,7 +847,7 @@ function AddEvent({ addEvent, wrestlers }) {
         return;
       }
     }
-    const id = eventType.toLowerCase().replace(/\s+/g, '-') + '-' + date.replace(/[^0-9]/g, '');
+    const id = eventType.toLowerCase().replace(/\s+/g, '-') + '-' + date.replace(/[^0-9]/g, '') + '-' + Date.now();
     const eventData = {
       id,
       name: eventType,
@@ -932,10 +994,24 @@ function AddEvent({ addEvent, wrestlers }) {
           </div>
           <div>
             <label>
+              Match Type:<br />
+              <select
+                value={match.matchType}
+                onChange={e => setMatch({ ...match, matchType: e.target.value })}
+                style={inputStyle}
+              >
+                {MATCH_TYPE_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>
               Stipulation:<br />
               <select
                 value={match.stipulation}
-                onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
+                onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
                 style={inputStyle}
               >
                 {STIPULATION_OPTIONS.map(opt => (
@@ -970,7 +1046,7 @@ function AddEvent({ addEvent, wrestlers }) {
               </select>
             </label>
           </div>
-          {match.stipulation === 'Battle Royal' ? (
+          {match.matchType === 'Battle Royal' ? (
             <>
               <div>
                 <label style={{ color: gold, fontWeight: 600 }}>Number of Participants:</label>
@@ -1009,17 +1085,95 @@ function AddEvent({ addEvent, wrestlers }) {
               </div>
             </>
           ) : (
-            <div>
-              <label>
-                Participants:<br />
-                <input
-                  value={match.participants}
-                  onChange={e => setMatch({ ...match, participants: e.target.value })}
-                  required
-                  style={{ width: '100%' }}
-                />
-              </label>
-            </div>
+            <>
+              {/* Participant Input Toggle */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={useVisualBuilder}
+                    onChange={e => setUseVisualBuilder(e.target.checked)}
+                    style={{ marginRight: 8 }}
+                  />
+                  Use Visual Match Builder
+                </label>
+              </div>
+
+              {useVisualBuilder ? (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                    Participants (Visual Builder):
+                  </label>
+                  {match.matchType === 'Gauntlet Match' ? (
+                    <GauntletMatchBuilder
+                      wrestlers={wrestlers}
+                      value={match.participants}
+                      onChange={value => {
+                        console.log('GauntletMatchBuilder onChange called with value:', value);
+                        const newMatch = { ...match, participants: value };
+                        setMatch(newMatch);
+                      }}
+                      onResultChange={gauntletResult => {
+                        console.log('Gauntlet result:', gauntletResult);
+                        // Store the gauntlet progression data
+                        setMatch(prev => ({
+                          ...prev,
+                          gauntletProgression: gauntletResult.progression,
+                          winner: gauntletResult.winner
+                        }));
+                      }}
+                    />
+                  ) : match.matchType === '2 out of 3 Falls' ? (
+                    <TwoOutOfThreeFallsBuilder
+                      wrestlers={wrestlers}
+                      value={match.participants}
+                      onChange={value => {
+                        console.log('TwoOutOfThreeFallsBuilder onChange called with value:', value);
+                        const newMatch = { ...match, participants: value };
+                        setMatch(newMatch);
+                      }}
+                      onResultChange={fallsResult => {
+                        console.log('2 out of 3 Falls result:', fallsResult);
+                        // Store the falls progression data
+                        setMatch(prev => ({
+                          ...prev,
+                          gauntletProgression: fallsResult.gauntletProgression,
+                          winner: fallsResult.winner,
+                          method: fallsResult.method,
+                          time: fallsResult.time
+                        }));
+                      }}
+                    />
+                  ) : (
+                    <VisualMatchBuilder
+                      wrestlers={wrestlers}
+                      value={match.participants}
+                      onChange={value => {
+                        console.log('VisualMatchBuilder onChange called with value:', value);
+                        console.log('Current match state:', match);
+                        const newMatch = { ...match, participants: value };
+                        console.log('New match state will be:', newMatch);
+                        setMatch(newMatch);
+                      }}
+                      maxParticipants={30}
+                      initialStructure={getMatchStructureFromMatchType(match.matchType)}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label>
+                    Participants:<br />
+                    <input
+                      value={match.participants}
+                      onChange={e => setMatch({ ...match, participants: e.target.value })}
+                      required
+                      style={{ width: '100%' }}
+                    />
+                  </label>
+                </div>
+              )}
+            </>
           )}
           {eventStatus === 'completed' && (
             <>
@@ -1036,7 +1190,7 @@ function AddEvent({ addEvent, wrestlers }) {
                   </select>
                 </label>
               </div>
-              {resultType === 'Winner' && winnerOptions.length >= 2 && (
+              {resultType === 'Winner' && winnerOptions.length >= 2 && match.matchType !== 'Gauntlet Match' && match.matchType !== '2 out of 3 Falls' && (
                 <div>
                   <label>
                     Winner:<br />
@@ -1150,7 +1304,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     result: '',
     method: '',
     time: '',
-    stipulation: '',
+    matchType: 'Singles Match', // Set default to Singles Match
+    stipulation: 'None', // Set default to None
     customStipulationType: '',
     customStipulation: '',
     title: '',
@@ -1165,6 +1320,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [numParticipants, setNumParticipants] = useState(10);
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
+  const [useVisualBuilder, setUseVisualBuilder] = useState(false); // Toggle for Visual Match Builder
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -1194,7 +1350,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         result: '',
         method: '',
         time: '',
-        stipulation: '',
+        matchType: 'Singles Match', // Reset to default
+        stipulation: 'None', // Reset to default
         customStipulation: '',
         title: '',
         titleOutcome: '',
@@ -1215,8 +1372,16 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     
     let result = '';
     if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-      const others = winnerOptions.filter(name => name !== winner);
-      result = formatResult(winner, others);
+      if (match.matchType === 'Gauntlet Match') {
+        // For Gauntlet Matches, we need to pass the wrestlerMap to format the progression
+        result = formatGauntletResult(match.participants, winner, wrestlers.reduce((map, w) => {
+          map[w.id] = w;
+          return map;
+        }, {}));
+      } else {
+        const others = winnerOptions.filter(name => name !== winner);
+        result = formatResult(winner, others);
+      }
     }
     setMatches([
       ...matches,
@@ -1227,7 +1392,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       result: '',
       method: '',
       time: '',
-      stipulation: '',
+      matchType: 'Singles Match', // Reset to default
+      stipulation: 'None', // Reset to default
       customStipulation: '',
       title: '',
       titleOutcome: '',
@@ -1500,6 +1666,20 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             </div>
             <div>
               <label>
+                Match Type:<br />
+                <select
+                  value={match.matchType}
+                  onChange={e => setMatch({ ...match, matchType: e.target.value })}
+                  style={inputStyle}
+                >
+                  {MATCH_TYPE_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div>
+              <label>
                 Stipulation:<br />
                 <select
                   value={match.stipulation}
@@ -1577,17 +1757,93 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 </div>
               </>
             ) : (
-              <div>
-                <label>
-                  Participants:<br />
-                  <input
-                    value={match.participants}
-                    onChange={e => setMatch({ ...match, participants: e.target.value })}
-                    required
-                    style={{ width: '100%' }}
-                  />
-                </label>
-              </div>
+              <>
+                {/* Participant Input Toggle */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={useVisualBuilder}
+                      onChange={e => setUseVisualBuilder(e.target.checked)}
+                      style={{ marginRight: 8 }}
+                    />
+                    Use Visual Match Builder
+                  </label>
+                </div>
+
+                {useVisualBuilder ? (
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                      Participants (Visual Builder):
+                    </label>
+                    {match.matchType === 'Gauntlet Match' ? (
+                      <GauntletMatchBuilder
+                        wrestlers={wrestlers}
+                        value={match.participants}
+                        onChange={value => {
+                          console.log('GauntletMatchBuilder onChange called with value:', value);
+                          const newMatch = { ...match, participants: value };
+                          setMatch(newMatch);
+                        }}
+                        onResultChange={gauntletResult => {
+                          console.log('Gauntlet result:', gauntletResult);
+                          setMatch(prev => ({
+                            ...prev,
+                            gauntletProgression: gauntletResult.progression,
+                            winner: gauntletResult.winner
+                          }));
+                        }}
+                      />
+                    ) : match.matchType === '2 out of 3 Falls' ? (
+                      <TwoOutOfThreeFallsBuilder
+                        wrestlers={wrestlers}
+                        value={match.participants}
+                        onChange={value => {
+                          console.log('TwoOutOfThreeFallsBuilder onChange called with value:', value);
+                          const newMatch = { ...match, participants: value };
+                          setMatch(newMatch);
+                        }}
+                        onResultChange={fallsResult => {
+                          console.log('2 out of 3 Falls result:', fallsResult);
+                          setMatch(prev => ({
+                            ...prev,
+                            gauntletProgression: fallsResult.gauntletProgression,
+                            winner: fallsResult.winner,
+                            method: fallsResult.method,
+                            time: fallsResult.time
+                          }));
+                        }}
+                      />
+                    ) : (
+                      <VisualMatchBuilder
+                        wrestlers={wrestlers}
+                        value={match.participants}
+                        onChange={value => {
+                          console.log('VisualMatchBuilder onChange called with value:', value);
+                          console.log('Current match state:', match);
+                          const newMatch = { ...match, participants: value };
+                          console.log('New match state will be:', newMatch);
+                          setMatch(newMatch);
+                        }}
+                        maxParticipants={30}
+                        initialStructure={getMatchStructureFromMatchType(match.matchType)}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label>
+                      Participants:<br />
+                      <input
+                        value={match.participants}
+                        onChange={e => setMatch({ ...match, participants: e.target.value })}
+                        required
+                        style={{ width: '100%' }}
+                      />
+                    </label>
+                  </div>
+                )}
+              </>
             )}
             {eventStatus === 'completed' && (
               <>
@@ -2035,3 +2291,77 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
     />
   );
 }
+
+// Function to get match structure based on match type
+const getMatchStructureFromMatchType = (matchType) => {
+  switch (matchType) {
+    case 'Singles Match':
+      return [
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] }
+      ];
+    case 'Tag Team':
+      return [
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' }
+      ];
+    case '3-way Tag Team':
+      return [
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' }
+      ];
+    case '4-way Tag Team':
+      return [
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' }
+      ];
+    case '6-person Tag Team':
+      return [
+        { type: 'team', participants: ['', '', ''], name: '' },
+        { type: 'team', participants: ['', '', ''], name: '' }
+      ];
+    case '8-person Tag Team':
+      return [
+        { type: 'team', participants: ['', '', '', ''], name: '' },
+        { type: 'team', participants: ['', '', '', ''], name: '' }
+      ];
+    case 'Fatal Four-way match':
+      return [
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] }
+      ];
+    case 'Triple Threat match':
+      return [
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] }
+      ];
+    case 'Gauntlet Match':
+      // Gauntlet Match: multiple individual participants (starting with 5)
+      return [
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] }
+      ];
+    case '2 out of 3 Falls':
+      // 2 out of 3 Falls: 2 individual participants who wrestle multiple falls
+      return [
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] }
+      ];
+    case 'Battle Royal':
+      // Battle Royal uses separate interface, so return null
+      return null;
+    default:
+      // For stipulations like "Hell in a Cell", "Bakersfield Brawl", etc.
+      // Return null to let user build manually
+      return null;
+  }
+};

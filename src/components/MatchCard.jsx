@@ -45,6 +45,11 @@ const getTeams = (participants) => {
 };
 
 const parseTeamString = (teamStr) => {
+  // Handle null/undefined input
+  if (!teamStr) {
+    return { teamName: '', slugs: [] };
+  }
+  
   // Handle team name with slugs in parentheses
   const teamMatch = teamStr.match(/^([^(]+)\s*\(([^)]+)\)$/);
   if (teamMatch) {
@@ -60,11 +65,306 @@ const parseTeamString = (teamStr) => {
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true }) {
   const navigate = useNavigate();
 
-  // Parse participants into sides (split by 'vs')
+  // Early return for 2 out of 3 Falls: render only the custom layout
+  if (match.matchType === '2 out of 3 Falls' && typeof match.participants === 'string') {
+    // Parse participants for 2 out of 3 Falls
+    const participantStrings = match.participants.split(' vs ').map(s => s.trim());
+    const participant1 = participantStrings[0];
+    const participant2 = participantStrings[1];
+    // Parse falls from result
+    const falls = [];
+    
+    if (match.result) {
+      // Try different separators for falls
+      let resultParts = match.result.split(' → ');
+      if (resultParts.length === 1) {
+        resultParts = match.result.split(' -> ');
+      }
+      if (resultParts.length === 1) {
+        resultParts = match.result.split(' → ');
+      }
+      falls.push(...resultParts);
+    }
+    
+    // If we only have one fall, create a 2 out of 3 falls structure
+    // This handles cases where only the final result is recorded
+    if (falls.length === 1 && falls[0].includes(' def. ')) {
+      const finalResult = falls[0];
+      const winner = finalResult.split(' def. ')[0];
+      const loser = finalResult.split(' def. ')[1];
+      
+      // Create a 2-1 scenario (winner wins 2 falls, loser wins 1)
+      falls.length = 0; // Clear the array
+      falls.push(`${loser} def. ${winner}`); // Fall 1: loser wins
+      falls.push(`${winner} def. ${loser}`); // Fall 2: winner wins  
+      falls.push(finalResult); // Fall 3: winner wins (final result)
+    }
+    
+    // Determine overall winner
+    let overallWinner = null;
+    if (falls.length > 0) {
+      const lastFall = falls[falls.length - 1];
+      if (lastFall.includes(' def. ')) {
+        overallWinner = lastFall.split(' def. ')[0];
+      }
+    }
+    
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#232323',
+          borderRadius: 12,
+          boxShadow: '0 0 12px #C6A04F22',
+          padding: '18px 24px',
+          border: match.cardType === 'Main Event' ? '2px solid #C6A04F' : '1px solid #444',
+          position: 'relative',
+          minHeight: 120,
+          marginBottom: 2,
+        }}
+      >
+        {/* Main Event Banner */}
+        {match.cardType === 'Main Event' && (
+          <div style={{
+            position: 'absolute',
+            top: -10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#C6A04F',
+            color: '#000',
+            padding: '4px 16px',
+            borderRadius: 12,
+            fontSize: 12,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            zIndex: 10,
+          }}>
+            Main Event
+          </div>
+        )}
+
+        {/* Top label: match type, stipulation/title */}
+        <div style={{
+          color: '#C6A04F',
+          fontWeight: 700,
+          fontSize: 15,
+          marginBottom: 8,
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}>{[match.matchType, match.stipulation !== 'None' ? match.stipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}</div>
+        
+        {/* Match Info Block */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}</div>
+          <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+            {match.isLive ? (
+              <span style={{ color: '#27ae60' }}>LIVE</span>
+            ) : (
+              match.result && match.result !== 'No winner' ? 'Final' : match.result
+            )}
+          </div>
+          <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+          <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+        </div>
+        
+        {/* Falls Progression */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 24,
+          marginBottom: 16,
+          flexWrap: 'wrap',
+        }}>
+          {falls.map((fall, index) => {
+            // Determine winner for this fall
+            let fallWinner = null;
+            if (fall.includes(' def. ')) {
+              fallWinner = fall.split(' def. ')[0];
+            }
+            
+            const isLastFall = index === falls.length - 1;
+            const isOverallWinner = overallWinner && (wrestlerMap[fallWinner]?.name === overallWinner || fallWinner === overallWinner);
+            
+            // Check if each participant is the winner of this fall
+            const participant1IsWinner = fallWinner === wrestlerMap[participant1]?.name || fallWinner === participant1;
+            const participant2IsWinner = fallWinner === wrestlerMap[participant2]?.name || fallWinner === participant2;
+            
+            return (
+              <div key={index} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                {/* Fall Match */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  padding: 12,
+                  background: '#2a2a2a',
+                  borderRadius: 8,
+                  border: '1px solid #444',
+                  minWidth: 160,
+                  minHeight: 80,
+                }}>
+                  {/* Participant 1 */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}>
+                    <img
+                      src={wrestlerMap[participant1]?.image_url || '/images/placeholder.png'}
+                      alt={wrestlerMap[participant1]?.name || participant1}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: participant1IsWinner ? '2px solid #C6A04F' : '2px solid #666',
+                      }}
+                    />
+                    <span style={{
+                      fontSize: 11,
+                      color: participant1IsWinner ? '#C6A04F' : '#fff',
+                      fontWeight: participant1IsWinner ? 'bold' : 'normal',
+                      textAlign: 'center',
+                      maxWidth: 70,
+                    }}>{wrestlerMap[participant1]?.name || participant1}</span>
+                  </div>
+                  
+                  {/* VS */}
+                  <div style={{ color: '#C6A04F', fontSize: 13, fontWeight: 'bold' }}>vs</div>
+                  
+                  {/* Participant 2 */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}>
+                    <img
+                      src={wrestlerMap[participant2]?.image_url || '/images/placeholder.png'}
+                      alt={wrestlerMap[participant2]?.name || participant2}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: participant2IsWinner ? '2px solid #C6A04F' : '2px solid #666',
+                      }}
+                    />
+                    <span style={{
+                      fontSize: 11,
+                      color: participant2IsWinner ? '#C6A04F' : '#fff',
+                      fontWeight: participant2IsWinner ? 'bold' : 'normal',
+                      textAlign: 'center',
+                      maxWidth: 70,
+                    }}>{wrestlerMap[participant2]?.name || participant2}</span>
+                  </div>
+                </div>
+                
+                {/* Fall Label */}
+                <div style={{
+                  color: '#C6A04F',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  textAlign: 'center',
+                }}>
+                  Fall {index + 1}
+                </div>
+                
+
+              </div>
+            );
+          })}
+          
+          {/* Arrow to Winner */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            color: '#C6A04F',
+            fontSize: 20,
+            fontWeight: 'bold',
+          }}>
+            →
+          </div>
+          
+          {/* Winner Box */}
+          {overallWinner && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: 16,
+                background: '#2a2a2a',
+                borderRadius: 8,
+                border: '2px solid #C6A04F',
+                minWidth: 160,
+                minHeight: 120,
+              }}>
+                <div style={{
+                  color: '#C6A04F',
+                  fontWeight: 800,
+                  fontSize: 16,
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}>
+                  WINNER
+                </div>
+                <img
+                  src={wrestlerMap[overallWinner]?.image_url || '/images/placeholder.png'}
+                  alt={overallWinner}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid #C6A04F',
+                    marginBottom: 8,
+                  }}
+                />
+                <span style={{
+                  fontSize: 14,
+                  color: '#C6A04F',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  maxWidth: 80,
+                }}>
+                  {wrestlerMap[overallWinner]?.name || overallWinner}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Parse participants into sides (split by 'vs' or '→' for Gauntlet Matches)
   const teams = getTeams(match.participants);
   // For each side, split by '&' for tag teams
-  const teamStrings = (typeof match.participants === 'string')
-    ? match.participants.split(' vs ').map(s => s.trim())
+  const teamStrings = (typeof match.participants === 'string' && match.participants)
+    ? ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls')
+        ? match.participants.split(' → ').map(s => s.trim())
+        : match.participants.split(' vs ').map(s => s.trim()))
     : [];
   
   // Winner logic
@@ -89,7 +389,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     }
   });
   
-  const isTitleMatch = match.title && match.title !== 'None';
+  const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
   
   // SVG triangle arrows for winner indication
   const triangleRight = (
@@ -108,14 +408,30 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     </svg>
   );
   
-  // Top label: stipulation and/or title
+  // Top label: match type, stipulation and/or title
   let topLabel = '';
-  if (isTitleMatch && match.stipulation && match.stipulation !== 'None') {
-    topLabel = `${match.stipulation} — ${match.title}`;
-  } else if (isTitleMatch) {
-    topLabel = match.title;
-  } else if (match.stipulation && match.stipulation !== 'None') {
-    topLabel = match.stipulation;
+  
+  // Build the label components
+  const labelParts = [];
+  
+  // Add match type if it exists and is not a basic singles match
+  if (match.matchType && match.matchType !== 'Singles Match') {
+    labelParts.push(match.matchType);
+  }
+  
+  // Add stipulation if it exists and is not None
+  if (match.stipulation && match.stipulation !== 'None') {
+    labelParts.push(match.stipulation);
+  }
+  
+  // Add title if it exists (for both title matches and No. 1 Contender matches)
+  if (match.title && match.title !== 'None') {
+    labelParts.push(match.title);
+  }
+  
+  // Combine the parts
+  if (labelParts.length > 0) {
+    topLabel = labelParts.join(' — ');
   }
   
   // Layout for 2+ sides
@@ -139,13 +455,34 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         boxShadow: '0 0 12px #C6A04F22',
         padding: '18px 24px',
         cursor: isClickable ? 'pointer' : 'default',
-        border: '1px solid #444',
+        border: match.cardType === 'Main Event' ? '2px solid #C6A04F' : '1px solid #444',
         transition: 'background 0.2s',
         position: 'relative',
         minHeight: 120,
         marginBottom: 2,
       }}
     >
+      {/* Main Event Banner */}
+      {match.cardType === 'Main Event' && (
+        <div style={{
+          position: 'absolute',
+          top: -10,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#C6A04F',
+          color: '#000',
+          padding: '4px 16px',
+          borderRadius: 12,
+          fontSize: 12,
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          zIndex: 10,
+        }}>
+          Main Event
+        </div>
+      )}
       {/* Top label: stipulation/title */}
       {topLabel && (
         <div style={{
@@ -160,8 +497,229 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         }}>{topLabel}</div>
       )}
       
-      {/* Battle Royal participant image grid */}
-      {match.stipulation === 'Battle Royal' && Array.isArray(match.participants) ? (
+      {/* Gauntlet Match bracket display */}
+      {match.matchType === 'Gauntlet Match' && typeof match.participants === 'string' ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+        }}>
+          {/* Match Info Block for Gauntlet Match */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}</div>
+            <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+              {match.isLive ? (
+                <span style={{ color: '#27ae60' }}>LIVE</span>
+              ) : (
+                match.result && match.result !== 'No winner' ? 'Final' : match.result
+              )}
+            </div>
+            <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+            <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+          </div>
+
+          
+          {/* Bracket visualization - horizontal flow layout */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            marginBottom: 16,
+            flexWrap: 'wrap',
+            position: 'relative',
+          }}>
+            {(() => {
+              const matches = [];
+              let currentWinner = teamStrings[0]; // Start with first participant
+              
+              for (let i = 0; i < teamStrings.length - 1; i++) {
+                const participant1 = currentWinner; // Winner from previous match (or first participant)
+                const participant2 = teamStrings[i + 1]; // Next opponent
+                const isFirstMatch = i === 0;
+                const isLastMatch = i === teamStrings.length - 2;
+                
+                // Determine winner for this match
+                let winner = null;
+                if (match.gauntletProgression && match.gauntletProgression[i]) {
+                  const matchResult = match.gauntletProgression[i];
+                  if (matchResult.winner) {
+                    // Check if the winner slug matches either participant slug
+                    if (matchResult.winner === participant1) {
+                      winner = wrestlerMap[participant1]?.name || participant1;
+                      currentWinner = participant1; // Update for next match
+                    } else if (matchResult.winner === participant2) {
+                      winner = wrestlerMap[participant2]?.name || participant2;
+                      currentWinner = participant2; // Update for next match
+                    }
+                  }
+                }
+               
+                matches.push(
+                  <div key={i} style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    position: 'relative',
+                  }}>
+                    {/* Match participants */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: 6,
+                      background: '#2a2a2a',
+                      borderRadius: 6,
+                      border: '1px solid #444',
+                      minWidth: 140,
+                    }}>
+                      {/* Participant 1 */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        color: winner === wrestlerMap[participant1]?.name ? '#C6A04F' : '#fff',
+                        fontWeight: winner === wrestlerMap[participant1]?.name ? 'bold' : 'normal',
+                      }}>
+                        <img
+                          src={wrestlerMap[participant1]?.image_url || '/images/placeholder.png'}
+                          alt={wrestlerMap[participant1]?.name || participant1}
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: winner === wrestlerMap[participant1]?.name ? '2px solid #C6A04F' : '1px solid #666',
+                          }}
+                        />
+                        <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {wrestlerMap[participant1]?.name || participant1}
+                        </span>
+                      </div>
+                      
+                      {/* VS separator */}
+                      <div style={{ color: '#C6A04F', fontSize: 9, fontWeight: 'bold' }}>vs</div>
+                      
+                      {/* Participant 2 */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        color: winner === wrestlerMap[participant2]?.name ? '#C6A04F' : '#fff',
+                        fontWeight: winner === wrestlerMap[participant2]?.name ? 'bold' : 'normal',
+                      }}>
+                        <img
+                          src={wrestlerMap[participant2]?.image_url || '/images/placeholder.png'}
+                          alt={wrestlerMap[participant2]?.name || participant2}
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: winner === wrestlerMap[participant2]?.name ? '2px solid #C6A04F' : '1px solid #666',
+                          }}
+                        />
+                        <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {wrestlerMap[participant2]?.name || participant2}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Arrow to next match (but not after the last match) */}
+                    {!isLastMatch && (
+                      <div style={{
+                        color: '#C6A04F',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                      }}>
+                        →
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return matches;
+            })()}
+          </div>
+          
+          {/* Winner Box - positioned below the progression */}
+          {(() => {
+            let finalWinner = null;
+            let finalWinnerSlug = null;
+            if (match.winner) {
+              // Use the match.winner property directly
+              const winnerEntry = Object.entries(wrestlerMap).find(([slug, wrestler]) => 
+                wrestler.name === match.winner || slug === match.winner
+              );
+              if (winnerEntry) {
+                finalWinner = winnerEntry[1].name;
+                finalWinnerSlug = winnerEntry[0];
+              } else {
+                finalWinner = match.winner;
+                finalWinnerSlug = match.winner;
+              }
+            }
+            
+            return finalWinner ? (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                marginTop: 16,
+              }}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  padding: 16,
+                  background: '#2a2a2a',
+                  borderRadius: 8,
+                  border: '2px solid #C6A04F',
+                  minWidth: 160,
+                  minHeight: 120,
+                }}>
+                  <div style={{
+                    color: '#C6A04F',
+                    fontWeight: 800,
+                    fontSize: 16,
+                    textAlign: 'center',
+                    marginBottom: 8,
+                  }}>
+                    WINNER
+                  </div>
+                  <img
+                    src={wrestlerMap[finalWinnerSlug]?.image_url || '/images/placeholder.png'}
+                    alt={finalWinner || 'Winner'}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #C6A04F',
+                      marginBottom: 8,
+                    }}
+                  />
+                  <span style={{
+                    fontSize: 14,
+                    color: '#C6A04F',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    maxWidth: 80,
+                  }}>
+                    {finalWinner || 'Winner'}
+                  </span>
+                </div>
+              </div>
+            ) : null;
+          })()}
+
+        </div>
+      ) : match.matchType === 'Battle Royal' && Array.isArray(match.participants) ? (
         match.winner ? (() => {
           // Split participants (excluding winner) into two balanced groups
           const others = match.participants.filter(slug => slug !== match.winner);
@@ -352,7 +910,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
           {/* Left participant */}
           {(() => {
-            const { teamName, slugs } = parseTeamString(teamStrings[0]);
+            const { teamName, slugs } = parseTeamString(teamStrings[0] || '');
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
             return (
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
@@ -413,7 +971,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           </div>
           {/* Right participant */}
           {(() => {
-            const { teamName, slugs } = parseTeamString(teamStrings[1]);
+            const { teamName, slugs } = parseTeamString(teamStrings[1] || '');
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
             return (
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
@@ -453,6 +1011,28 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           })()}
         </div>
       ) : null}
+      
+      {/* Result display for Battle Royal matches only */}
+      {match.result && match.matchType === 'Battle Royal' && (
+        <div style={{
+          background: '#2a2a2a',
+          borderRadius: 8,
+          padding: 12,
+          marginTop: 8,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          border: '1px solid #444',
+          maxWidth: 500,
+          textAlign: 'center'
+        }}>
+          <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+            Battle Royal Result
+          </div>
+          <div style={{ color: '#fff', fontSize: 13, lineHeight: 1.4 }}>
+            {match.result}
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

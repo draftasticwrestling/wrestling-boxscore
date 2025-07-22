@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  MATCH_TYPE_OPTIONS,
   STIPULATION_OPTIONS,
   METHOD_OPTIONS,
   TITLE_OPTIONS,
@@ -9,6 +10,9 @@ import {
 import { supabase } from '../supabaseClient';
 
 import WrestlerAutocomplete from './WrestlerAutocomplete';
+import VisualMatchBuilder from './VisualMatchBuilder';
+import GauntletMatchBuilder from './GauntletMatchBuilder';
+import TwoOutOfThreeFallsBuilder from './TwoOutOfThreeFallsBuilder';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };
 const inputStyle = {
@@ -20,6 +24,8 @@ const inputStyle = {
   color: '#fff',
   marginBottom: '12px',
 };
+
+const gold = '#C6A04F';
 
 export default function MatchEdit({
   initialMatch = {},
@@ -37,8 +43,8 @@ export default function MatchEdit({
     result: '',
     method: '',
     time: '',
-    stipulation: '',
-    customStipulationType: '',
+    matchType: 'Singles Match',
+    stipulation: 'None',
     customStipulation: '',
     title: '',
     specialWinnerType: '',
@@ -60,9 +66,22 @@ export default function MatchEdit({
   const [matchDetailsSaved, setMatchDetailsSaved] = useState(false);
   const [editingCommentIdx, setEditingCommentIdx] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  const [useVisualBuilder, setUseVisualBuilder] = useState(true);
+
+  // Battle Royal specific state
+  const [numParticipants, setNumParticipants] = useState(Array.isArray(match.participants) ? match.participants.length : 10);
+  const [brParticipants, setBrParticipants] = useState(() => {
+    if (Array.isArray(match.participants)) {
+      const arr = match.participants.slice(0, 10);
+      while (arr.length < 10) arr.push('');
+      return arr;
+    }
+    return Array(10).fill('');
+  });
+  const [brWinner, setBrWinner] = useState(match.winner || '');
 
   // Define isBattleRoyal early to avoid "Cannot access before initialization" error
-  const isBattleRoyal = match.stipulation === 'Battle Royal';
+  const isBattleRoyal = match.matchType === 'Battle Royal';
 
   useEffect(() => {
     setMatch(m => ({ ...m, status }));
@@ -97,333 +116,234 @@ export default function MatchEdit({
         
         // First try to match against tag team names
         for (let i = 0; i < participants.length; i++) {
-          if (tagTeams[i] && initialMatch.result.startsWith(tagTeams[i])) {
-            found = tagTeams[i];
+          const tagTeamName = tagTeams[i];
+          if (tagTeamName && initialMatch.result.includes(tagTeamName)) {
+            found = tagTeamName;
             break;
           }
         }
         
         // If no tag team match, try individual names
         if (!found) {
-          found = winnerOptions.find(w => initialMatch.result.startsWith(w));
+          for (let i = 0; i < participants.length; i++) {
+            const team = participants[i];
+            for (const participant of team) {
+              if (initialMatch.result.includes(participant)) {
+                found = team.join(' & ');
+                break;
+              }
+            }
+            if (found) break;
+          }
         }
         
-        if (found) setWinner(found);
+        if (found) {
+          setWinner(found);
+        }
       }
     }
   }, [initialMatch, winnerOptions, match.participants]);
 
-  // Sync local match state with parent updates (especially commentary)
-  useEffect(() => {
-    setMatch(m => ({ ...m, ...initialMatch }));
-    setCommentary(initialMatch.commentary || []);
-  }, [initialMatch.commentary]);
-
-  useEffect(() => {
-    // When match.participants changes (e.g., when opening the edit form), sync state
-    if (isBattleRoyal && Array.isArray(match.participants)) {
-      setNumParticipants(match.participants.length);
-      setBrParticipants(normalizeBrParticipants(match.participants, match.participants.length));
-    }
-  }, [match.participants, isBattleRoyal]);
-
-  // --- PATCH: Always initialize brParticipants and numParticipants from match.participants on edit ---
-  useEffect(() => {
-    if (isBattleRoyal && Array.isArray(match.participants) && match.participants.length > 0) {
-      setNumParticipants(match.participants.length);
-      setBrParticipants(normalizeBrParticipants(match.participants, match.participants.length));
-    }
-  }, [isBattleRoyal, match.participants]);
-
-  // --- PATCH: Enhanced sync for Battle Royal participants on edit ---
-  useEffect(() => {
-    if (isBattleRoyal) {
-      const participantsArray = ensureParticipantsArray(match.participants);
-      console.log('Battle Royal edit - original participants:', match.participants, 'converted to array:', participantsArray);
-      if (participantsArray.length > 0) {
-        setNumParticipants(participantsArray.length);
-        setBrParticipants(normalizeBrParticipants(participantsArray, participantsArray.length));
-      }
-    }
-  }, [isBattleRoyal, match.participants]);
-
-  // Helper to check if method is required
   function isMethodRequired() {
-    if (!eventDate) return true;
-    const cutoff = new Date('2025-05-01');
-    const d = new Date(eventDate);
-    return d >= cutoff;
+    return status === 'completed' && resultType === 'Winner';
   }
 
-  // Helper to get elapsed minutes
   function getElapsedMinutes(ts) {
-    if (!liveStart) return 0;
-    return Math.ceil((ts - liveStart) / 60000);
+    if (!ts || !liveStart) return 0;
+    return Math.floor((ts - liveStart) / 60000);
   }
 
-  // Helper to format commentary time
   function formatCommentaryTime(ts, liveStart, commentary) {
-    let start = liveStart;
-    if (!start && commentary && commentary.length > 0) {
-      // Use the last (oldest) commentary timestamp as start
-      start = commentary[commentary.length - 1].timestamp;
-    }
-    const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
-    return `${elapsed}'`;
+    if (!ts || !liveStart) return '00:00';
+    const elapsed = Math.floor((ts - liveStart) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  // Save match details for live match (before commentary)
   const handleSaveMatchDetails = (e) => {
     e.preventDefault();
     setMatchDetailsSaved(true);
-    if (!liveStart) {
-      const now = Date.now();
-      setLiveStart(now);
-      const newCommentary = [{ timestamp: now, text: 'The match begins' }];
-      setCommentary(newCommentary);
-      
-      // Update in real-time
-      if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
-        const updatedMatch = {
-          ...match,
-          commentary: newCommentary,
-          liveStart: now,
-          isLive: true
-        };
-        onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
-      }
-    }
-    // Optionally, persist match details here if needed
   };
 
-  // End match handler
   const handleEndMatch = () => {
-    const confirmed = window.confirm('Are you sure you want to end match? This will close live commentary and cannot be undone.');
-    if (!confirmed) return;
-    const now = Date.now();
-    setLiveEnd(now);
-    setIsLive(false);
+    const endTime = Date.now();
+    setLiveEnd(endTime);
     setStatus('completed');
-    const newCommentary = [{ timestamp: now, text: 'The match ends' }, ...commentary];
-    setCommentary(newCommentary);
+    setMatch(prev => ({ ...prev, liveEnd: endTime, status: 'completed' }));
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
     
+    let result = '';
+    
+    // --- Battle Royal branch ---
+    if (isBattleRoyal) {
+      if (status === 'completed' && brWinner) {
+        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
+        const participants = brParticipants.filter(Boolean).map(slug => 
+          wrestlers.find(w => w.id === slug)?.name || slug
+        );
+        result = `${winnerName} won the Battle Royal (${participants.join(', ')})`;
+      }
+    } else {
+      // --- Default (non-Battle Royal) branch ---
+      if (status === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
+        const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
+        const winnerIndex = winnerOptions.indexOf(winner);
+        if (winnerIndex !== -1) {
+          const winnerTeam = participants[winnerIndex];
+          const loserTeams = participants.filter((_, index) => index !== winnerIndex);
+          const winnerName = tagTeams[winnerIndex] || winnerTeam.join(' & ');
+          const loserNames = loserTeams.map((team, index) => {
+            const actualIndex = index >= winnerIndex ? index + 1 : index;
+            return tagTeams[actualIndex] || team.join(' & ');
+          });
+          result = `${winnerName} def. ${loserNames.join(' & ')}`;
+        }
+      } else if (status === 'completed' && resultType === 'No Winner') {
+        result = 'No winner';
+      }
+    }
+
+    // For Gauntlet Match and 2 out of 3 Falls, preserve the existing result
+    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
+      result = match.result || result;
+    }
+
+    const updatedMatch = {
+      ...match,
+      result,
+      status,
+      isLive,
+      liveStart,
+      liveEnd,
+      commentary,
+    };
+
+    onSave(updatedMatch);
+  };
+
+  async function updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary) {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ 
+          matches: supabase.sql`array_replace(matches, ${matchOrder}, ${JSON.stringify({ ...match, commentary: newCommentary })})`
+        })
+        .eq('id', eventId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating commentary in Supabase:', error);
+    }
+  }
+
+  const handleAddCommentary = async (e) => {
+    e.preventDefault();
+    if (!commentaryInput.trim()) return;
+
+    const newComment = {
+      text: commentaryInput,
+      timestamp: Date.now()
+    };
+
+    const updatedCommentary = [...commentary, newComment];
+    setCommentary(updatedCommentary);
+    setCommentaryInput("");
+
     // Update in real-time
     if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
       const updatedMatch = {
         ...match,
-        commentary: newCommentary,
-        liveEnd: now,
-        isLive: false,
-        status: 'completed'
+        commentary: updatedCommentary
       };
       onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
     }
-    
-    // Do NOT call onSave or exit edit mode here; let user fill in result fields and click Save
-    setMatchDetailsSaved(false); // allow editing winner/method after ending
-  };
 
-  // --- PATCH: Save full participants array and winner slug for Battle Royal ---
-  const handleSave = (e) => {
-    e.preventDefault();
-    let finalStatus = status;
-    let finalIsLive = isLive;
-    if (!isLive && (resultType === 'Winner' || resultType === 'No Winner')) {
-      finalStatus = 'completed';
-      finalIsLive = false;
-    }
-    let finalStipulation = match.stipulation === 'Custom/Other'
-      ? match.customStipulation
-      : match.stipulation === 'None' ? '' : match.stipulation;
-    let result = '';
-    if (isBattleRoyal) {
-      let brResult = '';
-      const validParticipants = brParticipants.filter(Boolean);
-      console.log('Battle Royal save - participants:', validParticipants, 'winner:', brWinner);
-      
-      if (finalStatus === 'completed' && brWinner && validParticipants.length >= 2) {
-        const winnerName = wrestlers.find(w => w.id === brWinner)?.name || brWinner;
-        brResult = `${winnerName} won the Battle Royal`;
-      } else if (finalStatus === 'completed') {
-        brResult = 'No winner';
-      }
-      onSave({
-        ...match,
-        participants: validParticipants, // Save all valid participants
-        winner: brWinner, // Save winner slug
-        result: brResult,
-        stipulation: finalStipulation,
-        status: finalStatus,
-        isLive: finalIsLive,
-        liveStart,
-        liveEnd,
-        commentary,
-      });
-      return;
-    }
-    // --- Default (non-Battle Royal) branch ---
-    if (finalStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-      const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
-      const winnerIndex = winnerOptions.indexOf(winner);
-      if (winnerIndex !== -1) {
-        const winnerTeam = participants[winnerIndex];
-        const loserTeams = participants.filter((_, index) => index !== winnerIndex);
-        const winnerName = tagTeams[winnerIndex] || winnerTeam.join(' & ');
-        const loserNames = loserTeams.map((team, index) => {
-          const actualIndex = index >= winnerIndex ? index + 1 : index;
-          return tagTeams[actualIndex] || team.join(' & ');
-        });
-        result = `${winnerName} def. ${loserNames.join(' & ')}`;
-      }
-    } else if (finalStatus === 'completed' && resultType === 'No Winner') {
-      result = 'No winner';
-    }
-    onSave({
-      ...match,
-      result,
-      stipulation: finalStipulation,
-      status: finalStatus,
-      isLive: finalIsLive,
-      liveStart,
-      liveEnd,
-      commentary,
-    });
-  };
-
-  // Helper to update commentary in Supabase for a match
-  async function updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary) {
-    // Fetch the event
-    const { data: events, error } = await supabase
-      .from('events')
-      .select('matches')
-      .eq('id', eventId)
-      .single();
-    if (error) {
-      console.error('Error fetching event for commentary update:', error);
-      return;
-    }
-    if (!events || !events.matches) return;
-    // Update the correct match's commentary
-    const updatedMatches = events.matches.map(m =>
-      String(m.order) === String(matchOrder)
-        ? { ...m, commentary: newCommentary }
-        : m
-    );
-    // Save back to Supabase
-    const { error: updateError } = await supabase
-      .from('events')
-      .update({ matches: updatedMatches })
-      .eq('id', eventId);
-    if (updateError) {
-      console.error('Error updating commentary in Supabase:', updateError);
-    }
-  }
-
-  // Save commentary line immediately and update in real-time
-  const handleAddCommentary = async (e) => {
-    e.preventDefault();
-    if (!commentaryInput.trim()) return;
-    const now = Date.now();
-    const newCommentary = [{ timestamp: now, text: commentaryInput.trim() }, ...commentary];
-    setCommentary(newCommentary);
-    setCommentaryInput("");
-    // Update the match in real-time so commentary appears immediately on match cards and pages
-    if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
-      const updatedMatch = {
-        ...match,
-        commentary: newCommentary,
-        liveStart: liveStart || now
-      };
-      onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
-    }
-    // Persist commentary to Supabase immediately
-    if (eventId && matchOrder) {
-      await updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary);
-    }
+    // Update in Supabase
+    await updateMatchCommentaryInSupabase(eventId, matchOrder, updatedCommentary);
   };
 
   function parseParticipants(input) {
-    if (Array.isArray(input)) {
-      // Already an array, assume it's correct
-      return input;
-    }
-    if (typeof input === "string") {
-      // Split by 'vs' for teams/sides, then by '&' for team members
-      return input
-        .split(/\s+vs\s+/i)
-        .map(side =>
-          side
-            .split(/\s*&\s*/i)
-            .map(slug => slug.trim())
-            .filter(Boolean)
-        );
-    }
-    return [];
+    if (!input) return [];
+    return input.split(' vs ').map(side => 
+      side.split(' & ').map(name => name.trim())
+    );
   }
 
   function parseParticipantsWithTagTeams(input) {
-    if (Array.isArray(input)) {
-      // Already an array, assume it's correct
-      return { participants: input, tagTeams: {} };
-    }
-    if (typeof input === "string") {
-      const tagTeams = {};
-      const participants = input
-        .split(/\s+vs\s+/i)
-        .map((side, sideIndex) => {
-          // Check if this side has a tag team name in parentheses
-          const tagTeamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
-          if (tagTeamMatch) {
-            const tagTeamName = tagTeamMatch[1].trim();
-            const wrestlers = tagTeamMatch[2].trim();
-            tagTeams[sideIndex] = tagTeamName;
-            
-            // Split wrestlers by '&' and clean up
-            return wrestlers
-              .split(/\s*&\s*/i)
-              .map(slug => slug.trim())
-              .filter(Boolean);
-          } else {
-            // No tag team name, just split by '&'
-            return side
-              .split(/\s*&\s*/i)
-              .map(slug => slug.trim())
-              .filter(Boolean);
-          }
-        });
+    if (!input) return { participants: [], tagTeams: {} };
+    
+    const sides = input.split(' vs ');
+    const participants = [];
+    const tagTeams = {};
+    
+    sides.forEach((side, sideIndex) => {
+      const names = side.split(' & ').map(name => name.trim());
+      participants.push(names);
       
-      return { participants, tagTeams };
-    }
-    return { participants: [], tagTeams: {} };
+      // If there are multiple names, treat as tag team
+      if (names.length > 1) {
+        tagTeams[sideIndex] = names.join(' & ');
+      }
+    });
+    
+    return { participants, tagTeams };
   }
 
-  // --- PATCH: Ensure brParticipants is always an array of strings ---
-  function normalizeBrParticipants(val, n) {
-    if (Array.isArray(val) && val.every(x => typeof x === 'string')) return val.slice(0, n).concat(Array(Math.max(0, n - val.length)).fill(''));
-    return Array(n).fill('');
-  }
-
-  // --- PATCH: Utility to always convert participants to array of slugs ---
-  function ensureParticipantsArray(participants) {
-    if (Array.isArray(participants)) {
-      return participants.filter(Boolean);
+  // Function to get match structure from match type (copied from App.jsx)
+  const getMatchStructureFromMatchType = (matchType) => {
+    switch (matchType) {
+      case 'Singles Match':
+        return { type: 'singles', sides: 2 };
+      case 'Tag Team Match':
+        return { type: 'tag', sides: 2, participantsPerSide: 2 };
+      case 'Triple Threat Match':
+        return { type: 'singles', sides: 3 };
+      case 'Fatal 4-Way Match':
+        return { type: 'singles', sides: 4 };
+      case '6-Man Tag Team Match':
+        return { type: 'tag', sides: 2, participantsPerSide: 3 };
+      case '8-Man Tag Team Match':
+        return { type: 'tag', sides: 2, participantsPerSide: 4 };
+      case '10-Man Tag Team Match':
+        return { type: 'tag', sides: 2, participantsPerSide: 5 };
+      case '12-Man Tag Team Match':
+        return { type: 'tag', sides: 2, participantsPerSide: 6 };
+      case 'Ladder Match':
+        return { type: 'singles', sides: 2 };
+      case 'Tables Match':
+        return { type: 'singles', sides: 2 };
+      case 'No Disqualification Match':
+        return { type: 'singles', sides: 2 };
+      case 'Extreme Rules Match':
+        return { type: 'singles', sides: 2 };
+      case 'Steel Cage Match':
+        return { type: 'singles', sides: 2 };
+      case 'Hell in a Cell Match':
+        return { type: 'singles', sides: 2 };
+      case 'TLC Match':
+        return { type: 'singles', sides: 2 };
+      case 'Elimination Chamber Match':
+        return { type: 'singles', sides: 6 };
+      case 'Money in the Bank Match':
+        return { type: 'singles', sides: 6 };
+      case 'Royal Rumble Match':
+        return { type: 'singles', sides: 30 };
+      case 'WarGames Match':
+        return { type: 'tag', sides: 2, participantsPerSide: 4 };
+      case 'Survivor Series Match':
+        return { type: 'tag', sides: 2, participantsPerSide: 5 };
+      case 'Gauntlet Match':
+        return { type: 'gauntlet', sides: 4 };
+      case '2 out of 3 Falls':
+        return { type: 'singles', sides: 2 };
+      default:
+        return { type: 'singles', sides: 2 };
     }
-    if (typeof participants === 'string') {
-      // Split by commas, spaces, or other common separators
-      return participants
-        .split(/[,\s&]+/)
-        .map(slug => slug.trim())
-        .filter(Boolean);
-    }
-    return [];
-  }
-
-  const [numParticipants, setNumParticipants] = useState(Array.isArray(match.participants) ? match.participants.length : 10);
-  const [brParticipants, setBrParticipants] = useState(() => normalizeBrParticipants(match.participants, Array.isArray(match.participants) ? match.participants.length : 10));
-  useEffect(() => {
-    setBrParticipants(prev => normalizeBrParticipants(prev, numParticipants));
-  }, [numParticipants]);
-  const [brWinner, setBrWinner] = useState(match.winner || '');
+  };
 
   // UI rendering
   return (
@@ -454,10 +374,56 @@ export default function MatchEdit({
         </select>
       </div>
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>Match Type:</label>
+        <select
+          style={inputStyle}
+          value={match.matchType}
+          onChange={e => setMatch({ ...match, matchType: e.target.value })}
+        >
+          {MATCH_TYPE_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>Stipulation:</label>
+        <select
+          style={inputStyle}
+          value={match.stipulation}
+          onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
+        >
+          {STIPULATION_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+      {match.stipulation === 'Custom/Other' && (
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Custom Stipulation:</label>
+          <input
+            style={inputStyle}
+            value={match.customStipulation || ''}
+            onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+          />
+        </div>
+      )}
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>Title:</label>
+        <select
+          style={inputStyle}
+          value={match.title || ''}
+          onChange={e => setMatch({ ...match, title: e.target.value })}
+        >
+          {TITLE_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
       {isBattleRoyal ? (
-        <div>
+        <>
           <div>
-            <label style={labelStyle}>Number of Participants:</label>
+            <label style={{ color: gold, fontWeight: 600 }}>Number of Participants:</label>
             <select value={numParticipants} onChange={e => {
               const n = parseInt(e.target.value, 10);
               setNumParticipants(n);
@@ -471,20 +437,21 @@ export default function MatchEdit({
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            {brParticipants.slice(0, numParticipants).map((slug, i) => (
-              <WrestlerAutocomplete
-                key={i}
-                wrestlers={wrestlers}
-                value={slug}
-                onChange={val => setBrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
-                placeholder={`Participant ${i+1}`}
-              />
-            ))}
           </div>
+          {brParticipants.slice(0, numParticipants).map((slug, i) => (
+            <WrestlerAutocomplete
+              key={i}
+              wrestlers={wrestlers}
+              value={slug}
+              onChange={val => setBrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+              placeholder={`Participant ${i+1}`}
+            />
+          ))}
           {status === 'completed' && brParticipants.filter(Boolean).length >= 2 && (
             <div>
-              <label style={labelStyle}>Winner:</label>
-              <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} required>
+              <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
+              <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} 
+                required={status === 'completed'}>
                 <option value="">Select winner</option>
                 {brParticipants.filter(Boolean).map((slug, i) => (
                   <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
@@ -492,144 +459,190 @@ export default function MatchEdit({
               </select>
             </div>
           )}
-        </div>
+        </>
       ) : (
         <>
-          <div>
-            <label style={labelStyle}>Participants:</label>
-            <input
-              value={match.participants}
-              onChange={e => setMatch({ ...match, participants: e.target.value })}
-              required
-              style={inputStyle}
-            />
+          {/* Participant Input Toggle */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={useVisualBuilder}
+                onChange={e => setUseVisualBuilder(e.target.checked)}
+                style={{ marginRight: 8 }}
+              />
+              Use Visual Match Builder
+            </label>
           </div>
-          {/* Show result fields if status is completed OR (isLive and liveEnd) */}
-          {(status === 'completed' || (isLive && liveEnd)) && (
-            <>
-              <div>
-                <label style={labelStyle}>Result Type:</label>
-                <select
-                  style={inputStyle}
-                  value={resultType}
-                  onChange={e => setResultType(e.target.value)}
-                  required
-                >
-                  <option value="">Select result type</option>
-                  <option value="Winner">Winner</option>
-                  <option value="No Winner">No Winner</option>
-                </select>
-              </div>
-              {resultType === 'Winner' && winnerOptions.length >= 2 && (
-                <div>
-                  <label style={labelStyle}>Winner:</label>
-                  <select
-                    style={inputStyle}
-                    value={winner}
-                    onChange={e => setWinner(e.target.value)}
-                    required
-                  >
-                    <option value="">Select winner</option>
-                    {winnerOptions.map(side => (
-                      <option key={side} value={side}>{side}</option>
-                    ))}
-                  </select>
-                </div>
+
+          {useVisualBuilder ? (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                Participants (Visual Builder):
+              </label>
+              {match.matchType === 'Gauntlet Match' ? (
+                <GauntletMatchBuilder
+                  wrestlers={wrestlers}
+                  value={match.participants}
+                  onChange={value => {
+                    console.log('GauntletMatchBuilder onChange called with value:', value);
+                    const newMatch = { ...match, participants: value };
+                    setMatch(newMatch);
+                  }}
+                  onResultChange={gauntletResult => {
+                    console.log('Gauntlet result:', gauntletResult);
+                    // Store the gauntlet progression data
+                    const winnerName = wrestlers.find(w => w.id === gauntletResult.winner)?.name || gauntletResult.winner;
+                    setMatch(prev => ({
+                      ...prev,
+                      gauntletProgression: gauntletResult.progression,
+                      winner: gauntletResult.winner,
+                      result: `${winnerName}` // Just the winner name
+                    }));
+                  }}
+                />
+              ) : match.matchType === '2 out of 3 Falls' ? (
+                <TwoOutOfThreeFallsBuilder
+                  wrestlers={wrestlers}
+                  value={match.participants}
+                  onChange={value => {
+                    console.log('TwoOutOfThreeFallsBuilder onChange called with value:', value);
+                    const newMatch = { ...match, participants: value };
+                    setMatch(newMatch);
+                  }}
+                  onResultChange={fallsResult => {
+                    console.log('2 out of 3 Falls result:', fallsResult);
+                    // Store the falls progression data
+                    setMatch(prev => ({
+                      ...prev,
+                      gauntletProgression: fallsResult.gauntletProgression,
+                      winner: fallsResult.winner,
+                      method: fallsResult.method,
+                      time: fallsResult.time
+                    }));
+                  }}
+                />
+              ) : (
+                <VisualMatchBuilder
+                  wrestlers={wrestlers}
+                  value={match.participants}
+                  onChange={value => {
+                    console.log('VisualMatchBuilder onChange called with value:', value);
+                    console.log('Current match state:', match);
+                    const newMatch = { ...match, participants: value };
+                    console.log('New match state will be:', newMatch);
+                    setMatch(newMatch);
+                  }}
+                  maxParticipants={30}
+                  initialStructure={getMatchStructureFromMatchType(match.matchType)}
+                />
               )}
-            </>
+            </div>
+          ) : (
+            <div>
+              <label>
+                Participants:<br />
+                <input
+                  value={match.participants}
+                  onChange={e => setMatch({ ...match, participants: e.target.value })}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </label>
+            </div>
           )}
         </>
       )}
-      {/* Always show these fields for all match types */}
-      <div>
-        <label style={labelStyle}>Method:</label>
-        <select
-          style={inputStyle}
-          value={match.method}
-          onChange={e => setMatch({ ...match, method: e.target.value })}
-          required={isMethodRequired()}
-        >
-          <option value="">Select method</option>
-          {METHOD_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>Time:</label>
-        <input
-          style={inputStyle}
-          value={match.time}
-          onChange={e => setMatch({ ...match, time: e.target.value })}
-          placeholder="Match time (e.g. 12:34)"
-        />
-      </div>
-      <div>
-        <label style={labelStyle}>Stipulation:</label>
-        <select
-          style={inputStyle}
-          value={match.stipulation}
-          onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulationType: '', customStipulation: '' })}
-        >
-          {STIPULATION_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
-      {match.stipulation === 'Custom/Other' && (
-        <div>
-          <label style={labelStyle}>Custom Stipulation:</label>
-          <input
-            style={inputStyle}
-            value={match.customStipulation || ''}
-            onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-          />
-        </div>
+      {status === 'completed' && (
+        <>
+          <div>
+            <label>
+              Result Type:<br />
+              <select value={resultType} onChange={e => {
+                setResultType(e.target.value);
+                setWinner('');
+              }} style={{ width: '100%' }} required>
+                <option value="">Select result type...</option>
+                <option value="Winner">Winner</option>
+                <option value="No Winner">No Winner</option>
+              </select>
+            </label>
+          </div>
+          {resultType === 'Winner' && winnerOptions.length >= 2 && match.matchType !== 'Gauntlet Match' && match.matchType !== '2 out of 3 Falls' && (
+            <div>
+              <label>
+                Winner:<br />
+                <select
+                  value={winner}
+                  onChange={e => setWinner(e.target.value)}
+                  style={{ width: '100%' }}
+                  required
+                >
+                  <option value="">Select winner</option>
+                  {winnerOptions.map(side => (
+                    <option key={side} value={side}>{side}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <div>
+            <label>
+              Method:<br />
+              <select value={match.method} onChange={e => setMatch({ ...match, method: e.target.value })} required style={{ width: '100%' }}>
+                <option value="">Select method</option>
+                {METHOD_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>
+              Time:<br />
+              <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
+            </label>
+          </div>
+          <div>
+            <label>
+              Notes (optional):<br />
+              <textarea 
+                value={match.notes || ''} 
+                onChange={e => setMatch({ ...match, notes: e.target.value })} 
+                style={{ width: '100%', minHeight: '60px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
+                placeholder="Enter any additional notes about the match..."
+              />
+            </label>
+          </div>
+        </>
       )}
-      <div>
-        <label style={labelStyle}>Title:</label>
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>
+          Special Match Winner:
+        </label>
         <select
-          style={inputStyle}
-          value={match.title || ''}
-          onChange={e => setMatch({ ...match, title: e.target.value })}
-        >
-          {TITLE_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>Special Match Winner:</label>
-        <select
-          style={inputStyle}
-          value={match.specialWinnerType || 'None'}
+          value={match.specialWinnerType || "None"}
           onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+          style={inputStyle}
         >
           {SPECIAL_WINNER_OPTIONS.map(opt => (
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
       </div>
-      <div>
-        <label style={labelStyle}>Title Outcome:</label>
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>
+          Title Outcome:
+        </label>
         <select
-          style={inputStyle}
-          value={match.titleOutcome || ''}
+          value={match.titleOutcome || ""}
           onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
+          style={inputStyle}
         >
           {TITLE_OUTCOME_OPTIONS.map(opt => (
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
-      </div>
-      <div>
-        <label style={labelStyle}>Notes (optional):</label>
-        <textarea
-          style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
-          value={match.notes || ''}
-          onChange={e => setMatch({ ...match, notes: e.target.value })}
-          placeholder="Enter any additional notes about the match..."
-        />
       </div>
       {/* Commentary UI: always show if there is commentary or if live match is active */}
       {(isLive || commentary.length > 0) && (

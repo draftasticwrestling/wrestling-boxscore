@@ -15,11 +15,29 @@ export default function WrestlerAutocomplete({ wrestlers, value, onChange, place
       placeholder={placeholder}
       isClearable
       styles={{
-        control: (base) => ({ ...base, background: '#222', color: '#fff', borderColor: '#444' }),
+        control: (base) => ({ 
+          ...base, 
+          background: '#222', 
+          color: '#fff', 
+          borderColor: '#444',
+          minHeight: '28px',
+          fontSize: '11px'
+        }),
         menu: (base) => ({ ...base, background: '#222', color: '#fff' }),
-        singleValue: (base) => ({ ...base, color: '#fff' }),
-        option: (base, state) => ({ ...base, color: state.isSelected ? '#232323' : '#fff', background: state.isSelected ? '#C6A04F' : '#222' }),
-        placeholder: (base) => ({ ...base, color: '#bbb' }),
+        singleValue: (base) => ({ ...base, color: '#fff', fontSize: '11px' }),
+        option: (base, state) => ({ 
+          ...base, 
+          color: state.isSelected ? '#232323' : '#fff', 
+          background: state.isSelected ? '#C6A04F' : '#222',
+          fontSize: '11px',
+          padding: '4px 8px'
+        }),
+        placeholder: (base) => ({ ...base, color: '#bbb', fontSize: '11px' }),
+        input: (base) => ({ ...base, fontSize: '11px' }),
+        valueContainer: (base) => ({ ...base, padding: '2px 6px' }),
+        indicatorsContainer: (base) => ({ ...base, height: '24px' }),
+        clearIndicator: (base) => ({ ...base, padding: '2px' }),
+        dropdownIndicator: (base) => ({ ...base, padding: '2px' }),
       }}
     />
   );
