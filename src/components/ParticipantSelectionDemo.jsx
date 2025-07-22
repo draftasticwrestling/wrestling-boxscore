@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import ImprovedParticipantsInput from './ImprovedParticipantsInput';
 import VisualMatchBuilder from './VisualMatchBuilder';
 
-export default function ParticipantSelectionDemo({ wrestlers }) {
+export default function ParticipantSelectionDemo({ wrestlers = [] }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [participants, setParticipants] = useState('');
   const [matchType, setMatchType] = useState('singles');
   const [selectedComponent, setSelectedComponent] = useState('visual'); // 'visual' or 'improved'
@@ -70,7 +72,7 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ marginBottom: 16 }}>Visual Match Builder</h2>
           <VisualMatchBuilder
-            wrestlers={wrestlers}
+            wrestlers={safeWrestlers}
             value={participants}
             onChange={handleParticipantsChange}
             maxParticipants={30}
@@ -109,7 +111,7 @@ export default function ParticipantSelectionDemo({ wrestlers }) {
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ marginBottom: 16 }}>Participant Selection</h2>
             <ImprovedParticipantsInput
-              wrestlers={wrestlers}
+              wrestlers={safeWrestlers}
               value={participants}
               onChange={handleParticipantsChange}
               matchType={matchType}

@@ -37,13 +37,15 @@ const tagTeamInputStyle = {
 };
 
 export default function ImprovedParticipantsInput({ 
-  wrestlers, 
+  wrestlers = [], 
   value, 
   onChange, 
   matchType = 'singles', // 'singles', 'tag', 'battle-royal', 'multi-way'
   maxParticipants = 30,
   placeholder = 'Select participants...'
 }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [participants, setParticipants] = useState([]);
   const [tagTeamNames, setTagTeamNames] = useState({});
   const [matchFormat, setMatchFormat] = useState(matchType);
@@ -110,21 +112,21 @@ export default function ImprovedParticipantsInput({
 
   // Get wrestler name from slug
   const getWrestlerName = (slug) => {
-    const wrestler = wrestlers.find(w => w.id === slug || w.slug === slug);
+    const wrestler = safeWrestlers.find(w => w.id === slug || w.slug === slug);
     return wrestler ? wrestler.name : slug;
   };
 
   // Filter wrestlers based on search term
   const filteredWrestlers = useMemo(() => {
-    if (!searchTerm) return wrestlers.slice(0, 20); // Show first 20 if no search
+    if (!searchTerm) return safeWrestlers.slice(0, 20); // Show first 20 if no search
     
-    return wrestlers
+    return safeWrestlers
       .filter(w => 
         w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         w.id.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .slice(0, 10);
-  }, [wrestlers, searchTerm]);
+  }, [safeWrestlers, searchTerm]);
 
   // Add wrestler to participants
   const addWrestler = (wrestler) => {
@@ -341,7 +343,7 @@ export default function ImprovedParticipantsInput({
                 }}
               >
                 <img
-                  src={wrestlers.find(w => w.id === participant.slug)?.image_url}
+                  src={safeWrestlers.find(w => w.id === participant.slug)?.image_url}
                   alt={participant.name}
                   style={{
                     width: '32px',
@@ -354,7 +356,7 @@ export default function ImprovedParticipantsInput({
                 <div style={{ flex: 1 }}>
                   <div style={{ color: '#fff', fontWeight: '500' }}>{participant.name}</div>
                   <div style={{ color: '#bbb', fontSize: '12px' }}>
-                    {wrestlers.find(w => w.id === participant.slug)?.brand || 'Unassigned'}
+                    {safeWrestlers.find(w => w.id === participant.slug)?.brand || 'Unassigned'}
                   </div>
                 </div>
                 <button
@@ -418,7 +420,7 @@ export default function ImprovedParticipantsInput({
                 }}
               >
                 <img
-                  src={wrestlers.find(w => w.id === participant.slug)?.image_url}
+                  src={safeWrestlers.find(w => w.id === participant.slug)?.image_url}
                   alt={participant.name}
                   style={{
                     width: '32px',
@@ -431,7 +433,7 @@ export default function ImprovedParticipantsInput({
                 <div style={{ flex: 1 }}>
                   <div style={{ color: '#fff', fontWeight: '500' }}>{participant.name}</div>
                   <div style={{ color: '#bbb', fontSize: '12px' }}>
-                    {wrestlers.find(w => w.id === participant.slug)?.brand || 'Unassigned'}
+                    {safeWrestlers.find(w => w.id === participant.slug)?.brand || 'Unassigned'}
                   </div>
                 </div>
                 <button
