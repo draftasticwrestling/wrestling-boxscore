@@ -99,6 +99,10 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const user = useUser();
+  
+  // Debug logging
+  console.log('MatchPageNew user:', user);
+  console.log('MatchPageNew user.email:', user?.email);
 
   return (
     <>
@@ -186,6 +190,10 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const user = useUser();
+  
+  // Debug logging
+  console.log('MatchPageNewWrapper user:', user);
+  console.log('MatchPageNewWrapper user.email:', user?.email);
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
   const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
