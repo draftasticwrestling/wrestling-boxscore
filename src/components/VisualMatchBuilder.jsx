@@ -141,8 +141,8 @@ export default function VisualMatchBuilder({
   useEffect(() => {
     if (initialStructure) {
       // Only reset if we're starting fresh (no wrestlers selected yet)
-      const hasWrestlers = matchStructure.some(side => 
-        side.participants.some(participant => participant && participant.trim() !== '')
+      const hasWrestlers = Array.isArray(matchStructure) && matchStructure.some(side => 
+        Array.isArray(side.participants) && side.participants.some(participant => participant && participant.trim() !== '')
       );
       
       if (!hasWrestlers) {
@@ -211,7 +211,7 @@ export default function VisualMatchBuilder({
     ];
     
     // Check if the initial structure indicates a tag team match
-    const isTagTeamMatch = matchStructure.some(side => side.type === 'team');
+    const isTagTeamMatch = Array.isArray(matchStructure) && matchStructure.some(side => side.type === 'team');
     
     // Don't show tag team suggestions for individual match types like Gauntlet Match
     if (!isTagTeamMatch) {
@@ -221,7 +221,7 @@ export default function VisualMatchBuilder({
     const suggestions = [];
     
     Object.values(tagTeamData).forEach(team => {
-      const isMember = team.members.some(member => member.wrestler_slug === wrestlerSlug);
+      const isMember = Array.isArray(team.members) && team.members.some(member => member.wrestler_slug === wrestlerSlug);
       if (isMember) {
         const otherMembers = team.members
           .filter(member => member.wrestler_slug !== wrestlerSlug)

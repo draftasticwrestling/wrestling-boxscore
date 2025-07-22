@@ -17,7 +17,7 @@ export default function WrestlerMultiSelect({ onChange, label = 'Select Wrestler
     const q = query.toLowerCase();
     setFiltered(
       safeWrestlers.filter(
-        w => w.name.toLowerCase().includes(q) && !selected.some(sel => sel.id === w.id)
+        w => w.name.toLowerCase().includes(q) && (!Array.isArray(selected) || !selected.some(sel => sel.id === w.id))
       )
     );
     setShowDropdown(true);

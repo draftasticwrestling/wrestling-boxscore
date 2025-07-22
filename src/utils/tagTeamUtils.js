@@ -134,7 +134,7 @@ export function formatTagTeam(wrestlerSlugs, allWrestlers) {
   } else {
     // It's a partial team or individual wrestlers
     const wrestlers = allWrestlers.filter(w => wrestlerSlugs.includes(w.id));
-    const hasTeamMembers = wrestlers.some(w => w.tag_team_id);
+    const hasTeamMembers = Array.isArray(wrestlers) && wrestlers.some(w => w.tag_team_id);
     
     if (hasTeamMembers) {
       // Some wrestlers are in teams, suggest completion

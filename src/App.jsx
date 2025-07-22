@@ -874,7 +874,7 @@ function AddEvent({ addEvent, wrestlers }) {
     }
     // For completed events, require at least one match with all required fields
     if (eventStatus === 'completed') {
-      const invalidMatch = matches.some(m => !m.participants || !m.method || !m.result);
+      const invalidMatch = Array.isArray(matches) && matches.some(m => !m.participants || !m.method || !m.result);
       if (invalidMatch) {
         alert('Please fill out all required match fields for completed events.');
         return;
@@ -1306,7 +1306,7 @@ function AddEvent({ addEvent, wrestlers }) {
           style={{ marginTop: 24 }}
           disabled={
             !eventType || !date || !location || matches.length === 0 ||
-            (eventStatus === 'completed' && matches.some(m => !m.participants || !m.method || !m.result))
+            (eventStatus === 'completed' && Array.isArray(matches) && matches.some(m => !m.participants || !m.method || !m.result))
           }
           onClick={handleSaveEvent}
         >
