@@ -71,16 +71,16 @@ export default function MatchEdit({
   const [useVisualBuilder, setUseVisualBuilder] = useState(true);
 
   // Battle Royal specific state
-  const [numParticipants, setNumParticipants] = useState(Array.isArray(match.participants) ? match.participants.length : 10);
+  const [numParticipants, setNumParticipants] = useState(Array.isArray(initialMatch.participants) ? initialMatch.participants.length : 10);
   const [brParticipants, setBrParticipants] = useState(() => {
-    if (Array.isArray(match.participants)) {
-      const arr = match.participants.slice(0, 10);
+    if (Array.isArray(initialMatch.participants)) {
+      const arr = initialMatch.participants.slice(0, 10);
       while (arr.length < 10) arr.push('');
       return arr;
     }
     return Array(10).fill('');
   });
-  const [brWinner, setBrWinner] = useState(match.winner || '');
+  const [brWinner, setBrWinner] = useState(initialMatch.winner || '');
 
   // Define isBattleRoyal early to avoid "Cannot access before initialization" error
   const isBattleRoyal = match.matchType === 'Battle Royal';
@@ -184,9 +184,9 @@ export default function MatchEdit({
     if (isBattleRoyal) {
       if (status === 'completed' && brWinner) {
         const winnerName = safeWrestlers.find(w => w.id === brWinner)?.name || brWinner;
-        const participants = brParticipants.filter(Boolean).map(slug => 
+        const participants = Array.isArray(brParticipants) ? brParticipants.filter(Boolean).map(slug => 
           safeWrestlers.find(w => w.id === slug)?.name || slug
-        );
+        ) : [];
         result = `${winnerName} won the Battle Royal (${participants.join(', ')})`;
       }
     } else {
@@ -440,12 +440,12 @@ export default function MatchEdit({
               ))}
             </select>
           </div>
-          {brParticipants.slice(0, numParticipants).map((slug, i) => (
+          {Array.isArray(brParticipants) && brParticipants.slice(0, numParticipants).map((slug, i) => (
             <WrestlerAutocomplete
               key={i}
               wrestlers={safeWrestlers}
               value={slug}
-              onChange={val => setBrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+              onChange={val => setBrParticipants(prev => Array.isArray(prev) ? prev.map((s, idx) => idx === i ? val : s) : [])}
               placeholder={`Participant ${i+1}`}
             />
           ))}
@@ -455,7 +455,7 @@ export default function MatchEdit({
               <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} 
                 required={status === 'completed'}>
                 <option value="">Select winner</option>
-                {brParticipants.filter(Boolean).map((slug, i) => (
+                {Array.isArray(brParticipants) && brParticipants.filter(Boolean).map((slug, i) => (
                   <option key={i} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
                 ))}
               </select>
