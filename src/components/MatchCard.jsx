@@ -45,19 +45,16 @@ const getTeams = (participants) => {
 };
 
 const parseTeamString = (teamStr) => {
-  // Handle null/undefined input
   if (!teamStr) {
     return { teamName: '', slugs: [] };
   }
   
-  // Handle team name with slugs in parentheses
   const teamMatch = teamStr.match(/^([^(]+)\s*\(([^)]+)\)$/);
   if (teamMatch) {
     const teamName = teamMatch[1].trim();
     const slugs = teamMatch[2].split('&').map(s => s.trim());
     return { teamName, slugs };
   }
-  // Otherwise, just slugs
   const slugs = teamStr.split('&').map(s => s.trim());
   return { teamName: '', slugs };
 };
@@ -71,42 +68,32 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     }
   };
 
-  // Early return for 2 out of 3 Falls: render only the custom layout
+  // Early return for 2 out of 3 Falls
   if (match.matchType === '2 out of 3 Falls' && typeof match.participants === 'string') {
-    // Parse participants for 2 out of 3 Falls
     const participantStrings = match.participants.split(' vs ').map(s => s.trim());
     const participant1 = participantStrings[0];
     const participant2 = participantStrings[1];
-    // Parse falls from result
     const falls = [];
     
     if (match.result) {
-      // Try different separators for falls
       let resultParts = match.result.split(' → ');
       if (resultParts.length === 1) {
         resultParts = match.result.split(' -> ');
       }
-      if (resultParts.length === 1) {
-        resultParts = match.result.split(' → ');
-      }
       falls.push(...resultParts);
     }
     
-    // If we only have one fall, create a 2 out of 3 falls structure
-    // This handles cases where only the final result is recorded
     if (falls.length === 1 && falls[0].includes(' def. ')) {
       const finalResult = falls[0];
       const winner = finalResult.split(' def. ')[0];
       const loser = finalResult.split(' def. ')[1];
       
-      // Create a 2-1 scenario (winner wins 2 falls, loser wins 1)
-      falls.length = 0; // Clear the array
-      falls.push(`${loser} def. ${winner}`); // Fall 1: loser wins
-      falls.push(`${winner} def. ${loser}`); // Fall 2: winner wins  
-      falls.push(finalResult); // Fall 3: winner wins (final result)
+      falls.length = 0;
+      falls.push(`${loser} def. ${winner}`);
+      falls.push(`${winner} def. ${loser}`);
+      falls.push(finalResult);
     }
     
-    // Determine overall winner
     let overallWinner = null;
     if (falls.length > 0) {
       const lastFall = falls[falls.length - 1];
@@ -133,7 +120,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           transition: 'background 0.2s',
         }}
       >
-        {/* Main Event Banner */}
         {match.cardType === 'Main Event' && (
           <div style={{
             position: 'absolute',
@@ -155,7 +141,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           </div>
         )}
 
-        {/* Top label: match type, stipulation/title */}
         <div style={{
           color: '#C6A04F',
           fontWeight: 700,
@@ -165,11 +150,14 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-        }}>{[match.matchType, match.stipulation !== 'None' ? match.stipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}</div>
+        }}>
+          {[match.matchType, match.stipulation !== 'None' ? match.stipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}
+        </div>
         
-        {/* Match Info Block */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}</div>
+          <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+            {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
+          </div>
           <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
             {match.isLive ? (
               <span style={{ color: '#27ae60' }}>LIVE</span>
@@ -181,7 +169,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
         </div>
         
-        {/* Falls Progression */}
         <div style={{
           display: 'flex',
           flexDirection: 'row',
@@ -192,16 +179,11 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           flexWrap: 'wrap',
         }}>
           {falls.map((fall, index) => {
-            // Determine winner for this fall
             let fallWinner = null;
             if (fall.includes(' def. ')) {
               fallWinner = fall.split(' def. ')[0];
             }
             
-            const isLastFall = index === falls.length - 1;
-            const isOverallWinner = overallWinner && (wrestlerMap[fallWinner]?.name === overallWinner || fallWinner === overallWinner);
-            
-            // Check if each participant is the winner of this fall
             const participant1IsWinner = fallWinner === wrestlerMap[participant1]?.name || fallWinner === participant1;
             const participant2IsWinner = fallWinner === wrestlerMap[participant2]?.name || fallWinner === participant2;
             
@@ -212,7 +194,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 alignItems: 'center',
                 gap: 8,
               }}>
-                {/* Fall Match */}
                 <div style={{
                   display: 'flex',
                   flexDirection: 'row',
@@ -226,7 +207,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   minWidth: 160,
                   minHeight: 80,
                 }}>
-                  {/* Participant 1 */}
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -250,13 +230,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       fontWeight: participant1IsWinner ? 'bold' : 'normal',
                       textAlign: 'center',
                       maxWidth: 70,
-                    }}>{wrestlerMap[participant1]?.name || participant1}</span>
+                    }}>
+                      {wrestlerMap[participant1]?.name || participant1}
+                    </span>
                   </div>
                   
-                  {/* VS */}
                   <div style={{ color: '#C6A04F', fontSize: 13, fontWeight: 'bold' }}>vs</div>
                   
-                  {/* Participant 2 */}
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -280,11 +260,12 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       fontWeight: participant2IsWinner ? 'bold' : 'normal',
                       textAlign: 'center',
                       maxWidth: 70,
-                    }}>{wrestlerMap[participant2]?.name || participant2}</span>
+                    }}>
+                      {wrestlerMap[participant2]?.name || participant2}
+                    </span>
                   </div>
                 </div>
                 
-                {/* Fall Label */}
                 <div style={{
                   color: '#C6A04F',
                   fontWeight: 700,
@@ -293,13 +274,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 }}>
                   Fall {index + 1}
                 </div>
-                
-
               </div>
             );
           })}
           
-          {/* Arrow to Winner */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -310,7 +288,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             →
           </div>
           
-          {/* Winner Box */}
           {overallWinner && (
             <div style={{
               display: 'flex',
@@ -367,21 +344,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     );
   }
 
-  // Parse participants into sides (split by 'vs' or '→' for Gauntlet Matches)
+  // Parse participants
   const teams = getTeams(match.participants);
-  // For each side, split by '&' for tag teams
   const teamStrings = (typeof match.participants === 'string' && match.participants)
     ? ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls')
         ? match.participants.split(' → ').map(s => s.trim())
         : match.participants.split(' vs ').map(s => s.trim()))
     : [];
   
-  // Winner logic
   const winner = match.result && match.result.includes(' def. ')
     ? match.result.split(' def. ')[0]
     : (match.result ? match.result : '');
   
-  // Robust normalization function
   function normalize(str) {
     return (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
   }
@@ -400,7 +374,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   
   const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
   
-  // SVG triangle arrows for winner indication
   const triangleRight = (
     <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
       <polygon points="0,8 8,0 8,16" fill="#fff" />
@@ -417,33 +390,25 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     </svg>
   );
   
-  // Top label: match type, stipulation and/or title
   let topLabel = '';
-  
-  // Build the label components
   const labelParts = [];
   
-  // Add match type if it exists and is not a basic singles match
   if (match.matchType && match.matchType !== 'Singles Match') {
     labelParts.push(match.matchType);
   }
   
-  // Add stipulation if it exists and is not None
   if (match.stipulation && match.stipulation !== 'None') {
     labelParts.push(match.stipulation);
   }
   
-  // Add title if it exists (for both title matches and No. 1 Contender matches)
   if (match.title && match.title !== 'None') {
     labelParts.push(match.title);
   }
   
-  // Combine the parts
   if (labelParts.length > 0) {
     topLabel = labelParts.join(' — ');
   }
   
-  // Layout for 2+ sides
   const isMultiSide = teams.length > 2;
   const isTwoSide = teams.length === 2;
 
@@ -465,7 +430,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         marginBottom: 2,
       }}
     >
-      {/* Main Event Banner */}
       {match.cardType === 'Main Event' && (
         <div style={{
           position: 'absolute',
@@ -486,7 +450,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           Main Event
         </div>
       )}
-      {/* Top label: stipulation/title */}
+      
       {topLabel && (
         <div style={{
           color: '#C6A04F',
@@ -497,10 +461,11 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-        }}>{topLabel}</div>
+        }}>
+          {topLabel}
+        </div>
       )}
       
-      {/* Gauntlet Match bracket display */}
       {match.matchType === 'Gauntlet Match' && typeof match.participants === 'string' ? (
         <div style={{
           display: 'flex',
@@ -509,9 +474,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           justifyContent: 'center',
           marginBottom: 16,
         }}>
-          {/* Match Info Block for Gauntlet Match */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}</div>
+            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+              {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
+            </div>
             <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
               {match.isLive ? (
                 <span style={{ color: '#27ae60' }}>LIVE</span>
@@ -523,8 +489,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
           </div>
 
-          
-          {/* Bracket visualization - horizontal flow layout */}
           <div style={{
             display: 'flex',
             flexDirection: 'row',
@@ -537,26 +501,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           }}>
             {(() => {
               const matches = [];
-              let currentWinner = teamStrings[0]; // Start with first participant
+              let currentWinner = teamStrings[0];
               
               for (let i = 0; i < teamStrings.length - 1; i++) {
-                const participant1 = currentWinner; // Winner from previous match (or first participant)
-                const participant2 = teamStrings[i + 1]; // Next opponent
-                const isFirstMatch = i === 0;
+                const participant1 = currentWinner;
+                const participant2 = teamStrings[i + 1];
                 const isLastMatch = i === teamStrings.length - 2;
                 
-                // Determine winner for this match
                 let winner = null;
                 if (match.gauntletProgression && match.gauntletProgression[i]) {
                   const matchResult = match.gauntletProgression[i];
                   if (matchResult.winner) {
-                    // Check if the winner slug matches either participant slug
                     if (matchResult.winner === participant1) {
                       winner = wrestlerMap[participant1]?.name || participant1;
-                      currentWinner = participant1; // Update for next match
+                      currentWinner = participant1;
                     } else if (matchResult.winner === participant2) {
                       winner = wrestlerMap[participant2]?.name || participant2;
-                      currentWinner = participant2; // Update for next match
+                      currentWinner = participant2;
                     }
                   }
                 }
@@ -569,7 +530,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     gap: 8,
                     position: 'relative',
                   }}>
-                    {/* Match participants */}
                     <div style={{
                       display: 'flex',
                       flexDirection: 'row',
@@ -581,7 +541,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       border: '1px solid #444',
                       minWidth: 140,
                     }}>
-                      {/* Participant 1 */}
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -605,10 +564,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                         </span>
                       </div>
                       
-                      {/* VS separator */}
                       <div style={{ color: '#C6A04F', fontSize: 9, fontWeight: 'bold' }}>vs</div>
                       
-                      {/* Participant 2 */}
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -633,7 +590,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       </div>
                     </div>
                     
-                    {/* Arrow to next match (but not after the last match) */}
                     {!isLastMatch && (
                       <div style={{
                         color: '#C6A04F',
@@ -650,12 +606,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             })()}
           </div>
           
-          {/* Winner Box - positioned below the progression */}
           {(() => {
             let finalWinner = null;
             let finalWinnerSlug = null;
             if (match.winner) {
-              // Use the match.winner property directly
               const winnerEntry = Object.entries(wrestlerMap).find(([slug, wrestler]) => 
                 wrestler.name === match.winner || slug === match.winner
               );
@@ -723,15 +677,12 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         </div>
       ) : match.matchType === 'Battle Royal' && Array.isArray(match.participants) ? (
         match.winner ? (() => {
-          // Split participants (excluding winner) into two balanced groups
           const others = match.participants.filter(slug => slug !== match.winner);
           const half = Math.ceil(others.length / 2);
           const left = others.slice(0, half);
           const right = others.slice(half);
           
-          // Helper to render a grid column
           const renderGrid = (arr) => {
-            // Auto-balance: 2 columns, N rows
             const numCols = 2;
             const numRows = Math.ceil(arr.length / numCols);
             let grid = [];
@@ -781,11 +732,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               gap: 24,
               flexWrap: 'wrap',
             }}>
-              {/* Left grid */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 {renderGrid(left)}
               </div>
-              {/* Winner center */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120 }}>
                 <img
                   src={wrestlerMap[match.winner]?.image_url || '/images/placeholder.png'}
@@ -803,10 +752,11 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     transition: 'all 0.2s',
                   }}
                 />
-                <div style={{ fontWeight: 800, fontSize: 20, color: '#C6A04F', marginTop: 10, textAlign: 'center' }}>{wrestlerMap[match.winner]?.name || match.winner}</div>
+                <div style={{ fontWeight: 800, fontSize: 20, color: '#C6A04F', marginTop: 10, textAlign: 'center' }}>
+                  {wrestlerMap[match.winner]?.name || match.winner}
+                </div>
                 <div style={{ color: '#fff', fontSize: 15, textAlign: 'center' }}>Winner</div>
               </div>
-              {/* Right grid */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 {renderGrid(right)}
               </div>
@@ -847,9 +797,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         )
       ) : isMultiSide ? (
         <>
-          {/* Match Info Block */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+              {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
+            </div>
             <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
               {match.isLive ? (
                 <span style={{ color: '#27ae60' }}>LIVE</span>
@@ -860,14 +811,12 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
             <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
           </div>
-          {/* Participants Row */}
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
             {teamStrings.map((teamStr, sideIdx) => {
               const { teamName, slugs } = parseTeamString(teamStr);
               const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
               return (
                 <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                  {/* Arrow above winner */}
                   <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                     {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
                   </div>
@@ -889,7 +838,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       </>
                     ) : individualNames}
                   </span>
-                  {/* Belt icon under winner if title match */}
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                     {isTitleMatch && winnerIndex === sideIdx ? (
                       <>
@@ -910,7 +858,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         </>
       ) : !isMultiSide ? (
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-          {/* Left participant */}
           {(() => {
             const { teamName, slugs } = parseTeamString(teamStrings[0] || '');
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
@@ -950,13 +897,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               </div>
             );
           })()}
-          {/* Left arrow (always reserve space) */}
           <div style={{ width: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
           </div>
-          {/* Center match details */}
           <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120, margin: 0, padding: 0 }}>
-            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 13, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{match.cardType}{isTitleMatch ? ' - Title Match' : ''}</div>
+            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 13, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>
+              {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
+            </div>
             <div style={{ fontWeight: 700, color: '#fff', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>
               {match.isLive ? (
                 <span style={{ color: '#27ae60' }}>LIVE</span>
@@ -967,11 +914,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             <div style={{ color: '#bbb', fontSize: 12, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
             <div style={{ color: '#bbb', fontSize: 12, textAlign: 'center' }}>{match.time}</div>
           </div>
-          {/* Right arrow (always reserve space) */}
           <div style={{ width: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
           </div>
-          {/* Right participant */}
           {(() => {
             const { teamName, slugs } = parseTeamString(teamStrings[1] || '');
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
@@ -1014,7 +959,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         </div>
       ) : null}
       
-      {/* Result display for Battle Royal matches only */}
       {match.result && match.matchType === 'Battle Royal' && (
         <div style={{
           background: '#2a2a2a',
