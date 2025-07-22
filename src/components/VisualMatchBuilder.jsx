@@ -277,11 +277,11 @@ export default function VisualMatchBuilder({
     if (Array.isArray(initialValue)) {
       // Battle Royal format
       setMatchStructure([{ type: 'battle-royal', participants: initialValue }]);
-    } else if (typeof initialValue === 'string') {
+    } else if (typeof initialValue === 'string' && initialValue.trim()) {
       // Check if it's a Gauntlet Match (contains arrows)
       if (initialValue.includes(' → ')) {
         // Gauntlet Match format: participant1 → participant2 → participant3
-        const participants = initialValue.split(' → ').map(s => s.trim());
+        const participants = initialValue.split(' → ').filter(s => s.trim()).map(s => s.trim());
         const structure = participants.map(participant => ({
           type: 'individual',
           participants: [participant]
@@ -289,17 +289,17 @@ export default function VisualMatchBuilder({
         setMatchStructure(structure);
       } else {
         // Regular match format: side1 vs side2
-        const sides = initialValue.split(' vs ');
+        const sides = initialValue.split(' vs ').filter(s => s.trim());
         const structure = sides.map(side => {
           const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
           if (teamMatch) {
             // Tag team with name
             const teamName = teamMatch[1].trim();
-            const wrestlerSlugs = teamMatch[2].split('&').map(s => s.trim());
+            const wrestlerSlugs = teamMatch[2].split('&').filter(s => s.trim()).map(s => s.trim());
             return { type: 'team', name: teamName, participants: wrestlerSlugs };
           } else {
             // Individual wrestlers
-            const wrestlerSlugs = side.split('&').map(s => s.trim());
+            const wrestlerSlugs = side.split('&').filter(s => s.trim()).map(s => s.trim());
             return { type: 'individual', participants: wrestlerSlugs };
           }
         });
@@ -655,7 +655,7 @@ export default function VisualMatchBuilder({
                 ×
               </button>
             </div>
-            {tagTeamSuggestions[`${sideIndex}-${participantIndex}`].map((suggestion, idx) => {
+            {Array.isArray(tagTeamSuggestions[`${sideIndex}-${participantIndex}`]) && tagTeamSuggestions[`${sideIndex}-${participantIndex}`].map((suggestion, idx) => {
               const suggestionKey = `${sideIndex}-${participantIndex}-${idx}`;
               const isHovered = hoveredSuggestion === suggestionKey;
               
@@ -673,7 +673,7 @@ export default function VisualMatchBuilder({
                     <span style={{ fontSize: '8px', color: '#888' }}>+</span>
                   </div>
                   <div style={{ fontSize: '9px', color: '#bbb' }}>
-                    {suggestion.members.map(slug => getWrestlerName(slug)).join(', ')}
+                    {Array.isArray(suggestion.members) && suggestion.members.map(slug => getWrestlerName(slug)).join(', ')}
                   </div>
                 </div>
               );
@@ -711,7 +711,7 @@ export default function VisualMatchBuilder({
 
         {/* Participants */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          {side.participants.map((participant, participantIndex) => 
+          {Array.isArray(side.participants) && side.participants.map((participant, participantIndex) => 
             renderParticipantCard(participant, sideIndex, participantIndex)
           )}
           
@@ -746,7 +746,7 @@ export default function VisualMatchBuilder({
         gap: '4px',
         maxWidth: '100%'
       }}>
-        {matchStructure.map((side, sideIndex) => (
+        {Array.isArray(matchStructure) && matchStructure.map((side, sideIndex) => (
           <React.Fragment key={sideIndex}>
             {renderSide(side, sideIndex)}
             {sideIndex < matchStructure.length - 1 && (
