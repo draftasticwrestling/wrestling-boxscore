@@ -385,9 +385,24 @@ export default function MatchEdit({
           const wrestlerSlugs = teamMatch[2].split('&').filter(s => s.trim()).map(s => s.trim());
           return { type: 'team', name: teamName, participants: wrestlerSlugs };
         } else {
-          // Individual wrestlers
+          // Individual wrestlers - check if this should be a team based on match type
           const wrestlerSlugs = side.split('&').filter(s => s.trim()).map(s => s.trim());
-          return { type: 'individual', participants: wrestlerSlugs };
+          const isTagTeamMatch = match.matchType && (
+            match.matchType.includes('Tag Team') || 
+            match.matchType.includes('6-Man') || 
+            match.matchType.includes('8-Man') || 
+            match.matchType.includes('10-Man') || 
+            match.matchType.includes('12-Man') ||
+            match.matchType.includes('WarGames') ||
+            match.matchType.includes('Survivor Series')
+          );
+          
+          if (isTagTeamMatch && wrestlerSlugs.length > 1) {
+            // Convert to team structure but without a name (user can add one)
+            return { type: 'team', name: '', participants: wrestlerSlugs };
+          } else {
+            return { type: 'individual', participants: wrestlerSlugs };
+          }
         }
       });
     }

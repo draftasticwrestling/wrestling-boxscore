@@ -468,7 +468,15 @@ export default function VisualMatchBuilder({
       // Regular match: string format
       const sides = structure.map(side => {
         const participants = side.participants.filter(Boolean);
-        return participants.length > 0 ? participants.join(' & ') : '';
+        if (participants.length === 0) return '';
+        
+        if (side.type === 'team' && side.name && side.name.trim()) {
+          // Tag team with name: TeamName (wrestler1 & wrestler2)
+          return `${side.name} (${participants.join(' & ')})`;
+        } else {
+          // Individual wrestlers or team without name
+          return participants.join(' & ');
+        }
       });
       
       console.log('Regular match - sides array:', sides);
