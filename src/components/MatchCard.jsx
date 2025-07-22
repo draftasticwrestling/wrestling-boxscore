@@ -717,7 +717,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               </div>
             ) : null;
           })()}
-
         </div>
       ) : match.matchType === 'Battle Royal' && Array.isArray(match.participants) ? (
         match.winner ? (() => {
