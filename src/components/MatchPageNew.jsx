@@ -96,6 +96,8 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
 }
 
 export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const user = useUser();
 
   return (
@@ -181,6 +183,8 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
 }
 
 function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap, wrestlers }) {
+  // Ensure wrestlers is always an array
+  const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const user = useUser();
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
@@ -222,7 +226,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
             onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
             eventId={event.id}
             matchOrder={match.order}
-            wrestlers={wrestlers}
+            wrestlers={safeWrestlers}
           />
         )}
       </div>
@@ -232,7 +236,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   return (
     <MatchPageNew 
       match={{ ...match, eventId: event.id }} 
-      wrestlers={wrestlers} 
+      wrestlers={safeWrestlers} 
       onEdit={handleEdit}
       wrestlerMap={wrestlerMap}
     />
