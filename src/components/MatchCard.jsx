@@ -65,6 +65,12 @@ const parseTeamString = (teamStr) => {
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true }) {
   const navigate = useNavigate();
 
+  const handleClick = () => {
+    if (isClickable && event) {
+      navigate(`/event/${event.id}/match/${match.order}`);
+    }
+  };
+
   // Early return for 2 out of 3 Falls: render only the custom layout
   if (match.matchType === '2 out of 3 Falls' && typeof match.participants === 'string') {
     // Parse participants for 2 out of 3 Falls
@@ -440,12 +446,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   // Layout for 2+ sides
   const isMultiSide = teams.length > 2;
   const isTwoSide = teams.length === 2;
-  
-  const handleClick = () => {
-    if (isClickable && event) {
-      navigate(`/event/${event.id}/match/${match.order}`);
-    }
-  };
 
   return (
     <div
