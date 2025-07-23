@@ -356,6 +356,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     ? match.result.split(' def. ')[0]
     : (match.result ? match.result : '');
   
+  console.log('MatchCard winner detection:', {
+    matchResult: match.result,
+    winner: winner,
+    teamStrings: teamStrings,
+    participants: match.participants
+  });
+  
   function normalize(str) {
     return (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
   }
@@ -364,11 +371,32 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   teamStrings.forEach((teamStr, idx) => {
     const { teamName, slugs } = parseTeamString(teamStr);
     const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
-    if (
-      (teamName && normalize(winner) === normalize(teamName)) ||
-      normalize(winner) === normalize(individualNames)
-    ) {
+    
+    console.log('Checking team:', {
+      teamStr,
+      teamName,
+      slugs,
+      individualNames,
+      winner,
+      normalizedWinner: normalize(winner),
+      normalizedTeamName: normalize(teamName),
+      normalizedIndividualNames: normalize(individualNames)
+    });
+    
+    // Check if winner matches team name
+    if (teamName && normalize(winner) === normalize(teamName)) {
       winnerIndex = idx;
+      console.log('Winner matched by team name');
+    }
+    // Check if winner matches individual names
+    else if (normalize(winner) === normalize(individualNames)) {
+      winnerIndex = idx;
+      console.log('Winner matched by individual names');
+    }
+    // Check if winner matches the full team string (e.g., "TeamName (wrestler1 & wrestler2)")
+    else if (normalize(winner) === normalize(teamStr)) {
+      winnerIndex = idx;
+      console.log('Winner matched by full team string');
     }
   });
   
