@@ -878,6 +878,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     ) : 
                      match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
                      getSpecialWinnerIcon(match.specialWinnerType) : 
+                     match.titleOutcome && match.titleOutcome === 'No. 1 Contender' && winnerIndex === sideIdx ? (
+                       <div style={{ fontSize: 10, color: '#C6A04F', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
+                     ) : 
                      <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
                   </div>
                 </div>
@@ -921,6 +924,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : 
                    match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 0 ? 
                    getSpecialWinnerIcon(match.specialWinnerType) : 
+                   match.titleOutcome && match.titleOutcome === 'No. 1 Contender' && winnerIndex === 0 ? (
+                     <div style={{ fontSize: 9, color: '#C6A04F', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
+                   ) : 
                    <span style={{ display: 'inline-block', width: 24, height: 12 }} />}
                 </div>
               </div>
@@ -980,6 +986,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : 
                    match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === 1 ? 
                    getSpecialWinnerIcon(match.specialWinnerType) : 
+                   match.titleOutcome && match.titleOutcome === 'No. 1 Contender' && winnerIndex === 1 ? (
+                     <div style={{ fontSize: 9, color: '#C6A04F', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
+                   ) : 
                    <span style={{ display: 'inline-block', width: 24, height: 12 }} />}
                 </div>
               </div>
