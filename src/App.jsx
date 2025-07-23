@@ -449,9 +449,12 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     setEditedMatch(null);
   };
 
+  // Don't designate main event for upcoming events with fewer than 4 matches
+  const shouldDesignateMainEvent = event.status !== 'upcoming' || event.matches.length >= 4;
+  
   const matchesWithCardType = event.matches.map((match, idx, arr) => ({
     ...match,
-    cardType: idx === arr.length - 1 ? "Main Event" : "Undercard"
+    cardType: shouldDesignateMainEvent && idx === arr.length - 1 ? "Main Event" : "Undercard"
   }));
 
   if (isEditingMatch) {
