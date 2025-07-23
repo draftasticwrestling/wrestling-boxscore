@@ -401,6 +401,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   });
   
   const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
+  const shouldShowBeltIcon = isTitleMatch && match.titleOutcome !== 'No. 1 Contender';
   
   const triangleRight = (
     <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
@@ -867,7 +868,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     ) : individualNames}
                   </span>
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                    {isTitleMatch && winnerIndex === sideIdx ? (
+                    {shouldShowBeltIcon && winnerIndex === sideIdx ? (
                       <>
                         <BeltIcon />
                         {match.titleOutcome && match.titleOutcome !== 'None' && (
@@ -910,7 +911,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : individualNames}
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                  {isTitleMatch && winnerIndex === 0 ? (
+                  {shouldShowBeltIcon && winnerIndex === 0 ? (
                     <>
                       <BeltIcon />
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
@@ -969,7 +970,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : individualNames}
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                  {isTitleMatch && winnerIndex === 1 ? (
+                  {shouldShowBeltIcon && winnerIndex === 1 ? (
                     <>
                       <BeltIcon />
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
