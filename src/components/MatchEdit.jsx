@@ -229,14 +229,26 @@ export default function MatchEdit({
 
   async function updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary) {
     try {
-      const { error } = await supabase
+      // First, get the current event to access the matches array
+      const { data: eventData, error: fetchError } = await supabase
         .from('events')
-        .update({ 
-          matches: supabase.sql`array_replace(matches, ${matchOrder}, ${JSON.stringify({ ...match, commentary: newCommentary })})`
-        })
+        .select('matches')
+        .eq('id', eventId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Update the specific match in the array
+      const updatedMatches = [...eventData.matches];
+      updatedMatches[matchOrder] = { ...match, commentary: newCommentary };
+      
+      // Update the event with the new matches array
+      const { error: updateError } = await supabase
+        .from('events')
+        .update({ matches: updatedMatches })
         .eq('id', eventId);
       
-      if (error) throw error;
+      if (updateError) throw updateError;
     } catch (error) {
       console.error('Error updating commentary in Supabase:', error);
     }
