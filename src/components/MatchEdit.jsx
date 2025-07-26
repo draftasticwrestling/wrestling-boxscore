@@ -59,10 +59,10 @@ export default function MatchEdit({
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [winnerOptions, setWinnerOptions] = useState([]);
-  const [isLive, setIsLive] = useState(match.isLive || false);
-  const [liveStart, setLiveStart] = useState(match.liveStart || null);
-  const [liveEnd, setLiveEnd] = useState(match.liveEnd || null);
-  const [commentary, setCommentary] = useState(Array.isArray(match.commentary) ? match.commentary : []);
+  const [isLive, setIsLive] = useState(initialMatch.isLive || false);
+  const [liveStart, setLiveStart] = useState(initialMatch.liveStart || null);
+  const [liveEnd, setLiveEnd] = useState(initialMatch.liveEnd || null);
+  const [commentary, setCommentary] = useState(Array.isArray(initialMatch.commentary) ? initialMatch.commentary : []);
   const [commentaryInput, setCommentaryInput] = useState("");
   const [liveMode, setLiveMode] = useState(isLive && (liveStart || !status || status === 'upcoming'));
   const [matchDetailsSaved, setMatchDetailsSaved] = useState(false);
@@ -156,6 +156,7 @@ export default function MatchEdit({
   }
 
   function formatCommentaryTime(ts, liveStart, commentary) {
+    console.log('formatCommentaryTime debug:', { ts, liveStart, elapsed: ts - liveStart });
     if (!ts || !liveStart) return '00:00';
     const elapsed = Math.floor((ts - liveStart) / 1000);
     const minutes = Math.floor(elapsed / 60);
@@ -262,6 +263,13 @@ export default function MatchEdit({
       text: commentaryInput,
       timestamp: Date.now()
     };
+    
+    console.log('handleAddCommentary debug:', { 
+      newComment, 
+      liveStart, 
+      currentCommentary: commentary,
+      isLive 
+    });
 
     const updatedCommentary = [...(Array.isArray(commentary) ? commentary : []), newComment];
     setCommentary(updatedCommentary);

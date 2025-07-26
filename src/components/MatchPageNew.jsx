@@ -87,12 +87,11 @@ function getWinnerDisplay(match, wrestlerMap) {
 
 // Helper to format commentary elapsed time (copied from App.jsx)
 function formatCommentaryElapsedTime(ts, liveStart, commentary) {
-  let start = liveStart;
-  if (!start && commentary && commentary.length > 0) {
-    start = commentary[commentary.length - 1].timestamp;
-  }
-  const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
-  return `${elapsed}'`;
+  if (!ts || !liveStart) return '00:00';
+  const elapsed = Math.floor((ts - liveStart) / 1000);
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {} }) {
