@@ -9,30 +9,22 @@ const BeltIcon = ({ size = 24, color = '#C6A04F' }) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        d="M3 8h18v8H3V8z"
-        stroke={color}
-        strokeWidth="2"
-        fill="none"
-      />
-      <rect
-        x="5"
-        y="10"
-        width="14"
-        height="4"
+      {/* Gold oval outer ring */}
+      <ellipse
+        cx="12"
+        cy="12"
+        rx="10"
+        ry="6"
         fill={color}
-        rx="1"
+        stroke={color}
+        strokeWidth="1"
       />
-      <circle
-        cx="8"
+      {/* Black center */}
+      <ellipse
+        cx="12"
         cy="12"
-        r="1"
-        fill="#232323"
-      />
-      <circle
-        cx="16"
-        cy="12"
-        r="1"
+        rx="6"
+        ry="3.5"
         fill="#232323"
       />
     </svg>
