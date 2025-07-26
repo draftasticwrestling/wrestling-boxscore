@@ -2311,6 +2311,15 @@ const getMatchStructureFromMatchType = (matchType) => {
         { type: 'team', participants: ['', ''], name: '' },
         { type: 'team', participants: ['', ''], name: '' }
       ];
+    case '6-team Tag Team':
+      return [
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' }
+      ];
     case '6-person Tag Team':
       return [
         { type: 'team', participants: ['', '', ''], name: '' },

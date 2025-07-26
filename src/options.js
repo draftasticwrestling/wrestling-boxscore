@@ -3,6 +3,7 @@ export const MATCH_TYPE_OPTIONS = [
   "Tag Team",
   "3-way Tag Team",
   "4-way Tag Team",
+  "6-team Tag Team",
   "6-person Tag Team",
   "8-person Tag Team",
   "Battle Royal",

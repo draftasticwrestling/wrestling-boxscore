@@ -344,13 +344,211 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     );
   }
 
+  // Early return for multi-team matches (6-team Tag Team, 4-way Tag Team, etc.)
+  if (match.matchType === '6-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team') {
+    let teamStrings = [];
+    if (typeof match.participants === 'string') {
+      teamStrings = match.participants.split(' vs ').map(s => s.trim());
+    } else if (Array.isArray(match.participants)) {
+      // For array format, each element represents a team
+      teamStrings = match.participants;
+    }
+    const winner = match.result && match.result.includes(' def. ')
+      ? match.result.split(' def. ')[0]
+      : (match.result ? match.result : '');
+    
+    function normalize(str) {
+      return (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+    }
+    
+    let winnerIndex = -1;
+    teamStrings.forEach((teamStr, idx) => {
+      const { teamName, slugs } = parseTeamString(teamStr);
+      const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+      
+      if (teamName && normalize(winner) === normalize(teamName)) {
+        winnerIndex = idx;
+      } else if (normalize(winner) === normalize(individualNames)) {
+        winnerIndex = idx;
+      } else if (normalize(winner) === normalize(teamStr)) {
+        winnerIndex = idx;
+      }
+    });
+    
+    const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
+    const shouldShowBeltIcon = isTitleMatch && match.titleOutcome !== 'No. 1 Contender';
+    let championIndex = winnerIndex;
+    if (isTitleMatch && match.titleOutcome === 'Champion Retains') {
+      championIndex = 0;
+    }
+    
+    return (
+      <div
+        onClick={handleClick}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#232323',
+          borderRadius: 12,
+          boxShadow: '0 0 12px #C6A04F22',
+          padding: '18px 24px',
+          cursor: isClickable ? 'pointer' : 'default',
+          border: match.cardType === 'Main Event' ? '2px solid #C6A04F' : '1px solid #444',
+          transition: 'background 0.2s',
+          position: 'relative',
+          minHeight: 120,
+          marginBottom: 2,
+        }}
+      >
+        {match.cardType === 'Main Event' && (
+          <div style={{
+            position: 'absolute',
+            top: -10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#C6A04F',
+            color: '#000',
+            padding: '4px 16px',
+            borderRadius: 12,
+            fontSize: 12,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            zIndex: 10,
+          }}>
+            Main Event
+          </div>
+        )}
+        
+        <div style={{
+          color: '#C6A04F',
+          fontWeight: 700,
+          fontSize: 15,
+          marginBottom: 8,
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}>
+          {[match.matchType, match.stipulation !== 'None' ? match.stipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}
+        </div>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+            {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
+          </div>
+          <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+            {match.isLive ? (
+              <span style={{ color: '#27ae60' }}>LIVE</span>
+            ) : (
+              match.result && match.result !== 'No winner' ? 'Final' : match.result
+            )}
+          </div>
+          <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+          <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+        </div>
+        
+        {/* Multi-team grid layout */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: match.matchType === '6-team Tag Team' 
+            ? 'repeat(3, 1fr)' 
+            : 'repeat(auto-fit, minmax(120px, 1fr))',
+          gap: '12px',
+          justifyContent: 'center',
+          marginBottom: 16,
+          maxWidth: '100%',
+        }}>
+          {teamStrings.map((teamStr, sideIdx) => {
+            const { teamName, slugs } = parseTeamString(teamStr);
+            const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+            return (
+              <div key={sideIdx} style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                padding: '8px',
+                background: winnerIndex === sideIdx ? '#2a2a2a' : '#1a1a1a',
+                borderRadius: '8px',
+                border: winnerIndex === sideIdx ? '2px solid #C6A04F' : '1px solid #444',
+                minWidth: '100px',
+              }}>
+                <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '6px' }}>
+                  {slugs.map((slug, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        borderRadius: '50%', 
+                        background: '#444', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        fontSize: '24px', 
+                        color: '#7da2c1',
+                        border: winnerIndex === sideIdx ? '2px solid #C6A04F' : '1px solid #666',
+                      }}>
+                        {wrestlerMap[slug]?.image_url
+                          ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                          : <span role="img" aria-label="wrestler">&#128100;</span>
+                        }
+                      </div>
+                      {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
+                        <div style={{ marginTop: '2px' }}>
+                          <BeltIcon size={16} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <span style={{ 
+                  fontWeight: 700, 
+                  color: winnerIndex === sideIdx ? '#C6A04F' : '#fff', 
+                  fontSize: '12px', 
+                  textAlign: 'center', 
+                  marginBottom: '2px',
+                  lineHeight: '1.2',
+                }}>
+                  {teamName ? (
+                    <>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: winnerIndex === sideIdx ? '#C6A04F' : '#fff' }}>{teamName}</div>
+                      <div style={{ fontSize: '10px', color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                    </>
+                  ) : individualNames}
+                </span>
+                {winnerIndex === sideIdx && (
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: '#C6A04F', 
+                    fontWeight: 600, 
+                    marginTop: '4px',
+                    textAlign: 'center',
+                  }}>
+                    WINNER
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   // Parse participants
   const teams = getTeams(match.participants);
-  const teamStrings = (typeof match.participants === 'string' && match.participants)
-    ? ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls')
-        ? match.participants.split(' → ').map(s => s.trim())
-        : match.participants.split(' vs ').map(s => s.trim()))
-    : [];
+  let teamStrings = [];
+  if (typeof match.participants === 'string' && match.participants) {
+    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
+      teamStrings = match.participants.split(' → ').map(s => s.trim());
+    } else {
+      teamStrings = match.participants.split(' vs ').map(s => s.trim());
+    }
+  } else if (Array.isArray(match.participants)) {
+    // For array format, each element represents a team
+    teamStrings = match.participants;
+  }
   
   const winner = match.result && match.result.includes(' def. ')
     ? match.result.split(' def. ')[0]

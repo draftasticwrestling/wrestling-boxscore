@@ -470,16 +470,57 @@ export default function VisualMatchBuilder({
     
     // Determine match type based on structure
     const totalParticipants = Array.isArray(structure) ? structure.flatMap(side => side.participants).filter(Boolean).length : 0;
-    const isBattleRoyal = totalParticipants > 8; // If more than 8 participants, treat as battle royal
+    const hasTeams = Array.isArray(structure) && structure.some(side => side.type === 'team');
+    const isBattleRoyal = totalParticipants > 8 && !hasTeams; // Only treat as battle royal if no teams and more than 8 participants
     const isGauntletMatch = Array.isArray(structure) && structure.length >= 5 && structure.every(side => side.type === 'individual');
     
     console.log('updateParentValue called with structure:', structure);
     console.log('totalParticipants:', totalParticipants, 'isBattleRoyal:', isBattleRoyal, 'isGauntletMatch:', isGauntletMatch);
     
+    // Determine match type based on structure
+    let matchType = 'Singles Match';
+    const numSides = Array.isArray(structure) ? structure.length : 0;
+    
+    if (isBattleRoyal) {
+      matchType = 'Battle Royal';
+    } else if (isGauntletMatch) {
+      matchType = 'Gauntlet Match';
+    } else if (numSides === 3) {
+      // Check if it's 3-way tag team or triple threat
+      const hasTeams = structure.some(side => side.type === 'team');
+      matchType = hasTeams ? '3-way Tag Team' : 'Triple Threat match';
+    } else if (numSides === 4) {
+      // Check if it's 4-way tag team or fatal four-way
+      const hasTeams = structure.some(side => side.type === 'team');
+      matchType = hasTeams ? '4-way Tag Team' : 'Fatal Four-way match';
+    } else if (numSides === 6) {
+      // Check if it's 6-team tag team or other 6-person match
+      const hasTeams = structure.some(side => side.type === 'team');
+      const participantsPerSide = structure[0]?.participants?.length || 1;
+      if (hasTeams && participantsPerSide === 2) {
+        matchType = '6-team Tag Team';
+      } else if (hasTeams && participantsPerSide > 2) {
+        matchType = '6-person Tag Team';
+      } else {
+        matchType = 'Battle Royal'; // Default for 6 individual participants
+      }
+    } else if (numSides === 2) {
+      // Check if it's tag team or singles
+      const hasTeams = structure.some(side => side.type === 'team');
+      const participantsPerSide = structure[0]?.participants?.length || 1;
+      if (hasTeams) {
+        if (participantsPerSide === 3) matchType = '6-person Tag Team';
+        else if (participantsPerSide === 4) matchType = '8-person Tag Team';
+        else matchType = 'Tag Team';
+      } else {
+        matchType = 'Singles Match';
+      }
+    }
+    
     if (isBattleRoyal) {
       // Battle Royal: array of slugs
       const allParticipants = Array.isArray(structure) ? structure.flatMap(side => side.participants).filter(Boolean) : [];
-      onChange(allParticipants);
+      onChange(allParticipants, matchType);
     } else if (isGauntletMatch) {
       // Gauntlet Match: participants in order with arrows
       const participants = structure.map(side => {
@@ -489,7 +530,7 @@ export default function VisualMatchBuilder({
       
       const participantsString = participants.join(' → ');
       console.log('Gauntlet Match - sending:', participantsString);
-      onChange(participantsString);
+      onChange(participantsString, matchType);
     } else {
       // Regular match: string format
       const sides = structure.map(side => {
@@ -507,28 +548,20 @@ export default function VisualMatchBuilder({
       
       console.log('Regular match - sides array:', sides);
       
-      // Build the participants string incrementally
+      // Build the participants string for all sides
+      const validSides = sides.filter(side => side && side.trim() !== '');
       let participantsString = '';
       
-      if (sides[0] && sides[1]) {
-        // Both wrestlers selected
-        participantsString = `${sides[0]} vs ${sides[1]}`;
-        console.log('Both wrestlers - sending:', participantsString);
-      } else if (sides[0] && !sides[1]) {
-        // Only first wrestler selected
-        participantsString = `${sides[0]} vs `;
-        console.log('First wrestler only - sending:', participantsString);
-      } else if (!sides[0] && sides[1]) {
-        // Only second wrestler selected
-        participantsString = ` vs ${sides[1]}`;
-        console.log('Second wrestler only - sending:', participantsString);
+      if (validSides.length > 0) {
+        participantsString = validSides.join(' vs ');
+        console.log(`${validSides.length} sides - sending:`, participantsString);
       } else {
         // No wrestlers selected
         participantsString = '';
         console.log('No wrestlers - sending empty string');
       }
       
-      onChange(participantsString);
+      onChange(participantsString, matchType);
     }
   };
 
@@ -820,7 +853,8 @@ export default function VisualMatchBuilder({
   // Render preview
   const renderPreview = () => {
     const totalParticipants = Array.isArray(matchStructure) ? matchStructure.flatMap(side => side.participants).filter(Boolean).length : 0;
-    const isBattleRoyal = totalParticipants > 8;
+    const hasTeams = Array.isArray(matchStructure) && matchStructure.some(side => side.type === 'team');
+    const isBattleRoyal = totalParticipants > 8 && !hasTeams;
     const isGauntletMatch = Array.isArray(matchStructure) && matchStructure.length >= 5 && matchStructure.every(side => side.type === 'individual');
     
     let previewValue;

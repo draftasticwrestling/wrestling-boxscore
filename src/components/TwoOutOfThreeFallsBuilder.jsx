@@ -28,7 +28,7 @@ export default function TwoOutOfThreeFallsBuilder({ wrestlers = [], value, onCha
     if (validParticipants.length === 2) {
       const participantString = validParticipants.join(' vs ');
       if (participantString !== value) {
-        onChange(participantString);
+        onChange(participantString, '2 out of 3 Falls');
       }
     }
   }, [participants, onChange, value]);

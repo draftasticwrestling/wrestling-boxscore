@@ -403,51 +403,82 @@ export default function MatchEdit({
   const getMatchStructureFromMatchType = (matchType) => {
     switch (matchType) {
       case 'Singles Match':
-        return { type: 'singles', sides: 2 };
-      case 'Tag Team Match':
-        return { type: 'tag', sides: 2, participantsPerSide: 2 };
-      case 'Triple Threat Match':
-        return { type: 'singles', sides: 3 };
-      case 'Fatal 4-Way Match':
-        return { type: 'singles', sides: 4 };
-      case '6-Man Tag Team Match':
-        return { type: 'tag', sides: 2, participantsPerSide: 3 };
-      case '8-Man Tag Team Match':
-        return { type: 'tag', sides: 2, participantsPerSide: 4 };
-      case '10-Man Tag Team Match':
-        return { type: 'tag', sides: 2, participantsPerSide: 5 };
-      case '12-Man Tag Team Match':
-        return { type: 'tag', sides: 2, participantsPerSide: 6 };
-      case 'Ladder Match':
-        return { type: 'singles', sides: 2 };
-      case 'Tables Match':
-        return { type: 'singles', sides: 2 };
-      case 'No Disqualification Match':
-        return { type: 'singles', sides: 2 };
-      case 'Extreme Rules Match':
-        return { type: 'singles', sides: 2 };
-      case 'Steel Cage Match':
-        return { type: 'singles', sides: 2 };
-      case 'Hell in a Cell Match':
-        return { type: 'singles', sides: 2 };
-      case 'TLC Match':
-        return { type: 'singles', sides: 2 };
-      case 'Elimination Chamber Match':
-        return { type: 'singles', sides: 6 };
-      case 'Money in the Bank Match':
-        return { type: 'singles', sides: 6 };
-      case 'Royal Rumble Match':
-        return { type: 'singles', sides: 30 };
-      case 'WarGames Match':
-        return { type: 'tag', sides: 2, participantsPerSide: 4 };
-      case 'Survivor Series Match':
-        return { type: 'tag', sides: 2, participantsPerSide: 5 };
+        return [
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] }
+        ];
+      case 'Tag Team':
+        return [
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' }
+        ];
+      case '3-way Tag Team':
+        return [
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' }
+        ];
+      case '4-way Tag Team':
+        return [
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' }
+        ];
+      case '6-team Tag Team':
+        return [
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' }
+        ];
+      case '6-person Tag Team':
+        return [
+          { type: 'team', participants: ['', '', ''], name: '' },
+          { type: 'team', participants: ['', '', ''], name: '' }
+        ];
+      case '8-person Tag Team':
+        return [
+          { type: 'team', participants: ['', '', '', ''], name: '' },
+          { type: 'team', participants: ['', '', '', ''], name: '' }
+        ];
+      case 'Fatal Four-way match':
+        return [
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] }
+        ];
+      case 'Triple Threat match':
+        return [
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] }
+        ];
       case 'Gauntlet Match':
-        return { type: 'gauntlet', sides: 4 };
+        // Gauntlet Match: multiple individual participants (starting with 5)
+        return [
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] }
+        ];
       case '2 out of 3 Falls':
-        return { type: 'singles', sides: 2 };
+        // 2 out of 3 Falls: 2 individual participants who wrestle multiple falls
+        return [
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] }
+        ];
+      case 'Battle Royal':
+        // Battle Royal uses separate interface, so return null
+        return null;
       default:
-        return { type: 'singles', sides: 2 };
+        // For stipulations like "Hell in a Cell", "Bakersfield Brawl", etc.
+        // Return null to let user build manually
+        return null;
     }
   };
 
@@ -659,9 +690,12 @@ export default function MatchEdit({
                 <GauntletMatchBuilder
                   wrestlers={safeWrestlers}
                   value={match.participants}
-                  onChange={value => {
-                    console.log('GauntletMatchBuilder onChange called with value:', value);
+                  onChange={(value, matchType) => {
+                    console.log('GauntletMatchBuilder onChange called with value:', value, 'matchType:', matchType);
                     const newMatch = { ...match, participants: value };
+                    if (matchType) {
+                      newMatch.matchType = matchType;
+                    }
                     setMatch(newMatch);
                   }}
                   onResultChange={gauntletResult => {
@@ -680,9 +714,12 @@ export default function MatchEdit({
                 <TwoOutOfThreeFallsBuilder
                   wrestlers={safeWrestlers}
                   value={match.participants}
-                  onChange={value => {
-                    console.log('TwoOutOfThreeFallsBuilder onChange called with value:', value);
+                  onChange={(value, matchType) => {
+                    console.log('TwoOutOfThreeFallsBuilder onChange called with value:', value, 'matchType:', matchType);
                     const newMatch = { ...match, participants: value };
+                    if (matchType) {
+                      newMatch.matchType = matchType;
+                    }
                     setMatch(newMatch);
                   }}
                   onResultChange={fallsResult => {
@@ -701,10 +738,13 @@ export default function MatchEdit({
                 <VisualMatchBuilder
                   wrestlers={safeWrestlers}
                   value={match.participants}
-                  onChange={value => {
-                    console.log('VisualMatchBuilder onChange called with value:', value);
+                  onChange={(value, matchType) => {
+                    console.log('VisualMatchBuilder onChange called with value:', value, 'matchType:', matchType);
                     console.log('Current match state:', match);
                     const newMatch = { ...match, participants: value };
+                    if (matchType) {
+                      newMatch.matchType = matchType;
+                    }
                     console.log('New match state will be:', newMatch);
                     setMatch(newMatch);
                   }}

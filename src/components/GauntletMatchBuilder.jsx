@@ -111,7 +111,7 @@ export default function GauntletMatchBuilder({
       
       // Only call onChange if the value has actually changed and we have valid participants
       if (participantString !== value && participantString.trim() !== '') {
-        onChange(participantString);
+        onChange(participantString, 'Gauntlet Match');
       }
     }
   }, [participants, value]);
