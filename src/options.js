@@ -91,7 +91,7 @@ export const SPECIAL_WINNER_OPTIONS = [
 
 export const TITLE_OUTCOME_OPTIONS = [
   "None",
-  "Successful Defense",
+  "Champion Retains",
   "New Champion",
   "Vacant",
   "No. 1 Contender"

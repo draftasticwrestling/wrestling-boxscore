@@ -431,7 +431,12 @@ export default function MatchEdit({
           <input
             type="checkbox"
             checked={isLive || false}
-            onChange={e => setIsLive(e.target.checked)}
+            onChange={e => {
+              setIsLive(e.target.checked);
+              if (e.target.checked && !liveStart) {
+                setLiveStart(Date.now());
+              }
+            }}
             style={{ marginRight: 8 }}
           />
           Live Match
@@ -720,6 +725,12 @@ export default function MatchEdit({
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
+        {match.title && match.title !== 'None' && (
+          <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+            <strong>Guidance:</strong> Use "Champion Retains" when the champion keeps the title (wins OR loses by DQ/Count Out). 
+            Use "New Champion" only when the title actually changes hands.
+          </div>
+        )}
       </div>
       {/* Commentary UI: always show if there is commentary or if live match is active */}
       {(isLive || (Array.isArray(commentary) && commentary.length > 0)) && (

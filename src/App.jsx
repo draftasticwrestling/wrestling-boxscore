@@ -2116,8 +2116,6 @@ function App() {
     const eventToUpdate = events.find(event => event.id === eventId);
     if (eventToUpdate) {
       updateEvent({ ...eventToUpdate, matches: updatedMatches });
-      // Check for new champions and update championships
-      checkForNewChampions(eventToUpdate, updatedMatches);
     }
   };
 
@@ -2135,50 +2133,7 @@ function App() {
     ));
   };
 
-  // Function to check for new champions and update championships
-  const checkForNewChampions = async (event, matches) => {
-    try {
-      for (const match of matches) {
-        if (match.titleOutcome === 'New Champion' && match.title && match.title !== 'None') {
-          console.log(`New champion detected: ${match.title} - ${match.result}`);
-          
-          // Extract winner name from result
-          const winnerName = match.result.split(' def. ')[0];
-          
-          // Find winner slug from wrestlerMap
-          const winnerSlug = Object.keys(wrestlerMap).find(slug => 
-            wrestlerMap[slug]?.name === winnerName
-          );
-          
-          if (winnerSlug) {
-            // Update championship in database
-            const championshipId = match.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            
-            const { error } = await supabase
-              .from('championships')
-              .upsert({
-                id: championshipId,
-                title_name: match.title,
-                current_champion: winnerName,
-                current_champion_slug: winnerSlug,
-                date_won: event.date,
-                event_id: event.id,
-                match_order: match.order,
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'id' });
-            
-            if (error) {
-              console.error('Error updating championship:', error);
-            } else {
-              console.log(`✅ Championship updated: ${match.title} - ${winnerName}`);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error checking for new champions:', error);
-    }
-  };
+
 
   useEffect(() => {
     async function fetchWrestlers() {
