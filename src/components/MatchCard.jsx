@@ -862,11 +862,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   </div>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                     {slugs.map((slug, i) => (
-                      <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
-                        {wrestlerMap[slug]?.image_url
-                          ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-                          : <span role="img" aria-label="wrestler">&#128100;</span>
-                        }
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
+                          {wrestlerMap[slug]?.image_url
+                            ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                            : <span role="img" aria-label="wrestler">&#128100;</span>
+                          }
+                        </div>
+                                              {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
+                        <div style={{ marginTop: 4 }}>
+                          <BeltIcon size={24} />
+                        </div>
+                      )}
                       </div>
                     ))}
                   </div>
@@ -879,16 +886,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     ) : individualNames}
                   </span>
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                    {shouldShowBeltIcon && championIndex === sideIdx ? (
+                    {shouldShowBeltIcon && championIndex === sideIdx && !match.title?.includes('Tag Team Championship') ? (
                       <>
-                        {match.matchType === 'Tag Team' ? (
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                            <BeltIcon size={32} />
-                            <BeltIcon size={32} />
-                          </div>
-                        ) : (
-                          <BeltIcon size={36} />
-                        )}
+                        <BeltIcon size={36} />
                         {match.titleOutcome && match.titleOutcome !== 'None' && (
                           <div style={{ fontSize: 10, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                         )}
@@ -915,11 +915,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
                 <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
                   {slugs.map((slug, i) => (
-                    <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
-                      {wrestlerMap[slug]?.image_url
-                        ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
-                        : <span role="img" aria-label="wrestler">&#128100;</span>
-                      }
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
+                        {wrestlerMap[slug]?.image_url
+                          ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
+                          : <span role="img" aria-label="wrestler">&#128100;</span>
+                        }
+                      </div>
+                      {shouldShowBeltIcon && championIndex === 0 && match.title?.includes('Tag Team Championship') && (
+                        <div style={{ marginTop: 2 }}>
+                          <BeltIcon size={20} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -932,16 +939,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : individualNames}
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                  {shouldShowBeltIcon && championIndex === 0 ? (
+                  {shouldShowBeltIcon && championIndex === 0 && !match.title?.includes('Tag Team Championship') ? (
                     <>
-                      {match.matchType === 'Tag Team' ? (
-                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                          <BeltIcon size={28} />
-                          <BeltIcon size={28} />
-                        </div>
-                      ) : (
-                        <BeltIcon size={32} />
-                      )}
+                      <BeltIcon size={32} />
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
                         <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                       )}
@@ -984,11 +984,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
                 <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
                   {slugs.map((slug, i) => (
-                    <div key={i} style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
-                      {wrestlerMap[slug]?.image_url
-                        ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
-                        : <span role="img" aria-label="wrestler">&#128100;</span>
-                      }
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
+                        {wrestlerMap[slug]?.image_url
+                          ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
+                          : <span role="img" aria-label="wrestler">&#128100;</span>
+                        }
+                      </div>
+                      {shouldShowBeltIcon && championIndex === 1 && match.title?.includes('Tag Team Championship') && (
+                        <div style={{ marginTop: 2 }}>
+                          <BeltIcon size={20} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1001,16 +1008,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : individualNames}
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                  {shouldShowBeltIcon && championIndex === 1 ? (
+                  {shouldShowBeltIcon && championIndex === 1 && !match.title?.includes('Tag Team Championship') ? (
                     <>
-                      {match.matchType === 'Tag Team' ? (
-                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                          <BeltIcon size={28} />
-                          <BeltIcon size={28} />
-                        </div>
-                      ) : (
-                        <BeltIcon size={32} />
-                      )}
+                      <BeltIcon size={32} />
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
                         <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                       )}
