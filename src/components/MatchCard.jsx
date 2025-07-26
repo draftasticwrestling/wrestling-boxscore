@@ -881,7 +881,14 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                     {shouldShowBeltIcon && championIndex === sideIdx ? (
                       <>
-                        <BeltIcon />
+                        {match.matchType === 'Tag Team' ? (
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                            <BeltIcon size={32} />
+                            <BeltIcon size={32} />
+                          </div>
+                        ) : (
+                          <BeltIcon size={36} />
+                        )}
                         {match.titleOutcome && match.titleOutcome !== 'None' && (
                           <div style={{ fontSize: 10, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                         )}
@@ -927,7 +934,14 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                   {shouldShowBeltIcon && championIndex === 0 ? (
                     <>
-                      <BeltIcon />
+                      {match.matchType === 'Tag Team' ? (
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                          <BeltIcon size={28} />
+                          <BeltIcon size={28} />
+                        </div>
+                      ) : (
+                        <BeltIcon size={32} />
+                      )}
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
                         <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                       )}
@@ -989,7 +1003,14 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                   {shouldShowBeltIcon && championIndex === 1 ? (
                     <>
-                      <BeltIcon />
+                      {match.matchType === 'Tag Team' ? (
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                          <BeltIcon size={28} />
+                          <BeltIcon size={28} />
+                        </div>
+                      ) : (
+                        <BeltIcon size={32} />
+                      )}
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
                         <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                       )}
