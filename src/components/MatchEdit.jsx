@@ -38,6 +38,13 @@ export default function MatchEdit({
   matchOrder,
   wrestlers = [],
 }) {
+  // Debug: Log the initialMatch object (only on mount)
+  useEffect(() => {
+    console.log('MatchEdit initialMatch debug - liveStart:', initialMatch.liveStart);
+    console.log('MatchEdit initialMatch debug - isLive:', initialMatch.isLive);
+    console.log('MatchEdit initialMatch debug - commentary:', initialMatch.commentary);
+  }, []);
+  
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [match, setMatch] = useState({
@@ -69,6 +76,13 @@ export default function MatchEdit({
   const [editingCommentIdx, setEditingCommentIdx] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState("");
   const [useVisualBuilder, setUseVisualBuilder] = useState(true);
+  const [isAddingCommentary, setIsAddingCommentary] = useState(false);
+
+  // Auto-sync isLive with status (now controlled by Begin Match button)
+  useEffect(() => {
+    // isLive is now controlled by the Begin Match button, not the status dropdown
+    // This effect is kept for backward compatibility but doesn't auto-sync anymore
+  }, [status, isLive]);
 
   // Battle Royal specific state
   const [numParticipants, setNumParticipants] = useState(Array.isArray(initialMatch.participants) ? initialMatch.participants.length : 10);
@@ -156,12 +170,10 @@ export default function MatchEdit({
   }
 
   function formatCommentaryTime(ts, liveStart, commentary) {
-    console.log('formatCommentaryTime debug:', { ts, liveStart, elapsed: ts - liveStart });
-    if (!ts || !liveStart) return '00:00';
+    if (!ts || !liveStart) return '0\'';
     const elapsed = Math.floor((ts - liveStart) / 1000);
     const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}'`;
   }
 
   const handleSaveMatchDetails = (e) => {
@@ -169,11 +181,66 @@ export default function MatchEdit({
     setMatchDetailsSaved(true);
   };
 
-  const handleEndMatch = () => {
+  const handleBeginMatch = async () => {
+    const startTime = Date.now();
+    setStatus('live');
+    setIsLive(true);
+    setLiveStart(startTime);
+    
+    // Add the first commentary automatically
+    const firstComment = {
+      text: "The match begins",
+      timestamp: startTime
+    };
+    
+    const updatedCommentary = [firstComment];
+    setCommentary(updatedCommentary);
+    
+    // Update in real-time
+    if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+      const updatedMatch = {
+        ...match,
+        status: 'live',
+        isLive: true,
+        liveStart: startTime,
+        commentary: updatedCommentary
+      };
+      onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+    }
+    
+    // Update in Supabase
+    await updateMatchCommentaryInSupabase(eventId, matchOrder, updatedCommentary, startTime);
+  };
+
+  const handleEndMatch = async () => {
     const endTime = Date.now();
     setLiveEnd(endTime);
     setStatus('completed');
-    setMatch(prev => ({ ...prev, liveEnd: endTime, status: 'completed' }));
+    setIsLive(false);
+    
+    // Add the final commentary automatically
+    const finalComment = {
+      text: "The match ends",
+      timestamp: endTime
+    };
+    
+    const updatedCommentary = [finalComment, ...(Array.isArray(commentary) ? commentary : [])];
+    setCommentary(updatedCommentary);
+    
+    // Update in real-time
+    if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+      const updatedMatch = {
+        ...match,
+        liveEnd: endTime,
+        status: 'completed',
+        isLive: false,
+        commentary: updatedCommentary
+      };
+      onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+    }
+    
+    // Update in Supabase
+    await updateMatchCommentaryInSupabase(eventId, matchOrder, updatedCommentary);
   };
 
   const handleSave = (e) => {
@@ -228,7 +295,7 @@ export default function MatchEdit({
     onSave(updatedMatch);
   };
 
-  async function updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary) {
+  async function updateMatchCommentaryInSupabase(eventId, matchOrder, newCommentary, newLiveStart = null) {
     try {
       // First, get the current event to access the matches array
       const { data: eventData, error: fetchError } = await supabase
@@ -241,7 +308,11 @@ export default function MatchEdit({
       
       // Update the specific match in the array
       const updatedMatches = [...eventData.matches];
-      updatedMatches[matchOrder] = { ...match, commentary: newCommentary };
+      updatedMatches[matchOrder] = { 
+        ...match, 
+        commentary: newCommentary,
+        liveStart: newLiveStart || liveStart // Use newLiveStart if provided, otherwise use current liveStart
+      };
       
       // Update the event with the new matches array
       const { error: updateError } = await supabase
@@ -259,33 +330,46 @@ export default function MatchEdit({
     e.preventDefault();
     if (!commentaryInput.trim()) return;
 
-    const newComment = {
-      text: commentaryInput,
-      timestamp: Date.now()
-    };
-    
-    console.log('handleAddCommentary debug:', { 
-      newComment, 
-      liveStart, 
-      currentCommentary: commentary,
-      isLive 
-    });
+    setIsAddingCommentary(true);
 
-    const updatedCommentary = [...(Array.isArray(commentary) ? commentary : []), newComment];
-    setCommentary(updatedCommentary);
-    setCommentaryInput("");
+    try {
+      // Use existing liveStart (Begin Match button should have set this)
+      let newLiveStart = liveStart;
+      if (!liveStart) {
+        // Fallback: start the match timer if this is the first commentary
+        newLiveStart = Date.now();
+        setLiveStart(newLiveStart);
+      }
 
-    // Update in real-time
-    if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
-      const updatedMatch = {
-        ...match,
-        commentary: updatedCommentary
+      const newComment = {
+        text: commentaryInput,
+        timestamp: Date.now()
       };
-      onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
-    }
+      
+          console.log('Adding commentary:', newComment.text, 'at timestamp:', newComment.timestamp);
 
-    // Update in Supabase
-    await updateMatchCommentaryInSupabase(eventId, matchOrder, updatedCommentary);
+      // Add new commentary to the beginning (newest first)
+      const updatedCommentary = [newComment, ...(Array.isArray(commentary) ? commentary : [])];
+      setCommentary(updatedCommentary);
+      setCommentaryInput("");
+
+      // Update in real-time
+      if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+        const updatedMatch = {
+          ...match,
+          commentary: updatedCommentary,
+          liveStart: newLiveStart
+        };
+        onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+      }
+
+      // Update in Supabase
+      await updateMatchCommentaryInSupabase(eventId, matchOrder, updatedCommentary, newLiveStart);
+    } catch (error) {
+      console.error('Error adding commentary:', error);
+    } finally {
+      setIsAddingCommentary(false);
+    }
   };
 
   function parseParticipants(input) {
@@ -445,23 +529,13 @@ export default function MatchEdit({
   // UI rendering
   return (
     <form onSubmit={handleSave} style={{ background: '#181818', padding: 24, borderRadius: 8, maxWidth: 500 }}>
-      {/* Live Match Checkbox always visible */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ color: '#C6A04F', fontWeight: 600 }}>
-          <input
-            type="checkbox"
-            checked={isLive || false}
-            onChange={e => {
-              setIsLive(e.target.checked);
-              if (e.target.checked && !liveStart) {
-                setLiveStart(Date.now());
-              }
-            }}
-            style={{ marginRight: 8 }}
-          />
-          Live Match
-        </label>
-      </div>
+      {/* Live Match Status Indicator */}
+      {isLive && (
+        <div style={{ marginBottom: 16, padding: '8px 12px', background: '#27ae60', borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+          <span style={{ color: 'white', fontWeight: 600, marginRight: 8 }}>🔴</span>
+          <span style={{ color: 'white', fontWeight: 600 }}>LIVE MATCH</span>
+        </div>
+      )}
       {/* Always show Match Status for all match types */}
       <div>
         <label style={labelStyle}>Match Status:</label>
@@ -471,7 +545,6 @@ export default function MatchEdit({
           onChange={e => setStatus(e.target.value)}
         >
           <option value="upcoming">Upcoming</option>
-          <option value="live">Live</option>
           <option value="completed">Completed</option>
         </select>
       </div>
@@ -752,11 +825,33 @@ export default function MatchEdit({
           </div>
         )}
       </div>
-      {/* Commentary UI: always show if there is commentary or if live match is active */}
-      {(isLive || (Array.isArray(commentary) && commentary.length > 0)) && (
+      {/* Begin Match Button - show when match is not live */}
+      {status !== 'live' && (
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <button 
+            type="button" 
+            onClick={handleBeginMatch}
+            style={{ 
+              background: '#27ae60', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: 4, 
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            🟢 Begin Match
+          </button>
+        </div>
+      )}
+
+      {/* Commentary UI: always show if there is commentary or if match is live */}
+      {(status === 'live' || (Array.isArray(commentary) && commentary.length > 0)) && (
         <div style={{ marginTop: 24 }}>
           <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
-          {isLive && !liveEnd && (
+          {status === 'live' && !liveEnd && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input
                 value={commentaryInput}
@@ -770,7 +865,21 @@ export default function MatchEdit({
                   }
                 }}
               />
-              <button type="button" onClick={handleAddCommentary}>Submit</button>
+              <button 
+                type="button" 
+                onClick={handleAddCommentary}
+                disabled={isAddingCommentary}
+                style={{ 
+                  background: isAddingCommentary ? '#666' : '#C6A04F', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: 4, 
+                  padding: '8px 16px',
+                  cursor: isAddingCommentary ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isAddingCommentary ? 'Adding...' : 'Submit'}
+              </button>
             </div>
           )}
           <div style={{ maxHeight: 200, overflowY: 'auto', background: '#181818', borderRadius: 4, padding: 8 }}>
@@ -824,7 +933,7 @@ export default function MatchEdit({
               </div>
             )}
           </div>
-          {isLive && !liveEnd && (
+          {status === 'live' && !liveEnd && (
             <button type="button" onClick={handleEndMatch} style={{ marginTop: 16, background: '#e63946', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}>
               End Match
             </button>

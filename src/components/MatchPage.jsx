@@ -53,9 +53,10 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
   function formatCommentaryTime(ts, liveStart, commentary) {
     let start = liveStart;
     if (!start && commentary && commentary.length > 0) {
-      // Use the last (oldest) commentary timestamp as start
-      start = commentary[commentary.length - 1].timestamp;
+      // Use the first (newest) commentary timestamp as start since we're now storing newest first
+      start = commentary[0].timestamp;
     }
+    if (!ts || !start) return '0\'';
     const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
     return `${elapsed}'`;
   }

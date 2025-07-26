@@ -394,9 +394,10 @@ const getTeamDisplayName = (team, tagTeams, sideIndex, wrestlerMap) => {
 function formatCommentaryElapsedTime(ts, liveStart, commentary) {
   let start = liveStart;
   if (!start && commentary && commentary.length > 0) {
-    // Use the last (oldest) commentary timestamp as start
-    start = commentary[commentary.length - 1].timestamp;
+    // Use the first (newest) commentary timestamp as start since we're now storing newest first
+    start = commentary[0].timestamp;
   }
+  if (!ts || !start) return '0\'';
   const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
   return `${elapsed}'`;
 }
@@ -2121,6 +2122,7 @@ function App() {
 
   // New function for real-time commentary updates (doesn't save to database immediately)
   const handleRealTimeCommentaryUpdate = (eventId, matchOrder, updatedMatch) => {
+    console.log('Real-time commentary update for match', matchOrder, 'in event', eventId);
     setEvents(events.map(event => 
       event.id === eventId 
         ? { 
