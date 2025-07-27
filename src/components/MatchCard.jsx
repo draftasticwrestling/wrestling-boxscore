@@ -526,6 +526,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     Debug: shouldShowBeltIcon={shouldShowBeltIcon}, championIndex={championIndex}, sideIdx={sideIdx}, titleOutcome={match.titleOutcome}
                   </div>
                 )}
+                {/* Debug info for all matches */}
+                <div style={{ fontSize: 8, color: 'blue', marginTop: 2 }}>
+                  Debug: match.title="{match.title}", shouldShowBeltIcon={shouldShowBeltIcon}, championIndex={championIndex}, sideIdx={sideIdx}, titleOutcome={match.titleOutcome}
+                </div>
                 {winnerIndex === sideIdx && (
                   <div style={{ 
                     fontSize: '10px', 
