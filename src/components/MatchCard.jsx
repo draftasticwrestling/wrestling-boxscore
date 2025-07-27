@@ -602,14 +602,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   
   // Determine which team should show the belt icon
   let championIndex = winnerIndex;
-  if (isTitleMatch && match.titleOutcome === 'Champion Retains') {
-    // For "Champion Retains", the belt icon should go to the team that retained
-    // In DQ scenarios, this might not be the winner
-    // We need to determine which team was the champion going into the match
-    // For now, we'll assume the first team (index 0) was the champion
-    // This is a simplification - ideally we'd have champion data in the match
-    championIndex = 0;
-  }
+  // For title matches, the winner should always be the champion
+  // Whether they're retaining or becoming a new champion, show belt on the winner
   
   const triangleRight = (
     <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
