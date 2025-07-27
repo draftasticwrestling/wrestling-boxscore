@@ -64,6 +64,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   console.log('MatchCard match object:', match);
   console.log('MatchCard titleOutcome:', match.titleOutcome);
   console.log('MatchCard title:', match.title);
+  console.log('MatchCard matchType:', match.matchType);
   const navigate = useNavigate();
 
   const handleClick = () => {
