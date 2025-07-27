@@ -521,26 +521,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     )}
                   </div>
                 )}
-                {/* Debug info for tag team championships */}
-                {match.title?.includes('Tag Team Championship') && (
-                  <div style={{ fontSize: 8, color: 'red', marginTop: 2 }}>
-                    Debug: shouldShowBeltIcon={shouldShowBeltIcon}, championIndex={championIndex}, sideIdx={sideIdx}, titleOutcome={match.titleOutcome}
-                  </div>
-                )}
-                {/* Debug info for all matches */}
-                <div style={{ fontSize: 8, color: 'blue', marginTop: 2 }}>
-                  Debug: match.title="{match.title}", shouldShowBeltIcon={shouldShowBeltIcon}, championIndex={championIndex}, sideIdx={sideIdx}, titleOutcome={match.titleOutcome}
-                </div>
-                {console.log('MatchCard debug:', { 
-                  matchTitle: match.title, 
-                  shouldShowBeltIcon, 
-                  championIndex, 
-                  sideIdx, 
-                  titleOutcome: match.titleOutcome,
-                  isTagTeamChampionship: match.title?.includes('Tag Team Championship'),
-                  winnerIndex,
-                  isTitleMatch: match.title?.includes('Championship')
-                })}
+
                 {winnerIndex === sideIdx && (
                   <div style={{ 
                     fontSize: '10px', 
