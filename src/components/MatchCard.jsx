@@ -62,6 +62,8 @@ const parseTeamString = (teamStr) => {
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true }) {
   console.log('MatchCard component called with:', { match, event: event?.id, isClickable });
   console.log('MatchCard match object:', match);
+  console.log('MatchCard titleOutcome:', match.titleOutcome);
+  console.log('MatchCard title:', match.title);
   const navigate = useNavigate();
 
   const handleClick = () => {
