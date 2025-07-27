@@ -60,11 +60,6 @@ const parseTeamString = (teamStr) => {
 };
 
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true }) {
-  console.log('MatchCard component called with:', { match, event: event?.id, isClickable });
-  console.log('MatchCard match object:', match);
-  console.log('MatchCard titleOutcome:', match.titleOutcome);
-  console.log('MatchCard title:', match.title);
-  console.log('MatchCard matchType:', match.matchType);
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -384,16 +379,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     const shouldShowBeltIcon = isTitleMatch && match.titleOutcome !== 'No. 1 Contender';
     let championIndex = winnerIndex;
     
-    // Debug logging
-    console.log('MatchCard render:', {
-      matchTitle: match.title,
-      isTitleMatch,
-      shouldShowBeltIcon,
-      championIndex,
-      winnerIndex,
-      titleOutcome: match.titleOutcome,
-      isTagTeamChampionship: match.title?.includes('Tag Team Championship')
-    });
     // For title matches, the winner should always be the champion
     // Whether they're retaining or becoming a new champion, show belt on the winner
     
