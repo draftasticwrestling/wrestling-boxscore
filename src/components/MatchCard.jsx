@@ -378,6 +378,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
     const shouldShowBeltIcon = isTitleMatch && match.titleOutcome !== 'No. 1 Contender';
     let championIndex = winnerIndex;
+    
+    // Debug logging
+    console.log('MatchCard render:', {
+      matchTitle: match.title,
+      isTitleMatch,
+      shouldShowBeltIcon,
+      championIndex,
+      winnerIndex,
+      titleOutcome: match.titleOutcome,
+      isTagTeamChampionship: match.title?.includes('Tag Team Championship')
+    });
     // For title matches, the winner should always be the champion
     // Whether they're retaining or becoming a new champion, show belt on the winner
     
@@ -536,7 +547,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   championIndex, 
                   sideIdx, 
                   titleOutcome: match.titleOutcome,
-                  isTagTeamChampionship: match.title?.includes('Tag Team Championship')
+                  isTagTeamChampionship: match.title?.includes('Tag Team Championship'),
+                  winnerIndex,
+                  isTitleMatch: match.title?.includes('Championship')
                 })}
                 {winnerIndex === sideIdx && (
                   <div style={{ 
