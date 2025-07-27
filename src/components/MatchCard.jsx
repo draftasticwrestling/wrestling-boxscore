@@ -350,7 +350,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   }
 
   // Early return for multi-team matches (6-team Tag Team, 4-way Tag Team, etc.)
-  if (match.matchType === '6-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team') {
+  if (match.matchType === '6-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team' || match.matchType === 'Tag Team') {
     let teamStrings = [];
     if (typeof match.participants === 'string') {
       teamStrings = match.participants.split(' vs ').map(s => s.trim());
