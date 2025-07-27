@@ -378,9 +378,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
     const shouldShowBeltIcon = isTitleMatch && match.titleOutcome !== 'No. 1 Contender';
     let championIndex = winnerIndex;
-    if (isTitleMatch && match.titleOutcome === 'Champion Retains') {
-      championIndex = 0;
-    }
+    // For title matches, the winner should always be the champion
+    // Whether they're retaining or becoming a new champion, show belt on the winner
     
     return (
       <div
