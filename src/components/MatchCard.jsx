@@ -496,6 +496,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
                         <div style={{ marginTop: '2px' }}>
                           <BeltIcon size={16} />
+                          {match.titleOutcome && match.titleOutcome !== 'None' && (
+                            <div style={{ fontSize: 8, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 1, textAlign: 'center' }}>{match.titleOutcome}</div>
+                          )}
                         </div>
                       )}
                     </div>
