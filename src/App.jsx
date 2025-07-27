@@ -2046,7 +2046,7 @@ function App() {
       const { data, error } = await supabase
         .from('events')
         .insert([event])
-        .select();
+        .select('id, name, date, location, matches, status, isLive');
 
       if (error) {
         console.error('Supabase insert error:', error);
@@ -2097,7 +2097,7 @@ function App() {
         .from('events')
         .update(sanitizedEvent)
         .eq('id', updatedEvent.id)
-        .select();
+        .select('id, name, date, location, matches, status, isLive');
 
       if (error) throw error;
       setEvents(events.map(e => e.id === updatedEvent.id ? data[0] : e));
