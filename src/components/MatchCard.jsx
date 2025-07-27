@@ -60,6 +60,7 @@ const parseTeamString = (teamStr) => {
 };
 
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true }) {
+  console.log('MatchCard component called with:', { match, event: event?.id, isClickable });
   const navigate = useNavigate();
 
   const handleClick = () => {
