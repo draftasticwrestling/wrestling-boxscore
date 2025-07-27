@@ -2043,18 +2043,17 @@ function App() {
   const addEvent = async (event) => {
     try {
       console.log('Attempting to add event to Supabase:', event);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('events')
-        .insert([event])
-        .select('id, name, date, location, matches, status, isLive');
+        .insert([event]);
 
       if (error) {
         console.error('Supabase insert error:', error);
         throw error;
       }
 
-      console.log('Successfully added event:', data);
-      setEvents([data[0], ...events]);
+      console.log('Successfully added event');
+      setEvents([event, ...events]);
     } catch (error) {
       console.error('Error adding event:', error);
       alert('Failed to add event. Please try again.');
@@ -2088,19 +2087,18 @@ function App() {
       for (const key of allowedFields) {
         if (updatedEvent[key] !== undefined) sanitizedEvent[key] = updatedEvent[key];
       }
-      // Remove any accidental top-level titleOutcome field
-      if ('titleOutcome' in sanitizedEvent) {
-        delete sanitizedEvent.titleOutcome;
-      }
+      // Keep titleOutcome in the matches data but not as a top-level field
+      // This prevents any database triggers from trying to access championship tables
       console.log('Sanitized event for update:', sanitizedEvent);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('events')
         .update(sanitizedEvent)
-        .eq('id', updatedEvent.id)
-        .select('id, name, date, location, matches, status, isLive');
+        .eq('id', updatedEvent.id);
 
       if (error) throw error;
-      setEvents(events.map(e => e.id === updatedEvent.id ? data[0] : e));
+      
+      // Update local state with the sanitized event data
+      setEvents(events.map(e => e.id === updatedEvent.id ? { ...e, ...sanitizedEvent } : e));
     } catch (error) {
       console.error('Error updating event:', error);
       alert('Failed to update event. Please try again.');
