@@ -282,11 +282,14 @@ export default function MatchEdit({
       result = match.result || result;
     }
 
+    // If the match has a result, it should not be live
+    const shouldBeLive = isLive && !result;
+    
     const updatedMatch = {
       ...match,
       result,
       status,
-      isLive,
+      isLive: shouldBeLive,
       liveStart,
       liveEnd,
       commentary,
