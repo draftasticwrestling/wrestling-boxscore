@@ -735,7 +735,8 @@ function AddEvent({ addEvent, wrestlers }) {
   const [numParticipants, setNumParticipants] = useState(10);
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
-  const [useVisualBuilder, setUseVisualBuilder] = useState(false); // Toggle for Visual Match Builder
+  const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
+  const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -760,20 +761,22 @@ function AddEvent({ addEvent, wrestlers }) {
         ...matches,
         { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
       ]);
-      setMatch({
-        participants: '',
-        result: '',
-        method: '',
-        time: '',
-        stipulation: 'Singles Match', // Reset to default
-        customStipulation: '',
-        title: '',
-        titleOutcome: '',
-        notes: '',
-        isLive: false
-      });
-      setResultType('');
-      setWinner('');
+          setMatch({
+      participants: '',
+      result: '',
+      method: '',
+      time: '',
+      matchType: 'Singles Match', // Reset to default
+      stipulation: 'None', // Reset to default
+      customStipulation: '',
+      title: '',
+      titleOutcome: '',
+      notes: '',
+      isLive: false
+    });
+    setResultType('');
+    setWinner('');
+    setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
       setNumParticipants(10);
       setBrParticipants(Array(10).fill(''));
       setBrWinner('');
@@ -858,7 +861,8 @@ function AddEvent({ addEvent, wrestlers }) {
       result: '',
       method: '',
       time: '',
-      stipulation: 'Singles Match', // Reset to default
+      matchType: 'Singles Match', // Reset to default
+      stipulation: 'None', // Reset to default
       customStipulation: '',
       title: '',
       titleOutcome: '',
@@ -867,6 +871,7 @@ function AddEvent({ addEvent, wrestlers }) {
     });
     setResultType('');
     setWinner('');
+    setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
   };
 
   // Save the event
@@ -1183,6 +1188,7 @@ function AddEvent({ addEvent, wrestlers }) {
                     />
                   ) : (
                     <VisualMatchBuilder
+                      key={formResetKey}
                       wrestlers={wrestlers}
                       value={match.participants}
                       onChange={value => {
@@ -1357,7 +1363,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [numParticipants, setNumParticipants] = useState(10);
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
-  const [useVisualBuilder, setUseVisualBuilder] = useState(false); // Toggle for Visual Match Builder
+  const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
+  const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -1439,6 +1446,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     });
     setResultType('');
     setWinner('');
+    setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
   };
 
   // Save the edited event
@@ -1853,6 +1861,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                       />
                     ) : (
                       <VisualMatchBuilder
+                        key={formResetKey}
                         wrestlers={wrestlers}
                         value={match.participants}
                         onChange={value => {

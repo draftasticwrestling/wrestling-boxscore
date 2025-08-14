@@ -188,18 +188,41 @@ export default function VisualMatchBuilder({
 
       console.log('Tag team members fetched:', tagTeamMembers);
 
-      // Build tag team data structure
+      // Fetch wrestler information including gender
+      const { data: wrestlers, error: wrestlersError } = await supabase
+        .from('wrestlers')
+        .select('id, name, gender, brand');
+      
+      if (wrestlersError) {
+        console.error('Error fetching wrestlers:', wrestlersError);
+        return;
+      }
+
+      console.log('Wrestlers fetched:', wrestlers);
+
+      // Build tag team data structure with enriched member data
       const teamData = {};
       tagTeams.forEach(team => {
+        const teamMembers = tagTeamMembers
+          .filter(member => member.tag_team_id === team.id)
+          .sort((a, b) => a.member_order - b.member_order)
+          .map(member => {
+            const wrestler = wrestlers.find(w => w.id === member.wrestler_slug);
+            return {
+              ...member,
+              wrestler_name: wrestler?.name || member.wrestler_slug,
+              wrestler_gender: wrestler?.gender || 'male',
+              wrestler_brand: wrestler?.brand || ''
+            };
+          });
+        
         teamData[team.id] = {
           ...team,
-          members: tagTeamMembers
-            .filter(member => member.tag_team_id === team.id)
-            .sort((a, b) => a.member_order - b.member_order)
+          members: teamMembers
         };
       });
 
-      console.log('Built tag team data structure:', teamData);
+      console.log('Built tag team data structure with enriched members:', teamData);
       setTagTeamData(teamData);
     } catch (error) {
       console.error('Error fetching tag team data:', error);
@@ -208,16 +231,17 @@ export default function VisualMatchBuilder({
 
   // Get tag team suggestions for a wrestler
   const getTagTeamSuggestions = (wrestlerSlug) => {
-    console.log('getTagTeamSuggestions called with wrestlerSlug:', wrestlerSlug);
-    console.log('Current tagTeamData:', tagTeamData);
-    console.log('Current matchStructure:', matchStructure);
+    console.log('getTagTeamSuggestions called for wrestler:', wrestlerSlug);
+    console.log('tagTeamData available:', Object.keys(tagTeamData));
     
+    if (!tagTeamData || Object.keys(tagTeamData).length === 0) {
+      console.log('No tag team data available');
+      return [];
+    }
+
     // Always show tag team suggestions unless it's explicitly a Gauntlet Match
-    // Don't restrict based on current structure when editing
     const isGauntletMatch = Array.isArray(matchStructure) && matchStructure.length >= 5 && 
       matchStructure.every(side => side.type === 'individual' && side.participants.length === 1);
-    
-    console.log('isGauntletMatch:', isGauntletMatch);
     
     if (isGauntletMatch) {
       console.log('Returning empty suggestions due to Gauntlet Match');
@@ -226,21 +250,99 @@ export default function VisualMatchBuilder({
     
     const suggestions = [];
     
-    console.log('Checking teams for wrestler slug:', wrestlerSlug);
     Object.values(tagTeamData).forEach(team => {
-      console.log('Checking team:', team.name, 'with members:', team.members);
+      console.log(`Processing team ${team.id}:`, team);
+      console.log(`Team members:`, team.members);
+      
       const isMember = Array.isArray(team.members) && team.members.some(member => member.wrestler_slug === wrestlerSlug);
-      console.log('Is member?', isMember);
+      
       if (isMember) {
-        const otherMembers = team.members
-          .filter(member => member.wrestler_slug !== wrestlerSlug)
-          .map(member => member.wrestler_slug);
-        suggestions.push({
-          teamName: team.name,
-          teamId: team.id,
-          members: otherMembers
-        });
-        console.log('Added suggestion:', team.name, 'with other members:', otherMembers);
+        console.log(`Wrestler ${wrestlerSlug} is a member of team ${team.id}`);
+        
+        // Get other members as full member objects (not just slugs)
+        const otherMemberObjects = team.members.filter(member => member.wrestler_slug !== wrestlerSlug);
+        console.log('Other member objects:', otherMemberObjects);
+
+        // Handle different team types with appropriate suggestions
+        if (team.id === 'judgment-day') {
+          console.log('Processing Judgment Day team...');
+          const selectedWrestler = team.members.find(member => member.wrestler_slug === wrestlerSlug);
+          console.log('Selected wrestler:', selectedWrestler);
+          
+          if (selectedWrestler) {
+            console.log('Selected wrestler gender:', selectedWrestler.wrestler_gender);
+            console.log('Other member objects before filtering:', otherMemberObjects);
+            
+            const maleMembers = otherMemberObjects.filter(member => {
+              console.log(`Checking member ${member.wrestler_slug}:`, member);
+              return member.wrestler_gender === 'male' || member.wrestler_gender === 'Male';
+            });
+            console.log('Male members after filtering:', maleMembers);
+            
+            const femaleMembers = otherMemberObjects.filter(member => {
+              return member.wrestler_gender === 'female' || member.wrestler_gender === 'Female';
+            });
+            console.log('Female members after filtering:', femaleMembers);
+            
+            console.log('Suggestions array before pushing:', suggestions);
+            
+            // For Judgment Day, show all individual members as separate options
+            otherMemberObjects.forEach((member, index) => {
+              const genderLabel = (member.wrestler_gender === 'male' || member.wrestler_gender === 'Male') ? 'Male' : 'Female';
+              suggestions.push({ 
+                teamName: team.name, 
+                teamId: team.id, 
+                members: [member.wrestler_slug], 
+                description: `${member.wrestler_name || member.wrestler_slug} (${genderLabel})` 
+              });
+            });
+            
+            // Also show gender-based groupings for convenience
+            if ((selectedWrestler.wrestler_gender === 'male' || selectedWrestler.wrestler_gender === 'Male') && maleMembers.length > 0) {
+              console.log('Adding male suggestion for male wrestler');
+              const maleSlugs = maleMembers.map(m => m.wrestler_slug).slice(0, 1);
+              suggestions.push({ teamName: `${team.name} (Male)`, teamId: team.id, members: maleSlugs, description: 'Male tag team combination' });
+              console.log('Suggestions after male push:', suggestions);
+            } else if ((selectedWrestler.wrestler_gender === 'female' || selectedWrestler.wrestler_gender === 'Female') && femaleMembers.length > 0) {
+              console.log('Adding female suggestion for female wrestler');
+              const femaleSlugs = femaleMembers.map(m => m.wrestler_slug).slice(0, 1);
+              suggestions.push({ teamName: `${team.name} (Female)`, teamId: team.id, members: femaleSlugs, description: 'Female tag team combination' });
+              console.log('Suggestions after female push:', suggestions);
+            }
+            
+            const oppositeGenderMembers = (selectedWrestler.wrestler_gender === 'male' || selectedWrestler.wrestler_gender === 'Male') ? femaleMembers : maleMembers;
+            console.log('Opposite gender members:', oppositeGenderMembers);
+            
+            if (oppositeGenderMembers.length > 0) {
+              console.log('Adding mixed suggestion');
+              const oppositeSlugs = oppositeGenderMembers.map(m => m.wrestler_slug).slice(0, 1);
+              suggestions.push({ teamName: `${team.name} (Mixed)`, teamId: team.id, members: oppositeSlugs, description: 'Mixed gender combination' });
+              console.log('Suggestions after mixed push:', suggestions);
+            }
+            
+            console.log('Final suggestions for Judgment Day:', suggestions);
+          }
+        } else if (team.members.length === 2) {
+          const otherSlugs = otherMemberObjects.map(m => m.wrestler_slug);
+          suggestions.push({ teamName: team.name, teamId: team.id, members: otherSlugs, description: 'Tag team partner' });
+        } else if (team.members.length === 3) {
+          const primaryPartner = otherMemberObjects[0]?.wrestler_slug;
+          if (primaryPartner) {
+            suggestions.push({ teamName: team.name, teamId: team.id, members: [primaryPartner], description: 'Primary partner' });
+          }
+          const allOtherSlugs = otherMemberObjects.map(m => m.wrestler_slug);
+          suggestions.push({ teamName: `${team.name} (Complete)`, teamId: team.id, members: allOtherSlugs, description: 'Complete 3-member team' });
+        } else { // For larger teams (4+ members)
+          // For large teams, show all individual members as separate options
+          otherMemberObjects.forEach((member, index) => {
+            suggestions.push({ 
+              teamName: team.name, 
+              teamId: team.id, 
+              members: [member.wrestler_slug], 
+              description: `${member.wrestler_name || member.wrestler_slug}` 
+            });
+          });
+        }
       }
     });
     
@@ -393,6 +495,7 @@ export default function VisualMatchBuilder({
 
   // Update a participant
   const updateParticipant = (sideIndex, participantIndex, wrestlerSlug) => {
+    console.log('=== UPDATE PARTICIPANT CALLED ===');
     console.log('updateParticipant called with:', { sideIndex, participantIndex, wrestlerSlug });
     console.log('Current matchStructure before update:', JSON.stringify(matchStructure, null, 2));
     
@@ -402,7 +505,9 @@ export default function VisualMatchBuilder({
     console.log('New structure after update:', JSON.stringify(newStructure, null, 2));
     
     // Get tag team suggestions for this wrestler
+    console.log('About to call getTagTeamSuggestions for:', wrestlerSlug);
     const suggestions = getTagTeamSuggestions(wrestlerSlug);
+    console.log('Suggestions returned:', suggestions);
     if (suggestions.length > 0) {
       setTagTeamSuggestions(prev => ({
         ...prev,

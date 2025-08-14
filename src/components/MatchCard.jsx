@@ -345,7 +345,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   }
 
   // Early return for multi-team matches (6-team Tag Team, 4-way Tag Team, etc.)
-  if (match.matchType === '6-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team' || match.matchType === 'Tag Team') {
+  if (match.matchType === '6-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team') {
     let teamStrings = [];
     if (typeof match.participants === 'string') {
       teamStrings = match.participants.split(' vs ').map(s => s.trim());
@@ -1119,11 +1119,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                           : <span role="img" aria-label="wrestler">&#128100;</span>
                         }
                       </div>
-                      {shouldShowBeltIcon && championIndex === 0 && match.title?.includes('Tag Team Championship') && (
-                        <div style={{ marginTop: 2 }}>
-                          <BeltIcon size={20} />
-                        </div>
-                      )}
+
                     </div>
                   ))}
                 </div>
@@ -1136,9 +1132,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : individualNames}
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                  {shouldShowBeltIcon && championIndex === 0 && !match.title?.includes('Tag Team Championship') ? (
+                  {shouldShowBeltIcon && championIndex === 0 ? (
                     <>
-                      <BeltIcon size={32} />
+                      {match.title?.includes('Tag Team Championship') ? (
+                        // Show two belt icons for tag team championships
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                          <BeltIcon size={24} />
+                          <BeltIcon size={24} />
+                        </div>
+                      ) : (
+                        // Show single belt icon for singles championships
+                        <BeltIcon size={32} />
+                      )}
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
                         <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                       )}
@@ -1188,11 +1193,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                           : <span role="img" aria-label="wrestler">&#128100;</span>
                         }
                       </div>
-                      {shouldShowBeltIcon && championIndex === 1 && match.title?.includes('Tag Team Championship') && (
-                        <div style={{ marginTop: 2 }}>
-                          <BeltIcon size={20} />
-                        </div>
-                      )}
+
                     </div>
                   ))}
                 </div>
@@ -1205,9 +1206,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   ) : individualNames}
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
-                  {shouldShowBeltIcon && championIndex === 1 && !match.title?.includes('Tag Team Championship') ? (
+                  {shouldShowBeltIcon && championIndex === 1 ? (
                     <>
-                      <BeltIcon size={32} />
+                      {match.title?.includes('Tag Team Championship') ? (
+                        // Show two belt icons for tag team championships
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                          <BeltIcon size={24} />
+                          <BeltIcon size={24} />
+                        </div>
+                      ) : (
+                        // Show single belt icon for singles championships
+                        <BeltIcon size={32} />
+                      )}
                       {match.titleOutcome && match.titleOutcome !== 'None' && (
                         <div style={{ fontSize: 9, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
                       )}
