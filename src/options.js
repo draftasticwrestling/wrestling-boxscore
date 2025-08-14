@@ -10,7 +10,8 @@ export const MATCH_TYPE_OPTIONS = [
   "Fatal Four-way match",
   "Triple Threat match",
   "Gauntlet Match",
-  "2 out of 3 Falls"
+  "2 out of 3 Falls",
+  "Cash In Match"
 ];
 
 export const STIPULATION_OPTIONS = [

@@ -596,6 +596,17 @@ export default function MatchEdit({
         </select>
       </div>
       <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>Match Order:</label>
+        <input
+          type="number"
+          min="1"
+          style={inputStyle}
+          value={match.matchOrder || 1}
+          onChange={e => setMatch({ ...match, matchOrder: parseInt(e.target.value) || 1 })}
+          placeholder="Order in event (1, 2, 3...)"
+        />
+      </div>
+      <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Stipulation:</label>
         <select
           style={inputStyle}

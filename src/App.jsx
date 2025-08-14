@@ -453,7 +453,14 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   // Don't designate main event for upcoming events with fewer than 4 matches
   const shouldDesignateMainEvent = event.status !== 'upcoming' || event.matches.length >= 4;
   
-  const matchesWithCardType = event.matches.map((match, idx, arr) => ({
+  // Sort matches by matchOrder, fallback to order if matchOrder doesn't exist
+  const sortedMatches = [...event.matches].sort((a, b) => {
+    const orderA = a.matchOrder || a.order || 0;
+    const orderB = b.matchOrder || b.order || 0;
+    return orderA - orderB;
+  });
+  
+  const matchesWithCardType = sortedMatches.map((match, idx, arr) => ({
     ...match,
     cardType: shouldDesignateMainEvent && idx === arr.length - 1 ? "Main Event" : "Undercard"
   }));
@@ -724,7 +731,8 @@ function AddEvent({ addEvent, wrestlers }) {
     customStipulation: '',
     title: '',
     titleOutcome: '',
-    notes: ''
+    notes: '',
+    matchOrder: 1
   });
   const [specialWinnerType, setSpecialWinnerType] = useState("None");
   const [specialWinnerName, setSpecialWinnerName] = useState('');
@@ -759,7 +767,7 @@ function AddEvent({ addEvent, wrestlers }) {
       }
       setMatches([
         ...matches,
-        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
+        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false, matchOrder: match.matchOrder || matches.length + 1 }
       ]);
           setMatch({
       participants: '',
@@ -772,7 +780,8 @@ function AddEvent({ addEvent, wrestlers }) {
       title: '',
       titleOutcome: '',
       notes: '',
-      isLive: false
+      isLive: false,
+      matchOrder: matches.length + 2
     });
     setResultType('');
     setWinner('');
@@ -854,7 +863,7 @@ function AddEvent({ addEvent, wrestlers }) {
     }
     setMatches([
       ...matches,
-      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, order: matches.length + 1 }
+      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, matchOrder: match.matchOrder || matches.length + 1 }
     ]);
     setMatch({
       participants: '',
@@ -867,7 +876,8 @@ function AddEvent({ addEvent, wrestlers }) {
       title: '',
       titleOutcome: '',
       notes: '',
-      isLive: false
+      isLive: false,
+      matchOrder: matches.length + 2
     });
     setResultType('');
     setWinner('');
@@ -1046,6 +1056,19 @@ function AddEvent({ addEvent, wrestlers }) {
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
+            </label>
+          </div>
+          <div>
+            <label>
+              Match Order:<br />
+              <input
+                type="number"
+                min="1"
+                value={match.matchOrder || matches.length + 1}
+                onChange={e => setMatch({ ...match, matchOrder: parseInt(e.target.value) || 1 })}
+                style={inputStyle}
+                placeholder="Order in event (1, 2, 3...)"
+              />
             </label>
           </div>
           <div>
@@ -1353,7 +1376,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     customStipulation: '',
     title: '',
     titleOutcome: '',
-    notes: ''
+    notes: '',
+    matchOrder: 1
   });
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
@@ -1429,7 +1453,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     }
     setMatches([
       ...matches,
-      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, order: matches.length + 1 }
+      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, matchOrder: match.matchOrder || matches.length + 1 }
     ]);
     setMatch({
       participants: '',
@@ -1442,7 +1466,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       title: '',
       titleOutcome: '',
       notes: '',
-      isLive: false
+      isLive: false,
+      matchOrder: matches.length + 2
     });
     setResultType('');
     setWinner('');
@@ -1721,6 +1746,19 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+              </label>
+            </div>
+            <div>
+              <label>
+                Match Order:<br />
+                <input
+                  type="number"
+                  min="1"
+                  value={match.matchOrder || matches.length + 1}
+                  onChange={e => setMatch({ ...match, matchOrder: parseInt(e.target.value) || 1 })}
+                  style={inputStyle}
+                  placeholder="Order in event (1, 2, 3...)"
+                />
               </label>
             </div>
             <div>

@@ -421,6 +421,30 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           </div>
         )}
         
+        {match.matchType === 'Cash In Match' && (
+          <div style={{
+            position: 'absolute',
+            top: -10,
+            right: 10,
+            background: '#27ae60',
+            color: '#fff',
+            padding: '4px 12px',
+            borderRadius: 12,
+            fontSize: 11,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}>
+            <span role="img" aria-label="briefcase">💼</span>
+            Cash In
+          </div>
+        )}
+        
         <div style={{
           color: '#C6A04F',
           fontWeight: 700,
