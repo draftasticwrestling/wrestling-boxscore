@@ -453,10 +453,10 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   // Don't designate main event for upcoming events with fewer than 4 matches
   const shouldDesignateMainEvent = event.status !== 'upcoming' || event.matches.length >= 4;
   
-  // Sort matches by matchOrder, fallback to order if matchOrder doesn't exist
+  // Sort matches by order property
   const sortedMatches = [...event.matches].sort((a, b) => {
-    const orderA = a.matchOrder || a.order || 0;
-    const orderB = b.matchOrder || b.order || 0;
+    const orderA = a.order || 0;
+    const orderB = b.order || 0;
     return orderA - orderB;
   });
   
@@ -731,10 +731,9 @@ function AddEvent({ addEvent, wrestlers }) {
     stipulation: 'None', // Set default to None
     customStipulation: '',
     title: '',
-    titleOutcome: '',
-    notes: '',
-    matchOrder: 1
-  });
+          titleOutcome: '',
+      notes: ''
+    });
   const [specialWinnerType, setSpecialWinnerType] = useState("None");
   const [specialWinnerName, setSpecialWinnerName] = useState('');
   const navigate = useNavigate();
@@ -768,7 +767,7 @@ function AddEvent({ addEvent, wrestlers }) {
       }
       setMatches([
         ...matches,
-        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false, matchOrder: match.matchOrder || matches.length + 1 }
+        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false }
       ]);
           setMatch({
       participants: '',
@@ -781,8 +780,7 @@ function AddEvent({ addEvent, wrestlers }) {
       title: '',
       titleOutcome: '',
       notes: '',
-      isLive: false,
-      matchOrder: matches.length + 2
+      isLive: false
     });
     setResultType('');
     setWinner('');
@@ -864,7 +862,7 @@ function AddEvent({ addEvent, wrestlers }) {
     }
     setMatches([
       ...matches,
-      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, matchOrder: match.matchOrder || matches.length + 1 }
+      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation }
     ]);
     setMatch({
       participants: '',
@@ -877,8 +875,7 @@ function AddEvent({ addEvent, wrestlers }) {
       title: '',
       titleOutcome: '',
       notes: '',
-      isLive: false,
-      matchOrder: matches.length + 2
+      isLive: false
     });
     setResultType('');
     setWinner('');
@@ -1364,10 +1361,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     customStipulationType: '',
     customStipulation: '',
     title: '',
-    titleOutcome: '',
-    notes: '',
-    matchOrder: 1
-  });
+          titleOutcome: '',
+      notes: ''
+    });
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [eventStatus, setEventStatus] = useState(event.status || 'completed');
@@ -1442,7 +1438,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     }
     setMatches([
       ...matches,
-      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation, matchOrder: match.matchOrder || matches.length + 1 }
+      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation }
     ]);
     setMatch({
       participants: '',
@@ -1455,8 +1451,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       title: '',
       titleOutcome: '',
       notes: '',
-      isLive: false,
-      matchOrder: matches.length + 2
+      isLive: false
     });
     setResultType('');
     setWinner('');
