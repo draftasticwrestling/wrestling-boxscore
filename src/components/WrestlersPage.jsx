@@ -1,6 +1,5 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import BeltIcon from './BeltIcon';
 import MedicalCrossIcon from './MedicalCrossIcon';
 import InactiveIcon from './InactiveIcon';
 
@@ -68,12 +67,7 @@ export default function WrestlersPage({ wrestlers = [] }) {
                   }}>
                     <div style={{ position: 'relative', width: 72, height: 72 }}>
                       <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
-                      {/* Belt icon if currentTitle is not empty */}
-                      {w.currentTitle && (
-                        <div style={{ position: 'absolute', top: -10, left: -10 }}>
-                          <BeltIcon size={32} />
-                        </div>
-                      )}
+
                       {/* Medical cross if status is Injured */}
                       {w.status === 'Injured' && (
                         <div style={{ position: 'absolute', top: -10, right: -10 }}>
