@@ -1059,19 +1059,7 @@ function AddEvent({ addEvent, wrestlers }) {
               </select>
             </label>
           </div>
-          <div>
-            <label>
-              Match Order:<br />
-              <input
-                type="number"
-                min="1"
-                value={match.matchOrder || matches.length + 1}
-                onChange={e => setMatch({ ...match, matchOrder: parseInt(e.target.value) || 1 })}
-                style={inputStyle}
-                placeholder="Order in event (1, 2, 3...)"
-              />
-            </label>
-          </div>
+
           <div>
             <label>
               Stipulation:<br />
@@ -1749,19 +1737,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 </select>
               </label>
             </div>
-            <div>
-              <label>
-                Match Order:<br />
-                <input
-                  type="number"
-                  min="1"
-                  value={match.matchOrder || matches.length + 1}
-                  onChange={e => setMatch({ ...match, matchOrder: parseInt(e.target.value) || 1 })}
-                  style={inputStyle}
-                  placeholder="Order in event (1, 2, 3...)"
-                />
-              </label>
-            </div>
+
             <div>
               <label>
                 Stipulation:<br />
