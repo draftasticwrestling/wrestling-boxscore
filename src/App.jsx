@@ -713,7 +713,8 @@ function AddEvent({ addEvent, wrestlers }) {
     "Summer Slam night 2",
     "Survivor Series",
     "WrestleMania night 1",
-    "WrestleMania night 2"
+    "WrestleMania night 2",
+    "Wrestlepalooza"
   ];
 
   const [name, setName] = useState('');
