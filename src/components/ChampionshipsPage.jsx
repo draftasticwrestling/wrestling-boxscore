@@ -11,7 +11,7 @@ const currentChampions = [
     current_champion_slug: 'cody-rhodes',
     date_won: '2025-01-01',
     event: 'TBD',
-    brand: 'Undisputed',
+    brand: 'SmackDown',
     type: 'World'
   },
   {
@@ -31,7 +31,7 @@ const currentChampions = [
     current_champion_slug: 'sami-zayn',
     date_won: '2025-01-01',
     event: 'TBD',
-    brand: 'RAW',
+    brand: 'SmackDown',
     type: 'Secondary'
   },
   {
@@ -41,7 +41,7 @@ const currentChampions = [
     current_champion_slug: 'dominik-mysterio',
     date_won: '2025-01-01',
     event: 'TBD',
-    brand: 'SmackDown',
+    brand: 'RAW',
     type: 'Secondary'
   },
   {
@@ -71,8 +71,8 @@ const currentChampions = [
     current_champion: 'Tiffany Stratton',
     current_champion_slug: 'tiffany-stratton',
     date_won: '2025-01-01',
-    event: 'RAW',
-    brand: 'RAW',
+    event: 'TBD',
+    brand: 'SmackDown',
     type: 'World'
   },
   {
@@ -92,7 +92,7 @@ const currentChampions = [
     current_champion_slug: 'becky-lynch',
     date_won: '2025-01-01',
     event: 'TBD',
-    brand: 'NXT',
+    brand: 'RAW',
     type: 'Secondary'
   },
   {
@@ -112,16 +112,16 @@ const currentChampions = [
     current_champion_slug: 'charlotte-flair-alexa-bliss',
     date_won: '2025-01-01',
     event: 'TBD',
-    brand: 'RAW',
+    brand: 'Unassigned',
     type: 'Tag Team'
   },
 
 ];
 
-const BRAND_ORDER = ['Undisputed', 'RAW', 'SmackDown', 'NXT'];
+const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'Unassigned'];
 const TYPE_ORDER = ['World', 'Secondary', 'Tag Team'];
 
-export default function ChampionshipsPage() {
+export default function ChampionshipsPage({ wrestlers = [] }) {
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
 
@@ -146,7 +146,7 @@ export default function ChampionshipsPage() {
       case 'RAW': return '#D32F2F';
       case 'SmackDown': return '#1976D2';
       case 'NXT': return '#FF6F00';
-      case 'Undisputed': return '#C6A04F';
+      case 'Unassigned': return '#C6A04F';
       default: return '#666';
     }
   };
@@ -158,6 +158,38 @@ export default function ChampionshipsPage() {
       case 'Tag Team': return '#9C27B0';
       default: return '#666';
     }
+  };
+
+  // Helper function to get wrestler image
+  const getWrestlerImage = (championSlug) => {
+    if (championSlug === 'vacant') return null;
+    const wrestler = wrestlers.find(w => w.id === championSlug);
+    return wrestler?.image_url || null;
+  };
+
+  // Helper function to get belt image URL from Supabase storage
+  const getBeltImageUrl = (championshipId) => {
+    // Map championship IDs to belt image filenames
+    const beltImageMap = {
+      'wwe-championship': 'undisputed-wwe-championship.png',
+      'world-heavyweight-championship': 'world-heavyweight-championship.png',
+      'mens-ic-championship': 'mens-intercontinental-championship1.png',
+      'mens-us-championship': 'mens-united-states-championship.png',
+      'raw-tag-team-championship': 'raw-tag-team-championship.png',
+      'smackdown-tag-team-championship': 'smackdown-tag-team-championship.png',
+      'wwe-womens-championship': 'wwe-womens-championship.png',
+      'womens-world-championship': 'womens-world-championship.png',
+      'womens-ic-championship': 'womens-intercontinental-championship.png',
+      'womens-us-championship': 'womens-united-states-championship.png',
+      'womens-tag-team-championship': 'womens-tag-team-championship.png'
+    };
+    
+    const filename = beltImageMap[championshipId];
+    if (!filename) return null;
+    
+    // Return Supabase storage URL - you'll need to replace with your actual project URL
+    // Format: https://[PROJECT_REF].supabase.co/storage/v1/object/public/belts/[filename]
+    return `https://[YOUR_PROJECT_REF].supabase.co/storage/v1/object/public/belts/${filename}`;
   };
 
   return (
@@ -274,8 +306,41 @@ export default function ChampionshipsPage() {
                 </div>
               </div>
               
+              {/* Belt Image */}
+              {getBeltImageUrl(champ.id) && (
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                  <img 
+                    src={getBeltImageUrl(champ.id)} 
+                    alt={`${champ.title_name} belt`}
+                    style={{ 
+                      maxWidth: '100%', 
+                      height: 'auto', 
+                      maxHeight: '80px',
+                      objectFit: 'contain'
+                    }} 
+                  />
+                </div>
+              )}
+              
               {/* Champion Info */}
               <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                {/* Wrestler Image */}
+                {getWrestlerImage(champ.current_champion_slug) && (
+                  <div style={{ marginBottom: 12 }}>
+                    <img 
+                      src={getWrestlerImage(champ.current_champion_slug)} 
+                      alt={champ.current_champion}
+                      style={{ 
+                        width: '80px', 
+                        height: '80px', 
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '3px solid #C6A04F'
+                      }} 
+                    />
+                  </div>
+                )}
+                
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
                   {champ.current_champion}
                 </div>
