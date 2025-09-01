@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import BeltIcon from './BeltIcon';
 
 // Current champions data (updated with accurate information)
 const currentChampions = [
@@ -119,16 +118,14 @@ const currentChampions = [
 ];
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'Unassigned'];
-const TYPE_ORDER = ['World', 'Secondary', 'Tag Team'];
+
 
 export default function ChampionshipsPage({ wrestlers = [] }) {
   const [selectedBrand, setSelectedBrand] = useState('all');
-  const [selectedType, setSelectedType] = useState('all');
 
   const filteredChampions = currentChampions.filter(champ => {
     const brandMatch = selectedBrand === 'all' || champ.brand === selectedBrand;
-    const typeMatch = selectedType === 'all' || champ.type === selectedType;
-    return brandMatch && typeMatch;
+    return brandMatch;
   });
 
   const formatDate = (dateStr) => {
@@ -151,20 +148,52 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     }
   };
 
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'World': return '#C6A04F';
-      case 'Secondary': return '#4CAF50';
-      case 'Tag Team': return '#9C27B0';
-      default: return '#666';
-    }
-  };
+
 
   // Helper function to get wrestler image
   const getWrestlerImage = (championSlug) => {
     if (championSlug === 'vacant') return null;
     const wrestler = wrestlers.find(w => w.id === championSlug);
     return wrestler?.image_url || null;
+  };
+
+  // Helper function to get tag team wrestler images
+  const getTagTeamImages = (championName, championSlug) => {
+    if (championSlug === 'vacant') return [];
+    
+    // Handle specific tag team cases
+    if (championSlug === 'the-judgment-day') {
+      return [
+        wrestlers.find(w => w.id === 'finn-balor')?.image_url,
+        wrestlers.find(w => w.id === 'jd-mcdonagh')?.image_url
+      ].filter(Boolean);
+    }
+    
+    if (championSlug === 'the-wyatt-sicks') {
+      return [
+        wrestlers.find(w => w.id === 'joe-gacy')?.image_url,
+        wrestlers.find(w => w.id === 'dexter-lumis')?.image_url
+      ].filter(Boolean);
+    }
+    
+    if (championSlug === 'charlotte-flair-alexa-bliss') {
+      return [
+        wrestlers.find(w => w.id === 'charlotte-flair')?.image_url,
+        wrestlers.find(w => w.id === 'alexa-bliss')?.image_url
+      ].filter(Boolean);
+    }
+    
+    // Fallback: try to find individual wrestlers by name
+    const names = championName.split('&').map(name => name.trim());
+    const images = names.map(name => {
+      const wrestler = wrestlers.find(w => 
+        w.name?.toLowerCase().includes(name.toLowerCase()) ||
+        w.id?.toLowerCase().includes(name.toLowerCase().replace(/\s+/g, '-'))
+      );
+      return wrestler?.image_url;
+    }).filter(Boolean);
+    
+    return images;
   };
 
   // Helper function to get belt image URL from Supabase storage
@@ -187,9 +216,8 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     const filename = beltImageMap[championshipId];
     if (!filename) return null;
     
-    // Return Supabase storage URL - you'll need to replace with your actual project URL
-    // Format: https://[PROJECT_REF].supabase.co/storage/v1/object/public/belts/[filename]
-    return `https://[YOUR_PROJECT_REF].supabase.co/storage/v1/object/public/belts/${filename}`;
+    // Return Supabase storage URL with your actual project reference
+    return `https://qvbqxietcmweltxoonvh.supabase.co/storage/v1/object/public/belts/${filename}`;
   };
 
   return (
@@ -230,27 +258,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
             ))}
           </div>
           
-          <div>
-            <span style={{ marginRight: 12, fontWeight: 600, color: '#C6A04F' }}>Type:</span>
-            {TYPE_ORDER.map(type => (
-              <button
-                key={type}
-                onClick={() => setSelectedType(selectedType === type ? 'all' : type)}
-                style={{
-                  margin: '0 4px',
-                  padding: '8px 16px',
-                  background: selectedType === type ? getTypeColor(type) : '#333',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                  fontWeight: selectedType === type ? 'bold' : 'normal'
-                }}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
+
         </div>
 
         {/* Champions Grid */}
@@ -265,21 +273,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               position: 'relative',
               overflow: 'hidden'
             }}>
-              {/* Championship Type Badge */}
-              <div style={{
-                position: 'absolute',
-                top: 12,
-                right: 12,
-                background: getTypeColor(champ.type),
-                color: '#fff',
-                padding: '4px 8px',
-                borderRadius: 12,
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: 'uppercase'
-              }}>
-                {champ.type}
-              </div>
+
               
               {/* Brand Badge */}
               <div style={{
@@ -298,12 +292,9 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               
               {/* Championship Title */}
               <div style={{ marginTop: 32, marginBottom: 16, textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                  <BeltIcon size={32} />
-                  <h3 style={{ margin: '0 0 0 12px', color: '#C6A04F', fontSize: 20, fontWeight: 700 }}>
-                    {champ.title_name}
-                  </h3>
-                </div>
+                <h3 style={{ color: '#C6A04F', fontSize: 20, fontWeight: 700, margin: 0 }}>
+                  {champ.title_name}
+                </h3>
               </div>
               
               {/* Belt Image */}
@@ -324,21 +315,44 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               
               {/* Champion Info */}
               <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                {/* Wrestler Image */}
-                {getWrestlerImage(champ.current_champion_slug) && (
-                  <div style={{ marginBottom: 12 }}>
-                    <img 
-                      src={getWrestlerImage(champ.current_champion_slug)} 
-                      alt={champ.current_champion}
-                      style={{ 
-                        width: '80px', 
-                        height: '80px', 
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '3px solid #C6A04F'
-                      }} 
-                    />
-                  </div>
+                {/* Wrestler Images */}
+                {champ.type === 'Tag Team' ? (
+                  // Tag Team Images
+                  getTagTeamImages(champ.current_champion, champ.current_champion_slug).length > 0 && (
+                    <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', gap: 8 }}>
+                      {getTagTeamImages(champ.current_champion, champ.current_champion_slug).map((imageUrl, index) => (
+                        <img 
+                          key={index}
+                          src={imageUrl} 
+                          alt={`Tag team member ${index + 1}`}
+                          style={{ 
+                            width: '60px', 
+                            height: '60px', 
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '3px solid #C6A04F'
+                          }} 
+                        />
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  // Individual Wrestler Image
+                  getWrestlerImage(champ.current_champion_slug) && (
+                    <div style={{ marginBottom: 12 }}>
+                      <img 
+                        src={getWrestlerImage(champ.current_champion_slug)} 
+                        alt={champ.current_champion}
+                        style={{ 
+                          width: '80px', 
+                          height: '80px', 
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '3px solid #C6A04F'
+                        }} 
+                      />
+                    </div>
+                  )
                 )}
                 
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
@@ -367,10 +381,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   <span style={{ color: '#ccc' }}>Brand:</span>
                   <span style={{ color: getBrandColor(champ.brand), fontWeight: 600 }}>{champ.brand}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: '#ccc' }}>Type:</span>
-                  <span style={{ color: getTypeColor(champ.type), fontWeight: 600 }}>{champ.type}</span>
-                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#ccc' }}>Event:</span>
                   <span style={{ fontWeight: 600 }}>{champ.event}</span>
