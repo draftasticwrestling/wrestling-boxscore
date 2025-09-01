@@ -238,6 +238,21 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         <div style={{ marginBottom: 32, textAlign: 'center' }}>
           <div style={{ marginBottom: 16 }}>
             <span style={{ marginRight: 12, fontWeight: 600, color: '#C6A04F' }}>Brand:</span>
+            <button
+              onClick={() => setSelectedBrand('all')}
+              style={{
+                margin: '0 4px',
+                padding: '8px 16px',
+                background: selectedBrand === 'all' ? '#C6A04F' : '#333',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontWeight: selectedBrand === 'all' ? 'bold' : 'normal'
+              }}
+            >
+              ALL
+            </button>
             {BRAND_ORDER.map(brand => (
               <button
                 key={brand}
@@ -323,13 +338,13 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                       />
                     </div>
                   ) : (
-                    // Individual: Show one belt
+                    // Individual: Show one belt with size based on championship type
                     <img 
                       src={getBeltImageUrl(champ.id)} 
                       alt={`${champ.title_name} belt`}
                       style={{ 
-                        width: '200px', 
-                        height: '80px',
+                        width: champ.id.includes('womens') ? '240px' : '200px', 
+                        height: champ.id.includes('womens') ? '96px' : '80px',
                         objectFit: 'contain'
                       }} 
                     />
