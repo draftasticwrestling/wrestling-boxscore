@@ -300,16 +300,40 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               {/* Belt Image */}
               {getBeltImageUrl(champ.id) && (
                 <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                  <img 
-                    src={getBeltImageUrl(champ.id)} 
-                    alt={`${champ.title_name} belt`}
-                    style={{ 
-                      maxWidth: '100%', 
-                      height: 'auto', 
-                      maxHeight: '80px',
-                      objectFit: 'contain'
-                    }} 
-                  />
+                  {champ.type === 'Tag Team' ? (
+                    // Tag Team: Show two belts side by side
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+                      <img 
+                        src={getBeltImageUrl(champ.id)} 
+                        alt={`${champ.title_name} belt`}
+                        style={{ 
+                          width: '120px', 
+                          height: '80px',
+                          objectFit: 'contain'
+                        }} 
+                      />
+                      <img 
+                        src={getBeltImageUrl(champ.id)} 
+                        alt={`${champ.title_name} belt`}
+                        style={{ 
+                          width: '120px', 
+                          height: '80px',
+                          objectFit: 'contain'
+                        }} 
+                      />
+                    </div>
+                  ) : (
+                    // Individual: Show one belt
+                    <img 
+                      src={getBeltImageUrl(champ.id)} 
+                      alt={`${champ.title_name} belt`}
+                      style={{ 
+                        width: '200px', 
+                        height: '80px',
+                        objectFit: 'contain'
+                      }} 
+                    />
+                  )}
                 </div>
               )}
               
@@ -382,10 +406,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   <span style={{ color: getBrandColor(champ.brand), fontWeight: 600 }}>{champ.brand}</span>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#ccc' }}>Event:</span>
-                  <span style={{ fontWeight: 600 }}>{champ.event}</span>
-                </div>
+
               </div>
             </div>
           ))}
