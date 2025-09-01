@@ -1,0 +1,346 @@
+import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
+import BeltIcon from './BeltIcon';
+
+// Current champions data (updated with accurate information)
+const currentChampions = [
+  {
+    id: 'wwe-championship',
+    title_name: 'WWE Championship',
+    current_champion: 'Cody Rhodes',
+    current_champion_slug: 'cody-rhodes',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'Undisputed',
+    type: 'World'
+  },
+  {
+    id: 'world-heavyweight-championship',
+    title_name: 'World Heavyweight Championship',
+    current_champion: 'Seth Rollins',
+    current_champion_slug: 'seth-rollins',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'RAW',
+    type: 'World'
+  },
+  {
+    id: 'mens-us-championship',
+    title_name: "Men's United States Championship",
+    current_champion: 'Sami Zayn',
+    current_champion_slug: 'sami-zayn',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'RAW',
+    type: 'Secondary'
+  },
+  {
+    id: 'mens-ic-championship',
+    title_name: "Men's Intercontinental Championship",
+    current_champion: 'Dominik Mysterio',
+    current_champion_slug: 'dominik-mysterio',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'SmackDown',
+    type: 'Secondary'
+  },
+  {
+    id: 'raw-tag-team-championship',
+    title_name: 'RAW Tag Team Championship',
+    current_champion: 'The Judgment Day (Finn Balor & JD McDonagh)',
+    current_champion_slug: 'the-judgment-day',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'RAW',
+    type: 'Tag Team'
+  },
+  {
+    id: 'smackdown-tag-team-championship',
+    title_name: 'SmackDown Tag Team Championship',
+    current_champion: 'The Wyatt Sicks (Joe Gacy & Dexter Lumis)',
+    current_champion_slug: 'the-wyatt-sicks',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'SmackDown',
+    type: 'Tag Team'
+  },
+
+  {
+    id: 'wwe-womens-championship',
+    title_name: "WWE Women's Championship",
+    current_champion: 'Tiffany Stratton',
+    current_champion_slug: 'tiffany-stratton',
+    date_won: '2025-01-01',
+    event: 'RAW',
+    brand: 'RAW',
+    type: 'World'
+  },
+  {
+    id: 'womens-world-championship',
+    title_name: "Women's World Championship",
+    current_champion: 'VACANT',
+    current_champion_slug: 'vacant',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'RAW',
+    type: 'World'
+  },
+  {
+    id: 'womens-ic-championship',
+    title_name: "Women's Intercontinental Championship",
+    current_champion: 'Becky Lynch',
+    current_champion_slug: 'becky-lynch',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'NXT',
+    type: 'Secondary'
+  },
+  {
+    id: 'womens-us-championship',
+    title_name: "Women's United States Championship",
+    current_champion: 'Giulia',
+    current_champion_slug: 'giulia',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'SmackDown',
+    type: 'Secondary'
+  },
+  {
+    id: 'womens-tag-team-championship',
+    title_name: 'Women\'s Tag Team Championship',
+    current_champion: 'Charlotte Flair & Alexa Bliss',
+    current_champion_slug: 'charlotte-flair-alexa-bliss',
+    date_won: '2025-01-01',
+    event: 'TBD',
+    brand: 'RAW',
+    type: 'Tag Team'
+  },
+
+];
+
+const BRAND_ORDER = ['Undisputed', 'RAW', 'SmackDown', 'NXT'];
+const TYPE_ORDER = ['World', 'Secondary', 'Tag Team'];
+
+export default function ChampionshipsPage() {
+  const [selectedBrand, setSelectedBrand] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
+
+  const filteredChampions = currentChampions.filter(champ => {
+    const brandMatch = selectedBrand === 'all' || champ.brand === selectedBrand;
+    const typeMatch = selectedType === 'all' || champ.type === selectedType;
+    return brandMatch && typeMatch;
+  });
+
+  const formatDate = (dateStr) => {
+    if (!dateStr || dateStr === '2025-01-01') return 'TBD';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const getBrandColor = (brand) => {
+    switch (brand) {
+      case 'RAW': return '#D32F2F';
+      case 'SmackDown': return '#1976D2';
+      case 'NXT': return '#FF6F00';
+      case 'Undisputed': return '#C6A04F';
+      default: return '#666';
+    }
+  };
+
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'World': return '#C6A04F';
+      case 'Secondary': return '#4CAF50';
+      case 'Tag Team': return '#9C27B0';
+      default: return '#666';
+    }
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Current Champions - WWE Championships | Wrestling Boxscore</title>
+        <meta name="description" content="View all current WWE champions across RAW, SmackDown, NXT, and undisputed titles. Stay updated with the latest championship holders." />
+        <meta name="keywords" content="WWE champions, current champions, WWE titles, RAW champions, SmackDown champions, NXT champions" />
+        <link rel="canonical" href="https://wrestlingboxscore.com/championships" />
+      </Helmet>
+      
+      <div style={{ color: '#fff', padding: 40, maxWidth: 1200, margin: '0 auto' }}>
+        <h1 style={{ textAlign: 'center', marginBottom: 32, color: '#C6A04F', fontSize: 36, fontWeight: 800 }}>
+          Current Champions
+        </h1>
+        
+        {/* Filters */}
+        <div style={{ marginBottom: 32, textAlign: 'center' }}>
+          <div style={{ marginBottom: 16 }}>
+            <span style={{ marginRight: 12, fontWeight: 600, color: '#C6A04F' }}>Brand:</span>
+            {BRAND_ORDER.map(brand => (
+              <button
+                key={brand}
+                onClick={() => setSelectedBrand(selectedBrand === brand ? 'all' : brand)}
+                style={{
+                  margin: '0 4px',
+                  padding: '8px 16px',
+                  background: selectedBrand === brand ? getBrandColor(brand) : '#333',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontWeight: selectedBrand === brand ? 'bold' : 'normal'
+                }}
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
+          
+          <div>
+            <span style={{ marginRight: 12, fontWeight: 600, color: '#C6A04F' }}>Type:</span>
+            {TYPE_ORDER.map(type => (
+              <button
+                key={type}
+                onClick={() => setSelectedType(selectedType === type ? 'all' : type)}
+                style={{
+                  margin: '0 4px',
+                  padding: '8px 16px',
+                  background: selectedType === type ? getTypeColor(type) : '#333',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontWeight: selectedType === type ? 'bold' : 'normal'
+                }}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Champions Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24 }}>
+          {filteredChampions.map(champ => (
+            <div key={champ.id} style={{ 
+              background: '#181818', 
+              padding: 24, 
+              borderRadius: 12,
+              border: `2px solid ${getBrandColor(champ.brand)}`,
+              boxShadow: `0 0 20px ${getBrandColor(champ.brand)}33`,
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Championship Type Badge */}
+              <div style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                background: getTypeColor(champ.type),
+                color: '#fff',
+                padding: '4px 8px',
+                borderRadius: 12,
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase'
+              }}>
+                {champ.type}
+              </div>
+              
+              {/* Brand Badge */}
+              <div style={{
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                background: getBrandColor(champ.brand),
+                color: '#fff',
+                padding: '4px 8px',
+                borderRadius: 12,
+                fontSize: 11,
+                fontWeight: 600
+              }}>
+                {champ.brand}
+              </div>
+              
+              {/* Championship Title */}
+              <div style={{ marginTop: 32, marginBottom: 16, textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  <BeltIcon size={32} />
+                  <h3 style={{ margin: '0 0 0 12px', color: '#C6A04F', fontSize: 20, fontWeight: 700 }}>
+                    {champ.title_name}
+                  </h3>
+                </div>
+              </div>
+              
+              {/* Champion Info */}
+              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+                  {champ.current_champion}
+                </div>
+                <div style={{ fontSize: 14, color: '#ccc' }}>
+                  Won on {formatDate(champ.date_won)}
+                </div>
+                <div style={{ fontSize: 14, color: '#ccc' }}>
+                  at {champ.event}
+                </div>
+              </div>
+              
+              {/* Championship Details */}
+              <div style={{ 
+                background: '#222', 
+                padding: 16, 
+                borderRadius: 8,
+                border: '1px solid #444'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ color: '#ccc' }}>Champion:</span>
+                  <span style={{ fontWeight: 600 }}>{champ.current_champion}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ color: '#ccc' }}>Brand:</span>
+                  <span style={{ color: getBrandColor(champ.brand), fontWeight: 600 }}>{champ.brand}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ color: '#ccc' }}>Type:</span>
+                  <span style={{ color: getTypeColor(champ.type), fontWeight: 600 }}>{champ.type}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#ccc' }}>Event:</span>
+                  <span style={{ fontWeight: 600 }}>{champ.event}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Summary Stats */}
+        <div style={{ 
+          marginTop: 48, 
+          padding: 24, 
+          background: '#181818', 
+          borderRadius: 12,
+          border: '1px solid #444'
+        }}>
+          <h3 style={{ textAlign: 'center', marginBottom: 20, color: '#C6A04F' }}>Championship Summary</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
+            {BRAND_ORDER.map(brand => {
+              const brandCount = currentChampions.filter(champ => champ.brand === brand).length;
+              return (
+                <div key={brand} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: getBrandColor(brand) }}>{brandCount}</div>
+                  <div style={{ fontSize: 14, color: '#ccc' }}>{brand} Titles</div>
+                </div>
+              );
+            })}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#C6A04F' }}>{currentChampions.length}</div>
+              <div style={{ fontSize: 14, color: '#ccc' }}>Total Titles</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
