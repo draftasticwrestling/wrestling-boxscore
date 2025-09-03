@@ -41,7 +41,7 @@ const currentChampions = [
     title_name: "Men's Intercontinental Championship",
     current_champion: 'Dominik Mysterio',
     current_champion_slug: 'dominik-mysterio',
-    previous_champion: 'Bron Breakker, Penta, and Finn Balor',
+    previous_champion: 'Bron Breakker',
     date_won: '2025-04-20',
     event: 'Wrestlemania Night 2',
     brand: 'RAW',
@@ -409,7 +409,10 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   {champ.current_champion}
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
-                  Won on {formatDate(champ.date_won)}
+                  {champ.previous_champion ? 
+                    `Defeated ${champ.previous_champion} on ${formatDate(champ.date_won)}` :
+                    `Won on ${formatDate(champ.date_won)}`
+                  }
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
                   at {champ.event}
@@ -427,12 +430,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   <span style={{ color: '#ccc' }}>Champion:</span>
                   <span style={{ fontWeight: 600 }}>{champ.current_champion}</span>
                 </div>
-                {champ.previous_champion && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ color: '#ccc' }}>Defeated:</span>
-                    <span style={{ fontWeight: 600, color: '#ff6b6b' }}>{champ.previous_champion}</span>
-                  </div>
-                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ color: '#ccc' }}>Brand:</span>
                   <span style={{ color: getBrandColor(champ.brand), fontWeight: 600 }}>{champ.brand}</span>
