@@ -8,6 +8,7 @@ const currentChampions = [
     title_name: 'WWE Championship',
     current_champion: 'Cody Rhodes',
     current_champion_slug: 'cody-rhodes',
+    previous_champion: 'John Cena',
     date_won: '2025-08-03',
     event: 'Summer Slam Night 2',
     brand: 'SmackDown',
@@ -18,6 +19,7 @@ const currentChampions = [
     title_name: 'World Heavyweight Championship',
     current_champion: 'Seth Rollins',
     current_champion_slug: 'seth-rollins',
+    previous_champion: 'CM Punk',
     date_won: '2025-08-02',
     event: 'Summer Slam Night 1',
     brand: 'RAW',
@@ -28,6 +30,7 @@ const currentChampions = [
     title_name: "Men's United States Championship",
     current_champion: 'Sami Zayn',
     current_champion_slug: 'sami-zayn',
+    previous_champion: 'Solo Sikoa',
     date_won: '2025-08-29',
     event: 'SmackDown',
     brand: 'SmackDown',
@@ -38,6 +41,7 @@ const currentChampions = [
     title_name: "Men's Intercontinental Championship",
     current_champion: 'Dominik Mysterio',
     current_champion_slug: 'dominik-mysterio',
+    previous_champion: 'Bron Breakker, Penta, and Finn Balor',
     date_won: '2025-04-20',
     event: 'Wrestlemania Night 2',
     brand: 'RAW',
@@ -48,6 +52,7 @@ const currentChampions = [
     title_name: 'RAW Tag Team Championship',
     current_champion: 'The Judgment Day (Finn Balor & JD McDonagh)',
     current_champion_slug: 'the-judgment-day',
+    previous_champion: 'The New Day (Kofi Kingston & Xavier Woods)',
     date_won: '2025-06-30',
     event: 'RAW',
     brand: 'RAW',
@@ -58,6 +63,7 @@ const currentChampions = [
     title_name: 'SmackDown Tag Team Championship',
     current_champion: 'The Wyatt Sicks (Joe Gacy & Dexter Lumis)',
     current_champion_slug: 'the-wyatt-sicks',
+    previous_champion: 'The Street Profits (Angelo Dawkins & Montez Ford)',
     date_won: '2025-07-11',
     event: 'SmackDown',
     brand: 'SmackDown',
@@ -69,6 +75,7 @@ const currentChampions = [
     title_name: "WWE Women's Championship",
     current_champion: 'Tiffany Stratton',
     current_champion_slug: 'tiffany-stratton',
+    previous_champion: 'Nia Jax',
     date_won: '2025-01-03',
     event: 'SmackDown',
     brand: 'SmackDown',
@@ -79,6 +86,7 @@ const currentChampions = [
     title_name: "Women's World Championship",
     current_champion: 'VACANT',
     current_champion_slug: 'vacant',
+    previous_champion: 'Naomi (Vacated for medical reasons)',
     date_won: '2025-01-01',
     event: 'TBD',
     brand: 'RAW',
@@ -89,6 +97,7 @@ const currentChampions = [
     title_name: "Women's Intercontinental Championship",
     current_champion: 'Becky Lynch',
     current_champion_slug: 'becky-lynch',
+    previous_champion: 'Lyra Valkyria',
     date_won: '2025-06-07',
     event: 'Money in the Bank',
     brand: 'RAW',
@@ -99,6 +108,7 @@ const currentChampions = [
     title_name: "Women's United States Championship",
     current_champion: 'Giulia',
     current_champion_slug: 'giulia',
+    previous_champion: 'Zelina Vega',
     date_won: '2025-06-27',
     event: 'SmackDown',
     brand: 'SmackDown',
@@ -109,6 +119,7 @@ const currentChampions = [
     title_name: 'Women\'s Tag Team Championship',
     current_champion: 'Charlotte Flair & Alexa Bliss',
     current_champion_slug: 'charlotte-flair-alexa-bliss',
+    previous_champion: 'The Judgment Day (Roxanne Perez & Raquel Rodriguez)',
     date_won: '2025-08-02',
     event: 'Summer Slam Night 1',
     brand: 'Unassigned',
@@ -416,6 +427,12 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   <span style={{ color: '#ccc' }}>Champion:</span>
                   <span style={{ fontWeight: 600 }}>{champ.current_champion}</span>
                 </div>
+                {champ.previous_champion && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#ccc' }}>Defeated:</span>
+                    <span style={{ fontWeight: 600, color: '#ff6b6b' }}>{champ.previous_champion}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ color: '#ccc' }}>Brand:</span>
                   <span style={{ color: getBrandColor(champ.brand), fontWeight: 600 }}>{champ.brand}</span>
