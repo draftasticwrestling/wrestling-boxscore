@@ -86,11 +86,12 @@ const currentChampions = [
     title_name: "Women's World Championship",
     current_champion: 'VACANT',
     current_champion_slug: 'vacant',
-    previous_champion: 'Naomi (Vacated for medical reasons)',
-    date_won: '2025-01-01',
-    event: 'TBD',
+    previous_champion: 'Naomi',
+    date_won: '2025-08-18',
+    event: 'RAW',
     brand: 'RAW',
-    type: 'World'
+    type: 'World',
+    vacation_reason: 'medical reasons'
   },
   {
     id: 'womens-ic-championship',
@@ -409,9 +410,11 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   {champ.current_champion}
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
-                  {champ.previous_champion ? 
-                    `Defeated ${champ.previous_champion} on ${formatDate(champ.date_won)}` :
-                    `Won on ${formatDate(champ.date_won)}`
+                  {champ.vacation_reason ? 
+                    `${champ.previous_champion} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
+                    champ.previous_champion ? 
+                      `Defeated ${champ.previous_champion} on ${formatDate(champ.date_won)}` :
+                      `Won on ${formatDate(champ.date_won)}`
                   }
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
