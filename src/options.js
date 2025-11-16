@@ -45,6 +45,7 @@ export const METHOD_OPTIONS = [
   "Submission",
   "DQ",
   "Count out",
+  "Double Count Out",
   "No Contest",
   "Draw",
   "Unhook the prize",

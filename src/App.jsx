@@ -2715,11 +2715,17 @@ function App() {
   const updateEvent = async (updatedEvent) => {
     try {
       // Only send allowed fields to Supabase
-      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'promos', 'status', 'isLive'];
+      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'status', 'isLive'];
       const sanitizedEvent = {};
       for (const key of allowedFields) {
         if (updatedEvent[key] !== undefined) sanitizedEvent[key] = updatedEvent[key];
       }
+      
+      // Include promos if it exists (may not be in database schema yet)
+      if (updatedEvent.promos !== undefined) {
+        sanitizedEvent.promos = updatedEvent.promos;
+      }
+      
       // Keep titleOutcome in the matches data but not as a top-level field
       // This prevents any database triggers from trying to access championship tables
       console.log('Sanitized event for update:', sanitizedEvent);
@@ -2728,10 +2734,27 @@ function App() {
         .update(sanitizedEvent)
         .eq('id', updatedEvent.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error details:', error);
+        // If error is about promos column not existing, try without it
+        if (error.message && (error.message.includes('promos') || error.message.includes('column') && error.message.includes('does not exist'))) {
+          console.warn('Promos column may not exist in database, retrying without promos');
+          const { promos, ...eventWithoutPromos } = sanitizedEvent;
+          const { error: retryError } = await supabase
+            .from('events')
+            .update(eventWithoutPromos)
+            .eq('id', updatedEvent.id);
+          if (retryError) {
+            console.error('Retry error:', retryError);
+            throw retryError;
+          }
+        } else {
+          throw error;
+        }
+      }
       
-      // Update local state with the sanitized event data
-      setEvents(events.map(e => e.id === updatedEvent.id ? { ...e, ...sanitizedEvent } : e));
+      // Update local state with the sanitized event data (always include promos in local state)
+      setEvents(events.map(e => e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e));
     } catch (error) {
       console.error('Error updating event:', error);
       alert('Failed to update event. Please try again.');
