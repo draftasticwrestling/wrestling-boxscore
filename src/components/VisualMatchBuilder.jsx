@@ -408,11 +408,29 @@ export default function VisualMatchBuilder({
           if (teamMatch) {
             // Tag team with name
             const teamName = teamMatch[1].trim();
-            const wrestlerSlugs = teamMatch[2].split('&').filter(s => s.trim()).map(s => s.trim());
+            const potentialSlugs = teamMatch[2].split('&').filter(s => s.trim()).map(s => s.trim());
+            // Convert display names to slugs if needed
+            const wrestlerSlugs = potentialSlugs.map(potentialSlug => {
+              // If it's already a slug (exists in wrestlers by id), use it
+              const foundById = safeWrestlers.find(w => w.id === potentialSlug || w.slug === potentialSlug);
+              if (foundById) return foundById.id;
+              // Otherwise, try to find by name
+              const foundByName = safeWrestlers.find(w => w.name === potentialSlug);
+              return foundByName ? foundByName.id : potentialSlug;
+            });
             return { type: 'team', name: teamName, participants: wrestlerSlugs };
           } else {
             // Individual wrestlers
-            const wrestlerSlugs = side.split('&').filter(s => s.trim()).map(s => s.trim());
+            const potentialSlugs = side.split('&').filter(s => s.trim()).map(s => s.trim());
+            // Convert display names to slugs if needed
+            const wrestlerSlugs = potentialSlugs.map(potentialSlug => {
+              // If it's already a slug (exists in wrestlers by id), use it
+              const foundById = safeWrestlers.find(w => w.id === potentialSlug || w.slug === potentialSlug);
+              if (foundById) return foundById.id;
+              // Otherwise, try to find by name
+              const foundByName = safeWrestlers.find(w => w.name === potentialSlug);
+              return foundByName ? foundByName.id : potentialSlug;
+            });
             return { type: 'individual', participants: wrestlerSlugs };
           }
         });

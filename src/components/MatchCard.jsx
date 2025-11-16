@@ -44,7 +44,7 @@ const getTeams = (participants) => {
   return [];
 };
 
-const parseTeamString = (teamStr) => {
+const parseTeamString = (teamStr, wrestlerMap = {}) => {
   if (!teamStr) {
     return { teamName: '', slugs: [] };
   }
@@ -52,10 +52,30 @@ const parseTeamString = (teamStr) => {
   const teamMatch = teamStr.match(/^([^(]+)\s*\(([^)]+)\)$/);
   if (teamMatch) {
     const teamName = teamMatch[1].trim();
-    const slugs = teamMatch[2].split('&').map(s => s.trim());
+    const potentialSlugs = teamMatch[2].split('&').map(s => s.trim());
+    // Convert display names to slugs if needed
+    const slugs = potentialSlugs.map(potentialSlug => {
+      // If it's already a slug (contains hyphen and lowercase), use it
+      if (wrestlerMap[potentialSlug]) {
+        return potentialSlug;
+      }
+      // Otherwise, try to find by name
+      const found = Object.values(wrestlerMap).find(w => w.name === potentialSlug || w.id === potentialSlug);
+      return found ? found.id : potentialSlug;
+    });
     return { teamName, slugs };
   }
-  const slugs = teamStr.split('&').map(s => s.trim());
+  const potentialSlugs = teamStr.split('&').map(s => s.trim());
+  // Convert display names to slugs if needed
+  const slugs = potentialSlugs.map(potentialSlug => {
+    // If it's already a slug (contains hyphen and lowercase), use it
+    if (wrestlerMap[potentialSlug]) {
+      return potentialSlug;
+    }
+    // Otherwise, try to find by name
+    const found = Object.values(wrestlerMap).find(w => w.name === potentialSlug || w.id === potentialSlug);
+    return found ? found.id : potentialSlug;
+  });
   return { teamName: '', slugs };
 };
 
@@ -363,7 +383,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     
     let winnerIndex = -1;
     teamStrings.forEach((teamStr, idx) => {
-      const { teamName, slugs } = parseTeamString(teamStr);
+      const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
       const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
       
       if (teamName && normalize(winner) === normalize(teamName)) {
@@ -485,7 +505,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           maxWidth: '100%',
         }}>
           {teamStrings.map((teamStr, sideIdx) => {
-            const { teamName, slugs } = parseTeamString(teamStr);
+            const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
             return (
               <div key={sideIdx} style={{ 
@@ -1074,7 +1094,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           </div>
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
             {teamStrings.map((teamStr, sideIdx) => {
-              const { teamName, slugs } = parseTeamString(teamStr);
+              const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
               const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
               return (
                 <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
@@ -1130,7 +1150,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
       ) : !isMultiSide ? (
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
           {(() => {
-            const { teamName, slugs } = parseTeamString(teamStrings[0] || '');
+            const { teamName, slugs } = parseTeamString(teamStrings[0] || '', wrestlerMap);
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
             return (
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
@@ -1204,7 +1224,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
           </div>
           {(() => {
-            const { teamName, slugs } = parseTeamString(teamStrings[1] || '');
+            const { teamName, slugs } = parseTeamString(teamStrings[1] || '', wrestlerMap);
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
             return (
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
