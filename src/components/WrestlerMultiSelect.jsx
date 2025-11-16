@@ -1,12 +1,35 @@
 import React, { useState, useEffect } from 'react';
 
-export default function WrestlerMultiSelect({ onChange, label = 'Select Wrestlers', placeholder = 'Type to search...', wrestlers = [] }) {
+export default function WrestlerMultiSelect({
+  value = [],
+  onChange,
+  label = 'Select Wrestlers',
+  placeholder = 'Type to search...',
+  wrestlers = []
+}) {
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const [query, setQuery] = useState('');
   const [filtered, setFiltered] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selected, setSelected] = useState([]);
+
+  // Sync local selected objects with incoming value ids
+  useEffect(() => {
+    const selectedObjects = Array.isArray(value)
+      ? value
+          .map(id => safeWrestlers.find(w => w.id === id))
+          .filter(Boolean)
+      : [];
+
+    const idsMatch =
+      selectedObjects.length === selected.length &&
+      selectedObjects.every((obj, idx) => obj.id === selected[idx]?.id);
+
+    if (!idsMatch) {
+      setSelected(selectedObjects);
+    }
+  }, [value, safeWrestlers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (query.trim() === '') {
@@ -24,16 +47,24 @@ export default function WrestlerMultiSelect({ onChange, label = 'Select Wrestler
   }, [query, safeWrestlers, selected]);
 
   const handleSelect = (wrestler) => {
-    setSelected([...selected, wrestler]);
+    if (!wrestler) return;
+    const newIds = Array.from(new Set([...(Array.isArray(value) ? value : []), wrestler.id]));
+    const newSelected = newIds
+      .map(id => safeWrestlers.find(w => w.id === id))
+      .filter(Boolean);
+    setSelected(newSelected);
     setQuery('');
     setShowDropdown(false);
-    if (onChange) onChange([...selected, wrestler]);
+    if (onChange) onChange(newIds);
   };
 
   const handleRemove = (id) => {
-    const updated = selected.filter(w => w.id !== id);
-    setSelected(updated);
-    if (onChange) onChange(updated);
+    const updatedIds = (Array.isArray(value) ? value : []).filter(wId => wId !== id);
+    const updatedSelected = updatedIds
+      .map(wId => safeWrestlers.find(w => w.id === wId))
+      .filter(Boolean);
+    setSelected(updatedSelected);
+    if (onChange) onChange(updatedIds);
   };
 
   return (

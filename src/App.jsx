@@ -26,6 +26,7 @@ import VisualMatchBuilder from './components/VisualMatchBuilder';
 import GauntletMatchBuilder from './components/GauntletMatchBuilder';
 import TwoOutOfThreeFallsBuilder from './components/TwoOutOfThreeFallsBuilder';
 import ChampionshipsPage from './components/ChampionshipsPage';
+import PromoPage from './components/PromoPage';
 
 // Place these at the top level, after imports
 
@@ -127,6 +128,31 @@ const participantsTdStyle = {
   maxWidth: 400,
   wordBreak: 'break-word',
 };
+
+const PROMO_TYPE_OPTIONS = [
+  'In-Ring',
+  'Backstage',
+  'Pre-Show',
+  'Post-Show',
+  'Video Package',
+  'Social Media',
+];
+
+const PROMO_OUTCOME_OPTIONS = [
+  'None',
+  'Vacated Title',
+  'Match Announced',
+  'Wrestler Going Inactive',
+  'Championship Challenge',
+  'Return Announced',
+  'Feud Started',
+  'Feud Ended',
+  'Alliance Formed',
+  'Alliance Broken',
+  'Retirement Announcement',
+  'Contract Signing',
+  'Other',
+];
 
 // Event List Component
 function isUpcomingEST(event) {
@@ -723,6 +749,7 @@ function AddEvent({ addEvent, wrestlers }) {
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
   const [matches, setMatches] = useState([]);
+  const [promos, setPromos] = useState([]);
   const [match, setMatch] = useState({
     participants: '',
     result: '',
@@ -746,6 +773,15 @@ function AddEvent({ addEvent, wrestlers }) {
   const [brWinner, setBrWinner] = useState('');
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
+  const [promoForm, setPromoForm] = useState({
+    wrestlers: [],
+    content: '',
+    outcome: 'None',
+    outcomeDetails: '',
+    type: 'In-Ring',
+    notes: '',
+  });
+  const [editingPromoIdx, setEditingPromoIdx] = useState(null);
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -883,6 +919,68 @@ function AddEvent({ addEvent, wrestlers }) {
     setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
   };
 
+  const resetPromoForm = () => {
+    setPromoForm({
+      wrestlers: [],
+      content: '',
+      outcome: 'None',
+      outcomeDetails: '',
+      type: 'In-Ring',
+      notes: '',
+    });
+    setEditingPromoIdx(null);
+  };
+
+  const handleAddPromo = (e) => {
+    e.preventDefault();
+    if (!promoForm.wrestlers || promoForm.wrestlers.length === 0) {
+      alert('Please select at least one wrestler for the promo.');
+      return;
+    }
+    if (!promoForm.content.trim()) {
+      alert('Please enter promo content.');
+      return;
+    }
+
+    const newPromo = {
+      ...promoForm,
+      content: promoForm.content.trim(),
+      outcomeDetails: promoForm.outcomeDetails.trim(),
+      notes: promoForm.notes.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    let updatedPromos;
+    if (editingPromoIdx !== null) {
+      updatedPromos = promos.map((promo, idx) => (idx === editingPromoIdx ? { ...promo, ...newPromo, updatedAt: new Date().toISOString() } : promo));
+    } else {
+      updatedPromos = [...promos, newPromo];
+    }
+    setPromos(updatedPromos);
+    resetPromoForm();
+  };
+
+  const handleEditPromo = (index) => {
+    const promo = promos[index];
+    if (!promo) return;
+    setPromoForm({
+      wrestlers: promo.wrestlers || [],
+      content: promo.content || '',
+      outcome: promo.outcome || 'None',
+      outcomeDetails: promo.outcomeDetails || '',
+      type: promo.type || 'In-Ring',
+      notes: promo.notes || '',
+    });
+    setEditingPromoIdx(index);
+  };
+
+  const handleDeletePromo = (index) => {
+    if (!window.confirm('Are you sure you want to delete this promo?')) return;
+    const updatedPromos = promos.filter((_, idx) => idx !== index);
+    setPromos(updatedPromos);
+    resetPromoForm();
+  };
+
   // Save the event
   const handleSaveEvent = (e) => {
     e.preventDefault();
@@ -905,6 +1003,7 @@ function AddEvent({ addEvent, wrestlers }) {
       date,
       location,
       matches,
+      promos,
       status: eventStatus,
       isLive: eventStatus === 'live'
     };
@@ -1321,6 +1420,227 @@ function AddEvent({ addEvent, wrestlers }) {
           </div>
           <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
         </form>
+        <h3 style={{ marginTop: 32 }}>Promos</h3>
+        {promos.length === 0 ? (
+          <p style={{ color: '#bbb' }}>No promos added yet.</p>
+        ) : (
+          <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {promos.map((promo, idx) => (
+              <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333', marginBottom: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => handleEditPromo(idx)}
+                  style={{
+                    background: '#4a90e2',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    fontSize: 16,
+                    width: 56,
+                    height: 36,
+                    marginRight: 10,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  aria-label="Edit Promo"
+                >
+                  Edit
+                </button>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: '#fff', fontWeight: 600 }}>{promo.wrestlers.map(id => wrestlers.find(w => w.id === id)?.name || id).join(', ')}</div>
+                  <div style={{ color: '#bbb', fontSize: 14, marginTop: 4 }}>{promo.type}</div>
+                  <div style={{ color: '#fff', marginTop: 8, fontSize: 14 }}>{promo.content}</div>
+                  {promo.outcome !== 'None' && (
+                    <div style={{ color: '#C6A04F', marginTop: 8, fontSize: 14 }}><strong>Outcome:</strong> {promo.outcome}</div>
+                  )}
+                  {promo.outcomeDetails && (
+                    <div style={{ color: '#ccc', marginTop: 4, fontSize: 14 }}>{promo.outcomeDetails}</div>
+                  )}
+                  {promo.notes && (
+                    <div style={{ color: '#777', marginTop: 6, fontSize: 14 }}><strong>Notes:</strong> {promo.notes}</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 16 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (idx === 0) return;
+                      const updated = [...promos];
+                      [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
+                      setPromos(updated);
+                    }}
+                    style={{
+                      background: '#C6A04F',
+                      color: '#232323',
+                      border: 'none',
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      fontSize: 22,
+                      width: 36,
+                      height: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: idx === 0 ? 0.3 : 1,
+                      cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                      marginRight: 2
+                    }}
+                    disabled={idx === 0}
+                    aria-label="Move Up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (idx === promos.length - 1) return;
+                      const updated = [...promos];
+                      [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+                      setPromos(updated);
+                    }}
+                    style={{
+                      background: '#C6A04F',
+                      color: '#232323',
+                      border: 'none',
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      fontSize: 22,
+                      width: 36,
+                      height: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: idx === promos.length - 1 ? 0.3 : 1,
+                      cursor: idx === promos.length - 1 ? 'not-allowed' : 'pointer',
+                      marginRight: 10
+                    }}
+                    disabled={idx === promos.length - 1}
+                    aria-label="Move Down"
+                  >
+                    ↓
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeletePromo(idx)}
+                  style={{
+                    background: '#b02a37',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    fontSize: 18,
+                    width: 36,
+                    height: 36,
+                    marginLeft: 18,
+                    opacity: 0.85,
+                    transition: 'opacity 0.2s',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  aria-label="Delete"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <form onSubmit={handleAddPromo} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+          <h4 style={{ marginTop: 0, color: '#fff' }}>{editingPromoIdx !== null ? 'Edit Promo' : 'Add Promo'}</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Wrestlers Involved *
+            </label>
+            <WrestlerMultiSelect
+              wrestlers={wrestlers}
+              value={promoForm.wrestlers}
+              onChange={(value) => setPromoForm(prev => ({ ...prev, wrestlers: value }))}
+              placeholder="Select wrestlers involved in the promo..."
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Promo Type
+            </label>
+            <select
+              value={promoForm.type}
+              onChange={e => setPromoForm(prev => ({ ...prev, type: e.target.value }))}
+              style={{ width: '100%', padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+            >
+              {PROMO_TYPE_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Promo Content *
+            </label>
+            <textarea
+              value={promoForm.content}
+              onChange={e => setPromoForm(prev => ({ ...prev, content: e.target.value }))}
+              style={{ width: '100%', minHeight: 100, padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+              placeholder="Enter promo summary, key quotes, or description..."
+              required
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Outcome
+            </label>
+            <select
+              value={promoForm.outcome}
+              onChange={e => setPromoForm(prev => ({ ...prev, outcome: e.target.value }))}
+              style={{ width: '100%', padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+            >
+              {PROMO_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          {promoForm.outcome !== 'None' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+                Outcome Details
+              </label>
+              <textarea
+                value={promoForm.outcomeDetails}
+                onChange={e => setPromoForm(prev => ({ ...prev, outcomeDetails: e.target.value }))}
+                style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+                placeholder="Provide details about what was announced or decided..."
+              />
+            </div>
+          )}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Additional Notes
+            </label>
+            <textarea
+              value={promoForm.notes}
+              onChange={e => setPromoForm(prev => ({ ...prev, notes: e.target.value }))}
+              style={{ width: '100%', minHeight: 60, padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+              placeholder="Optional context, interviewer names, segment specifics..."
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {editingPromoIdx !== null && (
+              <button type="button" onClick={resetPromoForm} style={{ padding: '10px 24px', borderRadius: 4, border: '1px solid #666', background: '#333', color: '#fff' }}>
+                Cancel Edit
+              </button>
+            )}
+            <button type="submit" style={{ padding: '10px 24px', borderRadius: 4, border: 'none', background: '#C6A04F', color: '#000', fontWeight: 600 }}>
+              {editingPromoIdx !== null ? 'Update Promo' : 'Add Promo'}
+            </button>
+          </div>
+        </form>
+        <p style={{ marginTop: 16, color: '#bbb' }}>Promos will be saved with the event and visible on the event page.</p>
         <button
           type="button"
           style={{ marginTop: 24 }}
@@ -1365,6 +1685,16 @@ function EditEvent({ events, updateEvent, wrestlers }) {
           titleOutcome: '',
       notes: ''
     });
+  const [promos, setPromos] = useState(event.promos || []);
+  const [promoForm, setPromoForm] = useState({
+    wrestlers: [],
+    content: '',
+    outcome: 'None',
+    outcomeDetails: '',
+    type: 'In-Ring',
+    notes: '',
+  });
+  const [editingPromoIdx, setEditingPromoIdx] = useState(null);
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [eventStatus, setEventStatus] = useState(event.status || 'completed');
@@ -1459,6 +1789,67 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
   };
 
+  const resetPromoForm = () => {
+    setPromoForm({
+      wrestlers: [],
+      content: '',
+      outcome: 'None',
+      outcomeDetails: '',
+      type: 'In-Ring',
+      notes: '',
+    });
+    setEditingPromoIdx(null);
+  };
+
+  const handleAddPromo = (e) => {
+    e.preventDefault();
+    if (!promoForm.wrestlers || promoForm.wrestlers.length === 0) {
+      alert('Please select at least one wrestler for the promo.');
+      return;
+    }
+    if (!promoForm.content.trim()) {
+      alert('Please enter promo content.');
+      return;
+    }
+
+    const newPromo = {
+      ...promoForm,
+      content: promoForm.content.trim(),
+      outcomeDetails: promoForm.outcomeDetails.trim(),
+      notes: promoForm.notes.trim(),
+    };
+
+    let updatedPromos;
+    if (editingPromoIdx !== null) {
+      updatedPromos = promos.map((promo, idx) => (idx === editingPromoIdx ? { ...promo, ...newPromo, updatedAt: new Date().toISOString() } : promo));
+    } else {
+      updatedPromos = [...promos, { ...newPromo, createdAt: new Date().toISOString() }];
+    }
+    setPromos(updatedPromos);
+    resetPromoForm();
+  };
+
+  const handleEditPromo = (index) => {
+    const promo = promos[index];
+    if (!promo) return;
+    setPromoForm({
+      wrestlers: promo.wrestlers || [],
+      content: promo.content || '',
+      outcome: promo.outcome || 'None',
+      outcomeDetails: promo.outcomeDetails || '',
+      type: promo.type || 'In-Ring',
+      notes: promo.notes || '',
+    });
+    setEditingPromoIdx(index);
+  };
+
+  const handleDeletePromo = (index) => {
+    if (!window.confirm('Are you sure you want to delete this promo?')) return;
+    const updatedPromos = promos.filter((_, idx) => idx !== index);
+    setPromos(updatedPromos);
+    resetPromoForm();
+  };
+
   // Save the edited event
   const handleSaveEvent = (e) => {
     e.preventDefault();
@@ -1472,6 +1863,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       date,
       location,
       matches,
+      promos,
       status: eventStatus,
       isLive: eventStatus === 'live'
     });
@@ -1996,6 +2388,227 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
           </form>
         )}
+        <h3 style={{ marginTop: 32 }}>Promos</h3>
+        {promos.length === 0 ? (
+          <p style={{ color: '#bbb' }}>No promos added yet.</p>
+        ) : (
+          <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {promos.map((promo, idx) => (
+              <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333', marginBottom: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => handleEditPromo(idx)}
+                  style={{
+                    background: '#4a90e2',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    fontSize: 16,
+                    width: 56,
+                    height: 36,
+                    marginRight: 10,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  aria-label="Edit Promo"
+                >
+                  Edit
+                </button>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: '#fff', fontWeight: 600 }}>{promo.wrestlers.map(id => wrestlers.find(w => w.id === id)?.name || id).join(', ')}</div>
+                  <div style={{ color: '#bbb', fontSize: 14, marginTop: 4 }}>{promo.type}</div>
+                  <div style={{ color: '#fff', marginTop: 8, fontSize: 14 }}>{promo.content}</div>
+                  {promo.outcome !== 'None' && (
+                    <div style={{ color: '#C6A04F', marginTop: 8, fontSize: 14 }}><strong>Outcome:</strong> {promo.outcome}</div>
+                  )}
+                  {promo.outcomeDetails && (
+                    <div style={{ color: '#ccc', marginTop: 4, fontSize: 14 }}>{promo.outcomeDetails}</div>
+                  )}
+                  {promo.notes && (
+                    <div style={{ color: '#777', marginTop: 6, fontSize: 14 }}><strong>Notes:</strong> {promo.notes}</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 16 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (idx === 0) return;
+                      const updated = [...promos];
+                      [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
+                      setPromos(updated);
+                    }}
+                    style={{
+                      background: '#C6A04F',
+                      color: '#232323',
+                      border: 'none',
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      fontSize: 22,
+                      width: 36,
+                      height: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: idx === 0 ? 0.3 : 1,
+                      cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                      marginRight: 2
+                    }}
+                    disabled={idx === 0}
+                    aria-label="Move Up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (idx === promos.length - 1) return;
+                      const updated = [...promos];
+                      [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+                      setPromos(updated);
+                    }}
+                    style={{
+                      background: '#C6A04F',
+                      color: '#232323',
+                      border: 'none',
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      fontSize: 22,
+                      width: 36,
+                      height: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: idx === promos.length - 1 ? 0.3 : 1,
+                      cursor: idx === promos.length - 1 ? 'not-allowed' : 'pointer',
+                      marginRight: 10
+                    }}
+                    disabled={idx === promos.length - 1}
+                    aria-label="Move Down"
+                  >
+                    ↓
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeletePromo(idx)}
+                  style={{
+                    background: '#b02a37',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    fontSize: 18,
+                    width: 36,
+                    height: 36,
+                    marginLeft: 18,
+                    opacity: 0.85,
+                    transition: 'opacity 0.2s',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  aria-label="Delete"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <form onSubmit={handleAddPromo} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+          <h4 style={{ marginTop: 0, color: '#fff' }}>{editingPromoIdx !== null ? 'Edit Promo' : 'Add Promo'}</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Wrestlers Involved *
+            </label>
+            <WrestlerMultiSelect
+              wrestlers={wrestlers}
+              value={promoForm.wrestlers}
+              onChange={(value) => setPromoForm(prev => ({ ...prev, wrestlers: value }))}
+              placeholder="Select wrestlers involved in the promo..."
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Promo Type
+            </label>
+            <select
+              value={promoForm.type}
+              onChange={e => setPromoForm(prev => ({ ...prev, type: e.target.value }))}
+              style={{ width: '100%', padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+            >
+              {PROMO_TYPE_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Promo Content *
+            </label>
+            <textarea
+              value={promoForm.content}
+              onChange={e => setPromoForm(prev => ({ ...prev, content: e.target.value }))}
+              style={{ width: '100%', minHeight: 100, padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+              placeholder="Enter promo summary, key quotes, or description..."
+              required
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Outcome
+            </label>
+            <select
+              value={promoForm.outcome}
+              onChange={e => setPromoForm(prev => ({ ...prev, outcome: e.target.value }))}
+              style={{ width: '100%', padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+            >
+              {PROMO_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          {promoForm.outcome !== 'None' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+                Outcome Details
+              </label>
+              <textarea
+                value={promoForm.outcomeDetails}
+                onChange={e => setPromoForm(prev => ({ ...prev, outcomeDetails: e.target.value }))}
+                style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+                placeholder="Provide details about what was announced or decided..."
+              />
+            </div>
+          )}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#fff', fontWeight: 600, marginBottom: 6, display: 'block' }}>
+              Additional Notes
+            </label>
+            <textarea
+              value={promoForm.notes}
+              onChange={e => setPromoForm(prev => ({ ...prev, notes: e.target.value }))}
+              style={{ width: '100%', minHeight: 60, padding: 10, borderRadius: 4, background: '#232323', color: '#fff', border: '1px solid #444' }}
+              placeholder="Optional context, interviewer names, segment specifics..."
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {editingPromoIdx !== null && (
+              <button type="button" onClick={resetPromoForm} style={{ padding: '10px 24px', borderRadius: 4, border: '1px solid #666', background: '#333', color: '#fff' }}>
+                Cancel Edit
+              </button>
+            )}
+            <button type="submit" style={{ padding: '10px 24px', borderRadius: 4, border: 'none', background: '#C6A04F', color: '#000', fontWeight: 600 }}>
+              {editingPromoIdx !== null ? 'Update Promo' : 'Add Promo'}
+            </button>
+          </div>
+        </form>
+        <p style={{ marginTop: 16, color: '#bbb' }}>Promos will be saved with the event and visible on the event page.</p>
         <button
           type="button"
           style={{ marginTop: 24 }}
@@ -2102,7 +2715,7 @@ function App() {
   const updateEvent = async (updatedEvent) => {
     try {
       // Only send allowed fields to Supabase
-      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'status', 'isLive'];
+      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'promos', 'status', 'isLive'];
       const sanitizedEvent = {};
       for (const key of allowedFields) {
         if (updatedEvent[key] !== undefined) sanitizedEvent[key] = updatedEvent[key];
@@ -2216,7 +2829,8 @@ function App() {
             <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
             <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />} />
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
-            <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
+                <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
+                <Route path="/promos" element={<PromoPage wrestlers={wrestlers} events={events} />} />
             <Route path="/participant-demo" element={<ParticipantSelectionDemo wrestlers={wrestlers} />} />
             <Route path="/about" element={<><Helmet><title>About Wrestling Boxscore</title><meta name="description" content="Learn about Wrestling Boxscore, our mission, and how we deliver fast, accurate WWE results for fans." /><link rel="canonical" href="https://wrestlingboxscore.com/about" /></Helmet><div style={{color:'#fff',padding:40,maxWidth:900,margin:'0 auto'}}><h2>About Us</h2><p>Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can't watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and key moment—so you're always in the know, no matter where you are.</p></div></>} />
             <Route path="/contact" element={<><Helmet><title>Contact Wrestling Boxscore</title><meta name="description" content="Contact Wrestling Boxscore with questions, suggestions, or collaboration requests. Email: wrestlingboxscore@gmail.com" /><link rel="canonical" href="https://wrestlingboxscore.com/contact" /></Helmet><div style={{color:'#fff',padding:40,maxWidth:900,margin:'0 auto'}}><h2>Contact</h2><p>Please contact us with questions, suggestions, corrections, or if you would like to collaborate or contribute to the site. Our e-mail is <a href="mailto:wrestlingboxscore@gmail.com" style={{color:'#C6A04F',textDecoration:'underline'}}>wrestlingboxscore@gmail.com</a></p></div></>} />
