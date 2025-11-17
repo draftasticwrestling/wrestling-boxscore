@@ -107,7 +107,10 @@ export default function VisualMatchBuilder({
   value, 
   onChange, 
   maxParticipants = 30,
-  initialStructure = null
+  initialStructure = null,
+  isTitleMatch = false,
+  defendingChampion = null,
+  onDefendingChampionChange = null
 }) {
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
@@ -874,13 +877,68 @@ export default function VisualMatchBuilder({
     );
   };
 
+  // Get side identifier for defending champion comparison
+  const getSideIdentifier = (side) => {
+    const validParticipants = side.participants.filter(Boolean);
+    if (validParticipants.length === 0) return null;
+    
+    if (side.type === 'team' && side.name && side.name.trim()) {
+      // Tag team with name: return team name
+      return side.name.trim();
+    } else {
+      // Individual wrestlers or team without name: return participant names joined
+      const participantNames = validParticipants.map(slug => getWrestlerName(slug)).filter(Boolean);
+      return participantNames.join(' & ');
+    }
+  };
+
   // Render side (opponent/team)
   const renderSide = (side, sideIndex) => {
     const isTeam = side.type === 'team' || side.participants.length > 1;
     const canAddTeammate = side.participants.length < 4; // Max 4 per team
+    const sideIdentifier = getSideIdentifier(side);
+    const isDefendingChampion = isTitleMatch && sideIdentifier && defendingChampion && 
+      sideIdentifier.trim().toLowerCase() === defendingChampion.trim().toLowerCase();
 
     return (
-      <div key={sideIndex} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '140px', maxWidth: '140px' }}>
+      <div key={sideIndex} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '140px', maxWidth: '140px', position: 'relative' }}>
+        {/* Champion "C" button - only show for title matches */}
+        {isTitleMatch && sideIdentifier && (
+          <button
+            type="button"
+            onClick={() => {
+              if (onDefendingChampionChange) {
+                // Toggle: if already selected, clear it; otherwise set it
+                const newChampion = isDefendingChampion ? null : sideIdentifier;
+                onDefendingChampionChange(newChampion);
+              }
+            }}
+            style={{
+              position: 'absolute',
+              top: '-8px',
+              right: '-8px',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              border: `2px solid ${isDefendingChampion ? gold : '#666'}`,
+              background: isDefendingChampion ? gold : '#1a1a1a',
+              color: isDefendingChampion ? '#232323' : '#999',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+              transition: 'all 0.2s ease',
+              boxShadow: isDefendingChampion ? `0 0 8px ${gold}` : 'none'
+            }}
+            title={isDefendingChampion ? 'Defending Champion (click to clear)' : 'Mark as Defending Champion'}
+          >
+            C
+          </button>
+        )}
+
         {/* Team name input for teams */}
         {isTeam && (
           <input

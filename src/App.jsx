@@ -760,6 +760,7 @@ function AddEvent({ addEvent, wrestlers }) {
     customStipulation: '',
     title: '',
           titleOutcome: '',
+      defendingChampion: '',
       notes: ''
     });
   const [specialWinnerType, setSpecialWinnerType] = useState("None");
@@ -816,6 +817,7 @@ function AddEvent({ addEvent, wrestlers }) {
       customStipulation: '',
       title: '',
       titleOutcome: '',
+      defendingChampion: '',
       notes: '',
       isLive: false
     });
@@ -911,6 +913,7 @@ function AddEvent({ addEvent, wrestlers }) {
       customStipulation: '',
       title: '',
       titleOutcome: '',
+      defendingChampion: '',
       notes: '',
       isLive: false
     });
@@ -1309,6 +1312,11 @@ function AddEvent({ addEvent, wrestlers }) {
                       }}
                       maxParticipants={30}
                       initialStructure={getMatchStructureFromMatchType(match.matchType)}
+                      isTitleMatch={match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match'}
+                      defendingChampion={match.defendingChampion || null}
+                      onDefendingChampionChange={(champion) => {
+                        setMatch({ ...match, defendingChampion: champion || '' });
+                      }}
                     />
                   )}
                 </div>
@@ -1418,6 +1426,11 @@ function AddEvent({ addEvent, wrestlers }) {
               ))}
             </select>
           </div>
+          {match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' && (
+            <div style={{ fontSize: 12, color: '#C6A04F', marginTop: 4, marginBottom: 16, fontStyle: 'italic' }}>
+              💡 <strong>Tip:</strong> Click the "C" button next to a participant in the visual builder above to mark them as the defending champion.
+            </div>
+          )}
           <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
         </form>
         <h3 style={{ marginTop: 32 }}>Promos</h3>
@@ -1683,6 +1696,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     customStipulation: '',
     title: '',
           titleOutcome: '',
+      defendingChampion: '',
       notes: ''
     });
   const [promos, setPromos] = useState(event.promos || []);
@@ -1739,6 +1753,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         customStipulation: '',
         title: '',
         titleOutcome: '',
+        defendingChampion: '',
         notes: '',
         isLive: false
       });
@@ -1781,6 +1796,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       customStipulation: '',
       title: '',
       titleOutcome: '',
+      defendingChampion: '',
       notes: '',
       isLive: false
     });
@@ -2385,6 +2401,55 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 ))}
               </select>
             </div>
+            {match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>
+                  Defending Champion:
+                </label>
+                <select
+                  value={match.defendingChampion || ""}
+                  onChange={e => setMatch({ ...match, defendingChampion: e.target.value })}
+                  style={inputStyle}
+                >
+                  <option value="">Select defending champion...</option>
+                  {(() => {
+                    // Extract participant options from match.participants
+                    const participantOptions = [];
+                    if (typeof match.participants === 'string' && match.participants.includes(' vs ')) {
+                      const sides = match.participants.split(' vs ').map(s => s.trim());
+                      sides.forEach(side => {
+                        const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
+                        if (teamMatch) {
+                          // Tag team with name - use team name
+                          participantOptions.push(teamMatch[1].trim());
+                        } else {
+                          // Individual or team without name - use the side as-is
+                          participantOptions.push(side);
+                        }
+                      });
+                    } else if (Array.isArray(match.participants)) {
+                      // Array format - use each element
+                      match.participants.forEach(participant => {
+                        if (typeof participant === 'string') {
+                          const teamMatch = participant.match(/^([^(]+)\s*\(([^)]+)\)$/);
+                          if (teamMatch) {
+                            participantOptions.push(teamMatch[1].trim());
+                          } else {
+                            participantOptions.push(participant);
+                          }
+                        }
+                      });
+                    }
+                    return participantOptions.map((opt, idx) => (
+                      <option key={idx} value={opt}>{opt}</option>
+                    ));
+                  })()}
+                </select>
+                <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+                  Select who entered the match as the defending champion. This helps determine who shows the belt when "Champion Retains" is selected.
+                </div>
+              </div>
+            )}
             <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
           </form>
         )}

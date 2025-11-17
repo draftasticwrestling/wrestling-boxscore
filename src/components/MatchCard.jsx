@@ -79,6 +79,34 @@ const parseTeamString = (teamStr, wrestlerMap = {}) => {
   return { teamName: '', slugs };
 };
 
+// Helper function to get current champion slug for a title
+const getCurrentChampionForTitle = (titleName) => {
+  if (!titleName || titleName === 'None') return null;
+  
+  // Map of title names to current champion slugs (from ChampionshipsPage.jsx)
+  const titleToChampion = {
+    'WWE Championship': 'cody-rhodes',
+    'Undisputed WWE Championship': 'cody-rhodes',
+    'World Heavyweight Championship': 'seth-rollins',
+    "Men's United States Championship": 'sami-zayn',
+    "Men's U.S. Championship": 'sami-zayn',
+    "Men's Intercontinental Championship": 'dominik-mysterio',
+    "Men's IC Championship": 'dominik-mysterio',
+    'RAW Tag Team Championship': 'the-judgment-day',
+    'Raw Tag Team Championship': 'the-judgment-day',
+    'SmackDown Tag Team Championship': 'the-wyatt-sicks',
+    "WWE Women's Championship": 'tiffany-stratton',
+    "Women's World Championship": 'vacant',
+    "Women's Intercontinental Championship": 'becky-lynch',
+    "Women's IC Championship": 'becky-lynch',
+    "Women's United States Championship": 'giulia',
+    "Women's U.S. Championship": 'giulia',
+    "Women's Tag Team Championship": 'charlotte-flair-alexa-bliss',
+  };
+  
+  return titleToChampion[titleName] || null;
+};
+
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true }) {
   const navigate = useNavigate();
 
@@ -399,8 +427,31 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     const shouldShowBeltIcon = isTitleMatch && match.titleOutcome !== 'No. 1 Contender';
     let championIndex = winnerIndex;
     
-    // For title matches, the winner should always be the champion
-    // Whether they're retaining or becoming a new champion, show belt on the winner
+    // If "Champion Retains" is selected and defendingChampion is set, find which participant is the defending champion
+    if (match.titleOutcome === 'Champion Retains' && match.defendingChampion) {
+      const defendingChampion = match.defendingChampion.trim();
+      teamStrings.forEach((teamStr, idx) => {
+        const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
+        const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+        
+        // Check if defending champion matches team name
+        if (teamName && normalize(defendingChampion) === normalize(teamName)) {
+          championIndex = idx;
+        }
+        // Check if defending champion matches individual names
+        else if (normalize(defendingChampion) === normalize(individualNames)) {
+          championIndex = idx;
+        }
+        // Check if defending champion matches the full team string
+        else if (normalize(defendingChampion) === normalize(teamStr)) {
+          championIndex = idx;
+        }
+      });
+    } else {
+      // For title matches, the winner should always be the champion
+      // Whether they're retaining or becoming a new champion, show belt on the winner
+      championIndex = winnerIndex;
+    }
     
     return (
       <div
@@ -652,8 +703,32 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   
   // Determine which team should show the belt icon
   let championIndex = winnerIndex;
-  // For title matches, the winner should always be the champion
-  // Whether they're retaining or becoming a new champion, show belt on the winner
+  
+  // If "Champion Retains" is selected and defendingChampion is set, find which participant is the defending champion
+  if (match.titleOutcome === 'Champion Retains' && match.defendingChampion) {
+    const defendingChampion = match.defendingChampion.trim();
+    teamStrings.forEach((teamStr, idx) => {
+      const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
+      const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+      
+      // Check if defending champion matches team name
+      if (teamName && normalize(defendingChampion) === normalize(teamName)) {
+        championIndex = idx;
+      }
+      // Check if defending champion matches individual names
+      else if (normalize(defendingChampion) === normalize(individualNames)) {
+        championIndex = idx;
+      }
+      // Check if defending champion matches the full team string
+      else if (normalize(defendingChampion) === normalize(teamStr)) {
+        championIndex = idx;
+      }
+    });
+  } else {
+    // For title matches, the winner should always be the champion
+    // Whether they're retaining or becoming a new champion, show belt on the winner
+    championIndex = winnerIndex;
+  }
   
   const triangleRight = (
     <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
