@@ -2741,20 +2741,53 @@ function App() {
   const addEvent = async (event) => {
     try {
       console.log('Attempting to add event to Supabase:', event);
+      
+      // Only send allowed fields to Supabase
+      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'status', 'isLive'];
+      const sanitizedEvent = {};
+      for (const key of allowedFields) {
+        if (event[key] !== undefined) sanitizedEvent[key] = event[key];
+      }
+      
+      // Include promos if it exists (may not be in database schema yet)
+      if (event.promos !== undefined) {
+        sanitizedEvent.promos = event.promos;
+      }
+      
+      // Include specialWinner if it exists
+      if (event.specialWinner !== undefined) {
+        sanitizedEvent.specialWinner = event.specialWinner;
+      }
+      
       const { error } = await supabase
         .from('events')
-        .insert([event]);
+        .insert([sanitizedEvent]);
 
       if (error) {
         console.error('Supabase insert error:', error);
-        throw error;
+        // If error is about promos column not existing, try without it
+        if (error.message && (error.message.includes('promos') || error.message.includes("Could not find the 'promos' column") || (error.message.includes('column') && error.message.includes('does not exist')))) {
+          console.warn('Promos column may not exist in database, retrying without promos');
+          const { promos, ...eventWithoutPromos } = sanitizedEvent;
+          const { error: retryError } = await supabase
+            .from('events')
+            .insert([eventWithoutPromos]);
+          if (retryError) {
+            console.error('Retry error:', retryError);
+            throw retryError;
+          }
+          console.log('Successfully added event without promos column');
+        } else {
+          throw error;
+        }
       }
 
       console.log('Successfully added event');
+      // Update local state with the full event data (always include promos in local state)
       setEvents([event, ...events]);
     } catch (error) {
       console.error('Error adding event:', error);
-      alert('Failed to add event. Please try again.');
+      alert(`Failed to add event: ${error.message || 'Please try again.'}`);
       // Fallback to local state update if Supabase fails
       setEvents([event, ...events]);
     }
