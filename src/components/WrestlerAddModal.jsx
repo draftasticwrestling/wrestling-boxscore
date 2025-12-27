@@ -5,10 +5,20 @@ const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned'];
 const CLASSIFICATION_OPTIONS = ['Active', 'Part-timer', 'Celebrity Guests', 'Alumni'];
 const STATUS_OPTIONS = ['', 'Injured', 'On Hiatus'];
 
-export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestlers = [] }) {
+// Helper function to generate slug from name
+function slugify(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+}
+
+export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] }) {
   const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
     brand: '',
-    classification: '',
+    classification: 'Active',
     status: '',
     tag_team_name: '',
     tag_team_partner_slug: '',
@@ -19,6 +29,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
   const [partnerSearchTerm, setPartnerSearchTerm] = useState('');
   const [showPartnerDropdown, setShowPartnerDropdown] = useState(false);
   const partnerDropdownRef = useRef(null);
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -37,36 +48,15 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
     };
   }, [showPartnerDropdown]);
 
+  // Auto-generate slug from name
   useEffect(() => {
-    if (wrestler) {
-      setFormData({
-        brand: wrestler.brand || 'Unassigned',
-        classification: wrestler.classification || 'Active',
-        status: wrestler.status || wrestler.Status || '',
-        tag_team_name: wrestler.tag_team_name || '',
-        tag_team_partner_slug: wrestler.tag_team_partner_slug || '',
-        stable: wrestler.stable || wrestler.affiliation || '',
-      });
-      
-      // Set partner search term to current partner's name if exists
-      if (wrestler.tag_team_partner_slug) {
-        const partner = allWrestlers.find(w => w.id === wrestler.tag_team_partner_slug);
-        if (partner) {
-          setPartnerSearchTerm(partner.name);
-        }
-      }
-      
-      // Set image preview if wrestler has an image
-      if (wrestler.image_url) {
-        setImagePreview(wrestler.image_url);
-      } else {
-        setImagePreview(null);
-      }
-      
-      // Reset image file
-      setImageFile(null);
+    if (!slugManuallyEdited && formData.name) {
+      setFormData(prev => ({
+        ...prev,
+        slug: slugify(formData.name)
+      }));
     }
-  }, [wrestler, allWrestlers]);
+  }, [formData.name, slugManuallyEdited]);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -82,21 +72,20 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
           // Part-timers shouldn't have brand
           updated.brand = '';
         } else if (value === 'Active') {
-          // Active wrestlers should have a brand, but status is optional
-          // Keep existing brand if it's valid
+          // Active wrestlers should have a brand, default to RAW
           if (!BRAND_OPTIONS.includes(updated.brand)) {
-            updated.brand = 'RAW'; // Default to RAW
+            updated.brand = 'RAW';
           }
         }
       }
       
-      // If brand changes and classification is Active, keep it Active
-      if (field === 'brand' && formData.classification === 'Active') {
-        // Brand change is fine for Active wrestlers
-      }
-      
       return updated;
     });
+
+    // Track if slug was manually edited
+    if (field === 'slug') {
+      setSlugManuallyEdited(true);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -105,15 +94,31 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
     setError('');
 
     try {
-      // Prepare update data - convert empty strings to null
-      const updateData = {
-        brand: formData.brand && formData.brand.trim() && formData.brand !== 'Unassigned' ? formData.brand.trim() : null,
-        classification: formData.classification || null,
-        "Status": formData.status && formData.status.trim() ? formData.status.trim() : null, // Use "Status" with capital S for database
-        tag_team_name: formData.tag_team_name && formData.tag_team_name.trim() ? formData.tag_team_name.trim() : null,
-        tag_team_partner_slug: formData.tag_team_partner_slug && formData.tag_team_partner_slug.trim() ? formData.tag_team_partner_slug.trim() : null,
-        stable: formData.stable && formData.stable.trim() ? formData.stable.trim() : null,
-      };
+      // Validate required fields
+      if (!formData.name || !formData.name.trim()) {
+        setError('Wrestler name is required');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.slug || !formData.slug.trim()) {
+        setError('Wrestler slug is required');
+        setLoading(false);
+        return;
+      }
+
+      // Check if slug already exists
+      const { data: existingWrestler, error: checkError } = await supabase
+        .from('wrestlers')
+        .select('id')
+        .eq('id', formData.slug.trim())
+        .single();
+
+      if (existingWrestler) {
+        setError(`A wrestler with the slug "${formData.slug}" already exists. Please choose a different slug.`);
+        setLoading(false);
+        return;
+      }
 
       // Validate based on classification
       if (formData.classification === 'Active') {
@@ -122,17 +127,9 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
           setLoading(false);
           return;
         }
-      } else if (formData.classification === 'Part-timer') {
-        // Part-timers shouldn't have brand
-        updateData.brand = null;
-        // Status is optional for Part-timers
-      } else if (formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests') {
-        // Alumni and Celebrity Guests shouldn't have brand or status
-        updateData.brand = null;
-        updateData["Status"] = null;
       }
 
-      // Validate and upload image if provided
+      // Validate image file if provided
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop().toLowerCase();
         if (fileExt !== 'png' && fileExt !== 'webp') {
@@ -140,11 +137,14 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
           setLoading(false);
           return;
         }
-        
+      }
+
+      // Upload image if provided
+      let imageUrl = null;
+      if (imageFile) {
         try {
-          const imageUrl = await uploadWrestlerImage(imageFile, wrestler.id);
+          imageUrl = await uploadWrestlerImage(imageFile, formData.slug.trim());
           console.log('Image uploaded successfully:', imageUrl);
-          updateData.image_url = imageUrl;
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError);
           setError(uploadError.message || 'Failed to upload image');
@@ -153,91 +153,72 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         }
       }
 
-      // Update wrestler in database
-      console.log('Updating wrestler:', wrestler.id, 'with data:', updateData);
-      
-      // Remove null values that might cause issues, but keep them for fields that should be cleared
-      const cleanUpdateData = { ...updateData };
-      
-      // First, try the update without select to see if it works
-      console.log('Attempting to update wrestler with ID:', wrestler.id);
-      console.log('Update data being sent:', cleanUpdateData);
-      
-      const { data: updateResult, error: updateError } = await supabase
-        .from('wrestlers')
-        .update(cleanUpdateData)
-        .eq('id', wrestler.id)
-        .select();
+      // Prepare insert data
+      const insertData = {
+        id: formData.slug.trim(),
+        name: formData.name.trim(),
+        brand: formData.brand && formData.brand.trim() && formData.brand !== 'Unassigned' ? formData.brand.trim() : null,
+        classification: formData.classification || null,
+        "Status": formData.status && formData.status.trim() ? formData.status.trim() : null,
+        tag_team_name: formData.tag_team_name && formData.tag_team_name.trim() ? formData.tag_team_name.trim() : null,
+        tag_team_partner_slug: formData.tag_team_partner_slug && formData.tag_team_partner_slug.trim() ? formData.tag_team_partner_slug.trim() : null,
+        stable: formData.stable && formData.stable.trim() ? formData.stable.trim() : null,
+        image_url: imageUrl,
+      };
 
-      if (updateError) {
-        console.error('Update error details:', {
-          message: updateError.message,
-          details: updateError.details,
-          hint: updateError.hint,
-          code: updateError.code
-        });
-        
-        // Check for common RLS/permission errors
-        if (updateError.code === '42501' || updateError.message?.includes('permission') || updateError.message?.includes('policy')) {
-          setError('Permission denied. You may need to set up Row Level Security policies for the wrestlers table. Check the console for details.');
-        }
-        
-        throw updateError;
+      // Clean up data based on classification
+      if (formData.classification === 'Part-timer') {
+        insertData.brand = null;
+      } else if (formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests') {
+        insertData.brand = null;
+        insertData["Status"] = null;
       }
 
-      console.log('Update result:', updateResult);
-      
-      // Check if update actually affected any rows
-      if (!updateResult || updateResult.length === 0) {
-        console.warn('Update returned no rows - wrestler may not exist or update had no effect');
-        // Don't throw - might still have worked
-      }
+      console.log('Creating wrestler with data:', insertData);
 
-      // Verify the update by fetching the wrestler
-      const { data: verifyData, error: verifyError } = await supabase
+      const { data: newWrestler, error: insertError } = await supabase
         .from('wrestlers')
-        .select('*')
-        .eq('id', wrestler.id)
+        .insert(insertData)
+        .select()
         .single();
 
-      if (verifyError) {
-        console.error('Verify error:', verifyError);
-        // Don't throw - the update might have worked even if we can't verify
-        console.warn('Update may have succeeded but could not verify');
-      } else {
-        console.log('Update verified, wrestler data:', verifyData);
+      if (insertError) {
+        console.error('Insert error details:', {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
+        });
+        
+        if (insertError.code === '42501' || insertError.message?.includes('permission') || insertError.message?.includes('policy')) {
+          setError('Permission denied. You may need to set up Row Level Security policies for the wrestlers table.');
+        } else if (insertError.code === '23505') {
+          setError('A wrestler with this slug already exists. Please choose a different slug.');
+        } else {
+          setError(insertError.message || 'Failed to create wrestler');
+        }
+        
+        throw insertError;
       }
 
-      // Show success message briefly before closing
-      setError(''); // Clear any previous errors
-      
-      // Call onSave callback with updated data
-      // Use verified data if available, otherwise use what we tried to update
-      const finalData = verifyData || {
-        ...wrestler,
-        ...updateData,
-        status: updateData["Status"], // Also set lowercase status for consistency
-        tag_team_name: updateData.tag_team_name,
-        tag_team_partner_slug: updateData.tag_team_partner_slug,
-        stable: updateData.stable,
-      };
-      
-      console.log('Calling onSave with data:', finalData);
-      onSave(finalData);
+      console.log('Wrestler created successfully:', newWrestler);
+
+      // Call onSave callback with new wrestler data
+      onSave(newWrestler);
 
       // Small delay to ensure database write completes
       setTimeout(() => {
         onClose();
       }, 100);
     } catch (err) {
-      console.error('Error updating wrestler:', err);
-      setError(err.message || 'Failed to update wrestler');
+      console.error('Error creating wrestler:', err);
+      if (!error) {
+        setError(err.message || 'Failed to create wrestler');
+      }
     } finally {
       setLoading(false);
     }
   };
-
-  if (!wrestler) return null;
 
   return (
     <div
@@ -269,7 +250,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         onClick={(e) => e.stopPropagation()}
       >
         <h2 style={{ color: '#C6A04F', marginBottom: 24, fontSize: 24 }}>
-          Edit {wrestler.name}
+          Add New Wrestler
         </h2>
 
         {error && (
@@ -285,9 +266,118 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* Name */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
-              Classification:
+              Name: *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              placeholder="e.g., John Cena"
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+              required
+            />
+          </div>
+
+          {/* Slug */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Slug (URL identifier): *
+            </label>
+            <input
+              type="text"
+              value={formData.slug}
+              onChange={(e) => handleChange('slug', e.target.value)}
+              placeholder="e.g., john-cena"
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+              required
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Auto-generated from name, but you can edit it. Must be unique.
+            </div>
+          </div>
+
+          {/* Image Upload */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Wrestler Image:
+            </label>
+            <input
+              type="file"
+              accept=".png,.webp"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  const fileExt = file.name.split('.').pop().toLowerCase();
+                  if (fileExt !== 'png' && fileExt !== 'webp') {
+                    setError('Image must be a .png or .webp file');
+                    e.target.value = '';
+                    return;
+                  }
+                  setImageFile(file);
+                  // Create preview
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setImagePreview(reader.result);
+                  };
+                  reader.readAsDataURL(file);
+                  setError('');
+                } else {
+                  setImageFile(null);
+                  setImagePreview(null);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+            />
+            {imagePreview && (
+              <div style={{ marginTop: 12, textAlign: 'center' }}>
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  style={{
+                    maxWidth: '200px',
+                    maxHeight: '200px',
+                    borderRadius: 8,
+                    border: '1px solid #444',
+                  }}
+                />
+              </div>
+            )}
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Upload a .png or .webp image. File will be saved as: {formData.slug || 'wrestler-slug'}.{imageFile ? imageFile.name.split('.').pop().toLowerCase() : 'png'}
+            </div>
+          </div>
+
+          {/* Classification */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Classification: *
             </label>
             <select
               value={formData.classification}
@@ -309,10 +399,11 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             </select>
           </div>
 
+          {/* Brand (only for Active) */}
           {formData.classification === 'Active' && (
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
-                Brand:
+                Brand: *
               </label>
               <select
                 value={formData.brand}
@@ -336,6 +427,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             </div>
           )}
 
+          {/* Status (only for Active and Part-timer) */}
           {(formData.classification === 'Active' || formData.classification === 'Part-timer') && (
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
@@ -381,69 +473,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             </div>
           )}
 
-          {/* Image Upload */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
-              Wrestler Image:
-            </label>
-            {imagePreview && (
-              <div style={{ marginBottom: 12, textAlign: 'center' }}>
-                <img
-                  src={imagePreview}
-                  alt="Current or preview"
-                  style={{
-                    maxWidth: '200px',
-                    maxHeight: '200px',
-                    borderRadius: 8,
-                    border: '1px solid #444',
-                  }}
-                />
-              </div>
-            )}
-            <input
-              type="file"
-              accept=".png,.webp"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  const fileExt = file.name.split('.').pop().toLowerCase();
-                  if (fileExt !== 'png' && fileExt !== 'webp') {
-                    setError('Image must be a .png or .webp file');
-                    e.target.value = '';
-                    return;
-                  }
-                  setImageFile(file);
-                  // Create preview
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setImagePreview(reader.result);
-                  };
-                  reader.readAsDataURL(file);
-                  setError('');
-                } else {
-                  setImageFile(null);
-                  // Keep existing image preview if no new file selected
-                  if (wrestler.image_url) {
-                    setImagePreview(wrestler.image_url);
-                  }
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: 10,
-                borderRadius: 8,
-                background: '#232323',
-                color: '#fff',
-                border: '1px solid #444',
-                fontSize: 15,
-              }}
-            />
-            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
-              Upload a .png or .webp image to replace the current image. File will be saved as: {wrestler.id}.{imageFile ? imageFile.name.split('.').pop().toLowerCase() : 'png'}
-            </div>
-          </div>
-
-          {/* Tag Team Information */}
+          {/* Tag Team Name */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
               Tag Team Name:
@@ -479,7 +509,6 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
               onChange={(e) => {
                 setPartnerSearchTerm(e.target.value);
                 setShowPartnerDropdown(true);
-                // Clear partner if search is cleared
                 if (!e.target.value) {
                   handleChange('tag_team_partner_slug', '');
                 }
@@ -512,7 +541,6 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
               }}>
                 {allWrestlers
                   .filter(w => 
-                    w.id !== wrestler.id && 
                     w.name.toLowerCase().includes(partnerSearchTerm.toLowerCase())
                   )
                   .slice(0, 10)
@@ -537,7 +565,6 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
                     </div>
                   ))}
                 {allWrestlers.filter(w => 
-                  w.id !== wrestler.id && 
                   w.name.toLowerCase().includes(partnerSearchTerm.toLowerCase())
                 ).length === 0 && (
                   <div style={{ padding: '10px 12px', color: '#999', fontSize: 13 }}>
@@ -609,7 +636,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
               }}
               disabled={loading}
             >
-              {loading ? 'Saving...' : 'Save Changes'}
+              {loading ? 'Creating...' : 'Create Wrestler'}
             </button>
           </div>
         </form>

@@ -25,25 +25,30 @@ supabase.from('events').select('count').then(
   }
 ); 
 
-export async function uploadWrestlerImage(file, wrestlerId) {
-  const fileExt = file.name.split('.').pop();
-  const filePath = `${wrestlerId}/${Date.now()}.${fileExt}`;
+export async function uploadWrestlerImage(file, wrestlerSlug) {
+  const fileExt = file.name.split('.').pop().toLowerCase();
+  
+  // Validate file extension
+  if (fileExt !== 'png' && fileExt !== 'webp') {
+    throw new Error('File must be a .png or .webp file');
+  }
+  
+  // Use format: wrestler-slug.filetype
+  const filePath = `${wrestlerSlug}.${fileExt}`;
+  
+  // Upload with upsert: true to allow overwriting existing images
   const { data, error } = await supabase.storage
     .from('wrestler-images')
     .upload(filePath, file, {
       cacheControl: '3600',
-      upsert: false
+      upsert: true
     });
 
   if (error) throw error;
 
-  // Get public URL
-  const { data: publicUrlData } = supabase
-    .storage
-    .from('wrestler-images')
-    .getPublicUrl(filePath);
-
-  return publicUrlData.publicUrl;
+  // Return the public URL in the format specified
+  const publicUrl = `https://qvbqxietcmweltxoonvh.supabase.co/storage/v1/object/public/wrestler-images/${filePath}`;
+  return publicUrl;
 } 
 
 function slugify(name) {

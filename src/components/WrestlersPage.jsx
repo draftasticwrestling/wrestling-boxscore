@@ -5,6 +5,7 @@ import InactiveIcon from './InactiveIcon';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../hooks/useUser';
 import WrestlerEditModal from './WrestlerEditModal';
+import WrestlerAddModal from './WrestlerAddModal';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'AAA'];
 const BRAND_LABELS = {
@@ -290,6 +291,7 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   const [wrestlersWithRecentAppearances, setWrestlersWithRecentAppearances] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [editingWrestler, setEditingWrestler] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const user = useUser();
   const isAuthorized = !!user;
   
@@ -347,6 +349,16 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
       window.location.reload(true);
     }, 300);
   };
+
+  const handleWrestlerCreate = async (newWrestler) => {
+    console.log('Wrestler created in parent:', newWrestler);
+    // Close the modal
+    setShowAddModal(false);
+    // Force a hard refresh to ensure we get the latest data from the database
+    setTimeout(() => {
+      window.location.reload(true);
+    }, 300);
+  };
   
   return (
     <>
@@ -357,7 +369,27 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
         <link rel="canonical" href="https://wrestlingboxscore.com/wrestlers" />
       </Helmet>
       <div style={{ color: '#fff', padding: 40, maxWidth: 900, margin: '0 auto' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: 32 }}>Wrestlers</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+          <h2 style={{ textAlign: 'center', margin: 0, flex: 1 }}>Wrestlers</h2>
+          {isAuthorized && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: 8,
+                background: '#C6A04F',
+                color: '#232323',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 15,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              + Add Wrestler
+            </button>
+          )}
+        </div>
         {loading && (
           <div style={{ textAlign: 'center', color: '#C6A04F', marginBottom: 24 }}>
             Loading recent appearances...
@@ -554,6 +586,15 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
             wrestler={editingWrestler}
             onClose={() => setEditingWrestler(null)}
             onSave={handleWrestlerUpdate}
+            allWrestlers={safeWrestlers}
+          />
+        )}
+
+        {/* Add Modal */}
+        {showAddModal && (
+          <WrestlerAddModal
+            onClose={() => setShowAddModal(false)}
+            onSave={handleWrestlerCreate}
             allWrestlers={safeWrestlers}
           />
         )}
