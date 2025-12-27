@@ -1,0 +1,350 @@
+-- Championship Automation System
+-- This file creates the database schema for automatically tracking championship changes
+
+-- 1. Create championships table
+CREATE TABLE IF NOT EXISTS championships (
+  id TEXT PRIMARY KEY,  -- e.g., 'wwe-championship', 'mens-ic-championship'
+  title_name TEXT NOT NULL UNIQUE,
+  current_champion TEXT,  -- Name of current champion (can be "VACANT")
+  current_champion_slug TEXT,  -- Slug of current champion (can be "vacant")
+  previous_champion TEXT,  -- Name of previous champion
+  previous_champion_slug TEXT,  -- Slug of previous champion
+  date_won DATE,  -- Date title was won
+  event_id TEXT,  -- ID of event where title changed
+  event_name TEXT,  -- Name of event where title changed
+  brand TEXT,  -- RAW, SmackDown, NXT, or Unassigned
+  type TEXT,  -- World, Secondary, or Tag Team
+  vacation_reason TEXT,  -- Reason for vacancy (if applicable)
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_championships_brand ON championships(brand);
+CREATE INDEX IF NOT EXISTS idx_championships_type ON championships(type);
+
+-- 2. Helper function to normalize title name to championship ID
+CREATE OR REPLACE FUNCTION title_to_championship_id(title_name TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  RETURN CASE title_name
+    WHEN 'Undisputed WWE Championship' THEN 'wwe-championship'
+    WHEN 'World Heavyweight Championship' THEN 'world-heavyweight-championship'
+    WHEN 'Men''s IC Championship' THEN 'mens-ic-championship'
+    WHEN 'Men''s U.S. Championship' THEN 'mens-us-championship'
+    WHEN 'Raw Tag Team Championship' THEN 'raw-tag-team-championship'
+    WHEN 'SmackDown Tag Team Championship' THEN 'smackdown-tag-team-championship'
+    WHEN 'Men''s Speed Championship' THEN 'mens-speed-championship'
+    WHEN 'WWE Women''s Championship' THEN 'wwe-womens-championship'
+    WHEN 'Women''s World Championship' THEN 'womens-world-championship'
+    WHEN 'Women''s IC Championship' THEN 'womens-ic-championship'
+    WHEN 'Women''s U.S. Championship' THEN 'womens-us-championship'
+    WHEN 'Women''s Tag Team Championship' THEN 'womens-tag-team-championship'
+    WHEN 'Women''s Speed Championship' THEN 'womens-speed-championship'
+    ELSE NULL
+  END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 3. Helper function to determine brand from title
+CREATE OR REPLACE FUNCTION title_to_brand(title_name TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  RETURN CASE 
+    WHEN title_name LIKE '%Raw%' 
+         OR title_name = 'World Heavyweight Championship'
+         OR title_name = 'Women''s World Championship'
+         OR title_name = 'Men''s IC Championship'
+         OR title_name = 'Women''s IC Championship' THEN 'RAW'
+    WHEN title_name LIKE '%SmackDown%' 
+         OR title_name = 'WWE Women''s Championship' 
+         OR title_name = 'Undisputed WWE Championship'
+         OR title_name = 'Men''s U.S. Championship'
+         OR title_name = 'Women''s U.S. Championship' THEN 'SmackDown'
+    WHEN title_name LIKE '%Speed%' THEN 'NXT'
+    WHEN title_name LIKE '%Tag Team%' AND title_name NOT LIKE '%Raw%' AND title_name NOT LIKE '%SmackDown%' THEN 'Unassigned'
+    ELSE 'Unassigned'
+  END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. Helper function to determine title type
+CREATE OR REPLACE FUNCTION title_to_type(title_name TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  RETURN CASE 
+    WHEN title_name LIKE '%World%' OR title_name LIKE '%WWE Championship%' THEN 'World'
+    WHEN title_name LIKE '%Tag Team%' THEN 'Tag Team'
+    ELSE 'Secondary'
+  END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 5. Function to extract winner from match result
+-- This handles various formats: "Winner def. Loser", "Winner won", etc.
+CREATE OR REPLACE FUNCTION extract_winner_from_result(
+  result_text TEXT,
+  participants_text TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  winner TEXT;
+BEGIN
+  IF result_text IS NULL OR result_text = '' THEN
+    RETURN NULL;
+  END IF;
+  
+  -- Extract winner from "Winner def. Loser" format
+  IF result_text LIKE '% def. %' THEN
+    winner := TRIM(SPLIT_PART(result_text, ' def. ', 1));
+  -- Extract from "Winner won" format
+  ELSIF result_text LIKE '% won %' THEN
+    winner := TRIM(SPLIT_PART(result_text, ' won ', 1));
+  -- Extract from "Winner defeats Loser" format
+  ELSIF result_text LIKE '% defeats %' THEN
+    winner := TRIM(SPLIT_PART(result_text, ' defeats ', 1));
+  ELSE
+    -- Try to get first part before any common separators
+    winner := TRIM(SPLIT_PART(result_text, ' ', 1));
+  END IF;
+  
+  RETURN winner;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 6. Function to find wrestler slug from name
+-- This tries to match the winner name to a wrestler in the database
+CREATE OR REPLACE FUNCTION find_wrestler_slug(winner_name TEXT)
+RETURNS TEXT AS $$
+DECLARE
+  wrestler_slug TEXT;
+  normalized_name TEXT;
+BEGIN
+  IF winner_name IS NULL OR winner_name = '' THEN
+    RETURN NULL;
+  END IF;
+  
+  -- Try exact match on name
+  SELECT id INTO wrestler_slug
+  FROM wrestlers
+  WHERE name = winner_name
+  LIMIT 1;
+  
+  IF wrestler_slug IS NOT NULL THEN
+    RETURN wrestler_slug;
+  END IF;
+  
+  -- Try case-insensitive match
+  SELECT id INTO wrestler_slug
+  FROM wrestlers
+  WHERE LOWER(name) = LOWER(winner_name)
+  LIMIT 1;
+  
+  IF wrestler_slug IS NOT NULL THEN
+    RETURN wrestler_slug;
+  END IF;
+  
+  -- Try to match if winner_name is already a slug
+  SELECT id INTO wrestler_slug
+  FROM wrestlers
+  WHERE id = winner_name
+  LIMIT 1;
+  
+  IF wrestler_slug IS NOT NULL THEN
+    RETURN wrestler_slug;
+  END IF;
+  
+  -- Try to find tag team match
+  SELECT id INTO wrestler_slug
+  FROM tag_teams
+  WHERE name = winner_name OR LOWER(name) = LOWER(winner_name)
+  LIMIT 1;
+  
+  IF wrestler_slug IS NOT NULL THEN
+    RETURN wrestler_slug;
+  END IF;
+  
+  -- If no match found, create a slug from the name
+  normalized_name := LOWER(REGEXP_REPLACE(winner_name, '[^a-z0-9]+', '-', 'gi'));
+  normalized_name := TRIM(BOTH '-' FROM normalized_name);
+  
+  RETURN normalized_name;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. Main trigger function to process championship changes
+CREATE OR REPLACE FUNCTION process_championship_changes()
+RETURNS TRIGGER AS $$
+DECLARE
+  match_record JSONB;
+  title_name TEXT;
+  title_outcome TEXT;
+  match_result TEXT;
+  winner_name TEXT;
+  winner_slug TEXT;
+  defending_champion_slug TEXT;
+  championship_id TEXT;
+  event_date DATE;
+  current_champ_record RECORD;
+  match_participants TEXT;
+BEGIN
+  -- Only process if matches array changed
+  IF OLD.matches IS NOT DISTINCT FROM NEW.matches THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Parse event date - try multiple formats
+  BEGIN
+    event_date := TO_DATE(NEW.date, 'Month DD, YYYY');
+  EXCEPTION WHEN OTHERS THEN
+    BEGIN
+      event_date := TO_DATE(NEW.date, 'YYYY-MM-DD');
+    EXCEPTION WHEN OTHERS THEN
+      BEGIN
+        event_date := TO_DATE(NEW.date, 'Mon DD, YYYY');
+      EXCEPTION WHEN OTHERS THEN
+        event_date := CURRENT_DATE;
+      END;
+    END;
+  END;
+  
+  -- Loop through each match in the matches array
+  FOR match_record IN SELECT * FROM jsonb_array_elements(NEW.matches)
+  LOOP
+    title_name := match_record->>'title';
+    title_outcome := match_record->>'titleOutcome';
+    match_result := match_record->>'result';
+    defending_champion_slug := match_record->>'defendingChampion';
+    match_participants := match_record->>'participants';
+    
+    -- Skip if no title or title is "None"
+    IF title_name IS NULL OR title_name = 'None' OR title_name = '' THEN
+      CONTINUE;
+    END IF;
+    
+    -- Skip if titleOutcome is not relevant
+    IF title_outcome IS NULL OR title_outcome = 'None' OR title_outcome = '' OR title_outcome = 'No. 1 Contender' THEN
+      CONTINUE;
+    END IF;
+    
+    -- Get championship ID
+    championship_id := title_to_championship_id(title_name);
+    IF championship_id IS NULL THEN
+      CONTINUE;
+    END IF;
+    
+    -- Handle different title outcomes
+    IF title_outcome = 'New Champion' THEN
+      -- Extract winner from match result
+      winner_name := extract_winner_from_result(match_result, match_participants);
+      
+      IF winner_name IS NULL OR winner_name = '' THEN
+        -- Log error but continue
+        RAISE WARNING 'Could not extract winner from result: %', match_result;
+        CONTINUE;
+      END IF;
+      
+      -- Try to find wrestler slug
+      winner_slug := find_wrestler_slug(winner_name);
+      
+      -- Get current champion info
+      SELECT current_champion, current_champion_slug INTO current_champ_record
+      FROM championships
+      WHERE id = championship_id;
+      
+      -- Update or insert championship record
+      INSERT INTO championships (
+        id, title_name, current_champion, current_champion_slug,
+        previous_champion, previous_champion_slug,
+        date_won, event_id, event_name, brand, type
+      )
+      VALUES (
+        championship_id, title_name, winner_name, COALESCE(winner_slug, LOWER(REGEXP_REPLACE(winner_name, '[^a-z0-9]+', '-', 'gi'))),
+        COALESCE(current_champ_record.current_champion, 'Unknown'),
+        COALESCE(current_champ_record.current_champion_slug, 'unknown'),
+        event_date, NEW.id, NEW.name,
+        title_to_brand(title_name), title_to_type(title_name)
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        previous_champion = championships.current_champion,
+        previous_champion_slug = championships.current_champion_slug,
+        current_champion = EXCLUDED.current_champion,
+        current_champion_slug = EXCLUDED.current_champion_slug,
+        date_won = EXCLUDED.date_won,
+        event_id = EXCLUDED.event_id,
+        event_name = EXCLUDED.event_name,
+        updated_at = NOW();
+        
+    ELSIF title_outcome = 'Vacant' THEN
+      -- Set title to vacant
+      SELECT current_champion, current_champion_slug INTO current_champ_record
+      FROM championships
+      WHERE id = championship_id;
+      
+      INSERT INTO championships (
+        id, title_name, current_champion, current_champion_slug,
+        previous_champion, previous_champion_slug,
+        date_won, event_id, event_name, brand, type
+      )
+      VALUES (
+        championship_id, title_name, 'VACANT', 'vacant',
+        COALESCE(current_champ_record.current_champion, 'Unknown'),
+        COALESCE(current_champ_record.current_champion_slug, 'unknown'),
+        event_date, NEW.id, NEW.name,
+        title_to_brand(title_name), title_to_type(title_name)
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        previous_champion = championships.current_champion,
+        previous_champion_slug = championships.current_champion_slug,
+        current_champion = 'VACANT',
+        current_champion_slug = 'vacant',
+        date_won = EXCLUDED.date_won,
+        event_id = EXCLUDED.event_id,
+        event_name = EXCLUDED.event_name,
+        updated_at = NOW();
+        
+    ELSIF title_outcome = 'Champion Retains' THEN
+      -- No change needed, but ensure the championship record exists
+      INSERT INTO championships (
+        id, title_name, brand, type
+      )
+      VALUES (
+        championship_id, title_name,
+        title_to_brand(title_name), title_to_type(title_name)
+      )
+      ON CONFLICT (id) DO NOTHING;
+    END IF;
+  END LOOP;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 8. Create trigger
+DROP TRIGGER IF EXISTS trigger_process_championships ON events;
+CREATE TRIGGER trigger_process_championships
+AFTER INSERT OR UPDATE ON events
+FOR EACH ROW
+EXECUTE FUNCTION process_championship_changes();
+
+-- 9. Grant permissions (adjust based on your RLS policies)
+ALTER TABLE championships ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist, then create new ones
+DROP POLICY IF EXISTS "Enable read access for all users" ON championships;
+DROP POLICY IF EXISTS "Enable insert for authenticated users" ON championships;
+DROP POLICY IF EXISTS "Enable update for authenticated users" ON championships;
+
+-- Create policy for read access (all users can read)
+CREATE POLICY "Enable read access for all users" ON championships
+  FOR SELECT
+  USING (true);
+
+-- Create policy for authenticated users to insert/update (adjust as needed)
+CREATE POLICY "Enable insert for authenticated users" ON championships
+  FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Enable update for authenticated users" ON championships
+  FOR UPDATE
+  USING (true);
+

@@ -1,141 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-
-// Current champions data (updated with accurate information)
-const currentChampions = [
-  {
-    id: 'wwe-championship',
-    title_name: 'WWE Championship',
-    current_champion: 'Cody Rhodes',
-    current_champion_slug: 'cody-rhodes',
-    previous_champion: 'John Cena',
-    date_won: '2025-08-03',
-    event: 'Summer Slam Night 2',
-    brand: 'SmackDown',
-    type: 'World'
-  },
-  {
-    id: 'world-heavyweight-championship',
-    title_name: 'World Heavyweight Championship',
-    current_champion: 'Seth Rollins',
-    current_champion_slug: 'seth-rollins',
-    previous_champion: 'CM Punk',
-    date_won: '2025-08-02',
-    event: 'Summer Slam Night 1',
-    brand: 'RAW',
-    type: 'World'
-  },
-  {
-    id: 'mens-us-championship',
-    title_name: "Men's United States Championship",
-    current_champion: 'Sami Zayn',
-    current_champion_slug: 'sami-zayn',
-    previous_champion: 'Solo Sikoa',
-    date_won: '2025-08-29',
-    event: 'SmackDown',
-    brand: 'SmackDown',
-    type: 'Secondary'
-  },
-  {
-    id: 'mens-ic-championship',
-    title_name: "Men's Intercontinental Championship",
-    current_champion: 'Dominik Mysterio',
-    current_champion_slug: 'dominik-mysterio',
-    previous_champion: 'Bron Breakker',
-    date_won: '2025-04-20',
-    event: 'Wrestlemania Night 2',
-    brand: 'RAW',
-    type: 'Secondary'
-  },
-  {
-    id: 'raw-tag-team-championship',
-    title_name: 'RAW Tag Team Championship',
-    current_champion: 'The Judgment Day (Finn Balor & JD McDonagh)',
-    current_champion_slug: 'the-judgment-day',
-    previous_champion: 'The New Day (Kofi Kingston & Xavier Woods)',
-    date_won: '2025-06-30',
-    event: 'RAW',
-    brand: 'RAW',
-    type: 'Tag Team'
-  },
-  {
-    id: 'smackdown-tag-team-championship',
-    title_name: 'SmackDown Tag Team Championship',
-    current_champion: 'The Wyatt Sicks (Joe Gacy & Dexter Lumis)',
-    current_champion_slug: 'the-wyatt-sicks',
-    previous_champion: 'The Street Profits (Angelo Dawkins & Montez Ford)',
-    date_won: '2025-07-11',
-    event: 'SmackDown',
-    brand: 'SmackDown',
-    type: 'Tag Team'
-  },
-
-  {
-    id: 'wwe-womens-championship',
-    title_name: "WWE Women's Championship",
-    current_champion: 'Tiffany Stratton',
-    current_champion_slug: 'tiffany-stratton',
-    previous_champion: 'Nia Jax',
-    date_won: '2025-01-03',
-    event: 'SmackDown',
-    brand: 'SmackDown',
-    type: 'World'
-  },
-  {
-    id: 'womens-world-championship',
-    title_name: "Women's World Championship",
-    current_champion: 'VACANT',
-    current_champion_slug: 'vacant',
-    previous_champion: 'Naomi',
-    date_won: '2025-08-18',
-    event: 'RAW',
-    brand: 'RAW',
-    type: 'World',
-    vacation_reason: 'medical reasons'
-  },
-  {
-    id: 'womens-ic-championship',
-    title_name: "Women's Intercontinental Championship",
-    current_champion: 'Becky Lynch',
-    current_champion_slug: 'becky-lynch',
-    previous_champion: 'Lyra Valkyria',
-    date_won: '2025-06-07',
-    event: 'Money in the Bank',
-    brand: 'RAW',
-    type: 'Secondary'
-  },
-  {
-    id: 'womens-us-championship',
-    title_name: "Women's United States Championship",
-    current_champion: 'Giulia',
-    current_champion_slug: 'giulia',
-    previous_champion: 'Zelina Vega',
-    date_won: '2025-06-27',
-    event: 'SmackDown',
-    brand: 'SmackDown',
-    type: 'Secondary'
-  },
-  {
-    id: 'womens-tag-team-championship',
-    title_name: 'Women\'s Tag Team Championship',
-    current_champion: 'Charlotte Flair & Alexa Bliss',
-    current_champion_slug: 'charlotte-flair-alexa-bliss',
-    previous_champion: 'The Judgment Day (Roxanne Perez & Raquel Rodriguez)',
-    date_won: '2025-08-02',
-    event: 'Summer Slam Night 1',
-    brand: 'Unassigned',
-    type: 'Tag Team'
-  },
-
-];
+import { supabase } from '../supabaseClient';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'Unassigned'];
 
+// Custom championship display order
+const CHAMPIONSHIP_ORDER = [
+  'Undisputed WWE Championship',
+  'World Heavyweight Championship',
+  'WWE Women\'s Championship',
+  'Women\'s World Championship',
+  'Men\'s IC Championship',
+  'Women\'s IC Championship',
+  'Men\'s U.S. Championship',
+  'Women\'s U.S. Championship',
+  'Raw Tag Team Championship',
+  'SmackDown Tag Team Championship',
+  'Women\'s Tag Team Championship'
+];
+
+// Helper function to get championship display order
+function getChampionshipOrder(titleName) {
+  const index = CHAMPIONSHIP_ORDER.indexOf(titleName);
+  return index === -1 ? 999 : index; // Put unknown championships at the end
+}
 
 export default function ChampionshipsPage({ wrestlers = [] }) {
   const [selectedBrand, setSelectedBrand] = useState('all');
+  const [champions, setChampions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tagTeams, setTagTeams] = useState([]);
+  const [tagTeamMembers, setTagTeamMembers] = useState({});
 
-  const filteredChampions = currentChampions.filter(champ => {
+  useEffect(() => {
+    fetchChampions();
+    fetchTagTeams();
+  }, []);
+
+  const fetchTagTeams = async () => {
+    try {
+      // Fetch all tag teams
+      const { data: teams, error: teamsError } = await supabase
+        .from('tag_teams')
+        .select('id, name');
+      
+      if (teamsError) throw teamsError;
+      setTagTeams(teams || []);
+      
+      // Fetch all tag team members
+      if (teams && teams.length > 0) {
+        const { data: members, error: membersError } = await supabase
+          .from('tag_team_members')
+          .select('tag_team_id, wrestler_slug, member_order')
+          .eq('active', true)
+          .order('member_order');
+        
+        if (membersError) throw membersError;
+        
+        // Group members by tag team
+        const membersByTeam = {};
+        (members || []).forEach(member => {
+          if (!membersByTeam[member.tag_team_id]) {
+            membersByTeam[member.tag_team_id] = [];
+          }
+          membersByTeam[member.tag_team_id].push(member.wrestler_slug);
+        });
+        
+        setTagTeamMembers(membersByTeam);
+      }
+    } catch (err) {
+      console.error('Error fetching tag teams:', err);
+      // Don't show error to user, just log it
+    }
+  };
+
+  const fetchChampions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { data, error: fetchError } = await supabase
+        .from('championships')
+        .select('*');
+
+      if (fetchError) throw fetchError;
+      
+      // Transform data to match expected format (event_name -> event)
+      let transformedData = (data || []).map(champ => ({
+        ...champ,
+        event: champ.event_name || champ.event || 'Unknown Event'
+      }));
+      
+      // Sort by custom championship order
+      transformedData.sort((a, b) => {
+        const orderA = getChampionshipOrder(a.title_name);
+        const orderB = getChampionshipOrder(b.title_name);
+        return orderA - orderB;
+      });
+      
+      setChampions(transformedData);
+    } catch (err) {
+      console.error('Error fetching champions:', err);
+      setError('Failed to load champions. Please try again later.');
+      // Fallback to empty array
+      setChampions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredChampions = champions.filter(champ => {
     const brandMatch = selectedBrand === 'all' || champ.brand === selectedBrand;
     return brandMatch;
   });
@@ -173,18 +147,48 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   const getTagTeamImages = (championName, championSlug) => {
     if (championSlug === 'vacant') return [];
     
-    // Handle specific tag team cases
+    // Normalize slug - remove "the-" prefix if present for lookup
+    const normalizedSlug = championSlug.replace(/^the-/, '');
+    
+    // Clean up champion name - remove member names in parentheses if present
+    const cleanChampionName = championName.replace(/\s*\([^)]+\)\s*$/, '').trim();
+    
+    // Try to find tag team in database by multiple methods
+    const tagTeam = tagTeams.find(team => {
+      // Match by exact slug
+      if (team.id === championSlug || team.id === normalizedSlug) return true;
+      // Match by name (case insensitive)
+      if (team.name.toLowerCase() === championName.toLowerCase()) return true;
+      // Match by cleaned name (without member names in parentheses)
+      if (team.name.toLowerCase() === cleanChampionName.toLowerCase()) return true;
+      // Match if team name is contained in champion name or vice versa
+      const teamNameLower = team.name.toLowerCase();
+      const champNameLower = championName.toLowerCase();
+      if (champNameLower.includes(teamNameLower) || teamNameLower.includes(champNameLower)) return true;
+      return false;
+    });
+    
+    if (tagTeam) {
+      // Get members from tag_team_members
+      const teamId = tagTeam.id;
+      const memberSlugs = tagTeamMembers[teamId] || [];
+      
+      // Get images for the first 2 members (for display)
+      const images = memberSlugs.slice(0, 2).map(slug => {
+        const wrestler = wrestlers.find(w => w.id === slug);
+        return wrestler?.image_url;
+      }).filter(Boolean);
+      
+      if (images.length > 0) {
+        return images;
+      }
+    }
+    
+    // Fallback: Handle specific hardcoded cases for teams not in database
     if (championSlug === 'the-judgment-day') {
       return [
         wrestlers.find(w => w.id === 'finn-balor')?.image_url,
         wrestlers.find(w => w.id === 'jd-mcdonagh')?.image_url
-      ].filter(Boolean);
-    }
-    
-    if (championSlug === 'the-wyatt-sicks') {
-      return [
-        wrestlers.find(w => w.id === 'joe-gacy')?.image_url,
-        wrestlers.find(w => w.id === 'dexter-lumis')?.image_url
       ].filter(Boolean);
     }
     
@@ -246,6 +250,29 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
           Current Champions
         </h1>
         
+        {error && (
+          <div style={{ 
+            background: '#b02a37', 
+            color: '#fff', 
+            padding: 16, 
+            borderRadius: 8, 
+            marginBottom: 24,
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+        
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#ccc' }}>
+            Loading champions...
+          </div>
+        ) : filteredChampions.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#ccc' }}>
+            No champions found.
+          </div>
+        ) : (
+          <>
         {/* Filters */}
         <div style={{ marginBottom: 32, textAlign: 'center' }}>
           <div style={{ marginBottom: 16 }}>
@@ -456,7 +483,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
           <h3 style={{ textAlign: 'center', marginBottom: 20, color: '#C6A04F' }}>Championship Summary</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
             {BRAND_ORDER.map(brand => {
-              const brandCount = currentChampions.filter(champ => champ.brand === brand).length;
+              const brandCount = champions.filter(champ => champ.brand === brand).length;
               return (
                 <div key={brand} style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 24, fontWeight: 800, color: getBrandColor(brand) }}>{brandCount}</div>
@@ -465,11 +492,13 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               );
             })}
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#C6A04F' }}>{currentChampions.length}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#C6A04F' }}>{champions.length}</div>
               <div style={{ fontSize: 14, color: '#ccc' }}>Total Titles</div>
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </>
   );
