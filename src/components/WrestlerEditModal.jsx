@@ -127,10 +127,14 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
       const cleanUpdateData = { ...updateData };
       
       // First, try the update without select to see if it works
-      const { error: updateError } = await supabase
+      console.log('Attempting to update wrestler with ID:', wrestler.id);
+      console.log('Update data being sent:', cleanUpdateData);
+      
+      const { data: updateResult, error: updateError } = await supabase
         .from('wrestlers')
         .update(cleanUpdateData)
-        .eq('id', wrestler.id);
+        .eq('id', wrestler.id)
+        .select();
 
       if (updateError) {
         console.error('Update error details:', {
@@ -139,7 +143,21 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
           hint: updateError.hint,
           code: updateError.code
         });
+        
+        // Check for common RLS/permission errors
+        if (updateError.code === '42501' || updateError.message?.includes('permission') || updateError.message?.includes('policy')) {
+          setError('Permission denied. You may need to set up Row Level Security policies for the wrestlers table. Check the console for details.');
+        }
+        
         throw updateError;
+      }
+
+      console.log('Update result:', updateResult);
+      
+      // Check if update actually affected any rows
+      if (!updateResult || updateResult.length === 0) {
+        console.warn('Update returned no rows - wrestler may not exist or update had no effect');
+        // Don't throw - might still have worked
       }
 
       // Verify the update by fetching the wrestler
@@ -157,6 +175,9 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         console.log('Update verified, wrestler data:', verifyData);
       }
 
+      // Show success message briefly before closing
+      setError(''); // Clear any previous errors
+      
       // Call onSave callback with updated data
       // Use verified data if available, otherwise use what we tried to update
       const finalData = verifyData || {
@@ -168,9 +189,13 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         stable: updateData.stable,
       };
       
+      console.log('Calling onSave with data:', finalData);
       onSave(finalData);
 
-      onClose();
+      // Small delay to ensure database write completes
+      setTimeout(() => {
+        onClose();
+      }, 100);
     } catch (err) {
       console.error('Error updating wrestler:', err);
       setError(err.message || 'Failed to update wrestler');

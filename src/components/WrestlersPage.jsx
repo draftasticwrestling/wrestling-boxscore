@@ -228,6 +228,31 @@ function WrestlerCard({ w, onEdit, isAuthorized }) {
         )}
       </div>
       <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', textAlign: 'center', wordBreak: 'break-word' }}>{w.name}</div>
+      {/* Status indicator text */}
+      {w.status === 'Injured' && (
+        <div style={{
+          marginTop: 4,
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#ff4444',
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        }}>
+          INJ
+        </div>
+      )}
+      {(w.status === 'On Hiatus' || w.status === 'Inactive') && (
+        <div style={{
+          marginTop: 4,
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#ffa726',
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        }}>
+          HIATUS
+        </div>
+      )}
     </div>
   );
 }
@@ -272,19 +297,18 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   const grouped = groupWrestlersByClassification(filteredWrestlers);
 
   const handleWrestlerUpdate = async (updatedWrestler) => {
-    console.log('Wrestler updated:', updatedWrestler);
+    console.log('Wrestler updated in parent:', updatedWrestler);
     // Call the parent callback if provided
     if (onWrestlerUpdate) {
       onWrestlerUpdate(updatedWrestler);
     }
     // Close the modal
     setEditingWrestler(null);
-    // Refresh the wrestlers list by reloading the page
-    // This ensures all data is up to date
-    // Small delay to ensure database update completes
+    // Force a hard refresh to ensure we get the latest data from the database
+    // Using location.reload(true) for a hard refresh (clears cache)
     setTimeout(() => {
-      window.location.reload();
-    }, 500);
+      window.location.reload(true);
+    }, 300);
   };
   
   return (
