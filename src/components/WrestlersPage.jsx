@@ -326,6 +326,16 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   });
   
   const grouped = groupWrestlersByClassification(filteredWrestlers);
+  
+  // Debug: Log grouping results
+  console.log('Wrestler grouping:', {
+    'Part-timer': grouped['Part-timer'].length,
+    'Not Assigned': grouped['Not Assigned'].length,
+    'RAW': grouped.Active['RAW'].length,
+    'SmackDown': grouped.Active['SmackDown'].length,
+    'NXT': grouped.Active['NXT'].length,
+    'AAA': grouped.Active['AAA'].length,
+  });
 
   const handleWrestlerUpdate = async (updatedWrestler) => {
     console.log('Wrestler updated in parent:', updatedWrestler);
