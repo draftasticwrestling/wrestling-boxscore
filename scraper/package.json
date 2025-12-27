@@ -1,0 +1,25 @@
+{
+  "name": "wrestling-boxscore-scraper",
+  "version": "1.0.0",
+  "description": "Scraper to extract wrestling match data and calculate fantasy league points",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node src/index.js --dry-run"
+  },
+  "keywords": [
+    "wrestling",
+    "scraper",
+    "fantasy-league"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.5",
+    "csv-writer": "^1.6.0",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5"
+  }
+}
+

@@ -460,12 +460,31 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
     );
   }
 
-  const activeTeams = tagTeams.filter(t => t.active !== false);
+  // Filter out inactive teams and teams with no members
+  const activeTeams = tagTeams.filter(t => t.active !== false && t.members && t.members.length > 0);
+  
+  // Remove duplicate team names - keep the one with the most members, or the first one if equal
+  const seenNames = new Map();
+  const deduplicatedTeams = activeTeams.filter(team => {
+    const nameKey = team.name.toLowerCase().trim();
+    if (!seenNames.has(nameKey)) {
+      seenNames.set(nameKey, team);
+      return true;
+    } else {
+      const existing = seenNames.get(nameKey);
+      // Keep the one with more members, or the existing one if equal
+      if (team.members.length > existing.members.length) {
+        seenNames.set(nameKey, team);
+        return true;
+      }
+      return false;
+    }
+  });
   
   // Separate primary and non-primary teams
   // Also filter out teams that are marked as stables (they should only appear in primary section)
-  const primaryTeams = activeTeams.filter(t => t.primary_for_stable);
-  const nonPrimaryTeams = activeTeams.filter(t => !t.primary_for_stable && !t.is_stable);
+  const primaryTeams = deduplicatedTeams.filter(t => t.primary_for_stable);
+  const nonPrimaryTeams = deduplicatedTeams.filter(t => !t.primary_for_stable && !t.is_stable);
   
   // Group primary teams by stable
   const primaryByStable = {};
@@ -478,16 +497,131 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
   });
   
   const wrestlersInTeams = new Set();
-  tagTeams.forEach(team => {
+  deduplicatedTeams.forEach(team => {
     team.members.forEach(m => wrestlersInTeams.add(m.id));
   });
   const availableWrestlers = wrestlers.filter(w => !wrestlersInTeams.has(w.id));
 
+  const handleCreateTagTeam = async (teamData) => {
+    if (!isAuthorized) return;
+
+    setLoading(true);
+    try {
+      // Ensure we have a team name (should be generated if not provided)
+      const teamName = teamData.name || teamData.members.map(id => {
+        const wrestler = wrestlers.find(w => w.id === id);
+        return wrestler ? wrestler.name : id;
+      }).join(' & ');
+
+      // Generate a unique ID from the team name
+      const teamId = teamName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '')
+        .substring(0, 50);
+
+      // Check if team ID already exists
+      const { data: existing } = await supabase
+        .from('tag_teams')
+        .select('id')
+        .eq('id', teamId)
+        .single();
+
+      if (existing) {
+        alert('A tag team with this name already exists. Please choose a different name.');
+        setLoading(false);
+        return;
+      }
+
+      // Create the tag team
+      const { data: newTeam, error: createError } = await supabase
+        .from('tag_teams')
+        .insert({
+          id: teamId,
+          name: teamName,
+          brand: teamData.brand && teamData.brand.trim() ? teamData.brand.trim() : null,
+          description: teamData.description && teamData.description.trim() ? teamData.description.trim() : null,
+          is_stable: teamData.is_stable || false,
+          primary_for_stable: teamData.primary_for_stable && teamData.primary_for_stable.trim() ? teamData.primary_for_stable.trim() : null,
+          active: true,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // Add members to the tag team
+      if (teamData.members && teamData.members.length >= 2) {
+        const memberInserts = teamData.members.map((memberId, index) => ({
+          tag_team_id: newTeam.id,
+          wrestler_slug: memberId,
+          member_order: index,
+          active: true,
+        }));
+
+        const { error: membersError } = await supabase
+          .from('tag_team_members')
+          .insert(memberInserts);
+
+        if (membersError) throw membersError;
+
+        // Update wrestlers' tag team fields
+        for (let i = 0; i < teamData.members.length; i++) {
+          const memberId = teamData.members[i];
+          const partnerId = teamData.members[i === 0 ? 1 : 0]; // First member's partner is second, etc.
+
+          await supabase
+            .from('wrestlers')
+            .update({
+              tag_team_id: newTeam.id,
+              tag_team_name: teamName,
+              tag_team_partner_slug: partnerId,
+            })
+            .eq('id', memberId);
+        }
+      }
+
+      setShowAddModal(false);
+
+      // Refresh the page to show updated data
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 300);
+    } catch (err) {
+      console.error('Error creating tag team:', err);
+      alert('Failed to create tag team: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div>
+      {isAuthorized && (
+        <div style={{ marginBottom: 24, textAlign: 'right' }}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            disabled={loading}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 8,
+              background: '#C6A04F',
+              color: '#232323',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: 15,
+              fontWeight: 600,
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            + Add Tag Team
+          </button>
+        </div>
+      )}
+
       {activeTeams.length === 0 && (
         <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
-          No active tag teams found. Tag teams can be created and managed through the database.
+          No active tag teams found. {isAuthorized ? 'Click "Add Tag Team" to create one.' : 'Tag teams can be created and managed through the database.'}
         </div>
       )}
 
@@ -1075,6 +1209,16 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
         />
       )}
 
+      {/* Add Tag Team Modal */}
+      {showAddModal && (
+        <AddTagTeamModal
+          wrestlers={wrestlers}
+          availableStables={availableStables}
+          onSave={handleCreateTagTeam}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
+
     </div>
   );
 }
@@ -1355,6 +1499,368 @@ function EditTeamModal({ team, availableStables = [], onSave, onClose, onChange 
             Save Changes
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Modal for adding a new tag team
+function AddTagTeamModal({ wrestlers = [], availableStables = [], onSave, onClose }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    brand: '',
+    description: '',
+    is_stable: false,
+    primary_for_stable: '',
+    members: [],
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedWrestlers, setSelectedWrestlers] = useState([]);
+
+  const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned'];
+
+  // Filter wrestlers not already selected
+  const availableWrestlers = wrestlers.filter(w => 
+    !selectedWrestlers.find(sw => sw.id === w.id) &&
+    w.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleAddMember = (wrestler) => {
+    if (selectedWrestlers.length < 10 && !selectedWrestlers.find(sw => sw.id === wrestler.id)) {
+      setSelectedWrestlers([...selectedWrestlers, wrestler]);
+      setSearchTerm('');
+      setShowDropdown(false);
+    }
+  };
+
+  const handleRemoveMember = (wrestlerId) => {
+    setSelectedWrestlers(selectedWrestlers.filter(sw => sw.id !== wrestlerId));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (selectedWrestlers.length < 2) {
+      alert('Please select at least 2 members for the tag team');
+      return;
+    }
+
+    // If no name provided, generate from member names
+    let teamName = formData.name.trim();
+    if (!teamName && selectedWrestlers.length >= 2) {
+      teamName = selectedWrestlers.map(sw => sw.name).join(' & ');
+    }
+
+    if (!teamName) {
+      alert('Please provide a team name or select at least 2 members');
+      return;
+    }
+
+    onSave({
+      name: teamName,
+      brand: formData.brand || null,
+      description: formData.description || null,
+      is_stable: formData.is_stable,
+      primary_for_stable: formData.primary_for_stable || null,
+      members: selectedWrestlers.map(sw => sw.id),
+    });
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: '#181818',
+          borderRadius: 14,
+          padding: 32,
+          maxWidth: 600,
+          width: '90%',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          boxShadow: '0 0 24px #C6A04F22',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ color: '#C6A04F', marginBottom: 24 }}>
+          Add New Tag Team
+        </h3>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Team Name:
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Leave blank to auto-generate from member names"
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              {selectedWrestlers.length >= 2 
+                ? `Will be "${selectedWrestlers.map(sw => sw.name).join(' & ')}" if left blank`
+                : 'Select at least 2 members to auto-generate name'}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Brand:
+            </label>
+            <select
+              value={formData.brand}
+              onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+            >
+              <option value="">No Brand</option>
+              {BRAND_OPTIONS.map(brand => (
+                <option key={brand} value={brand}>{brand}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Description:
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+                resize: 'vertical',
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={formData.is_stable}
+                onChange={(e) => setFormData(prev => ({ ...prev, is_stable: e.target.checked, primary_for_stable: e.target.checked ? prev.primary_for_stable : '' }))}
+                style={{ width: 18, height: 18 }}
+              />
+              Mark as Stable
+            </label>
+          </div>
+
+          {formData.is_stable && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+                Primary for Stable:
+              </label>
+              <select
+                value={formData.primary_for_stable}
+                onChange={(e) => setFormData(prev => ({ ...prev, primary_for_stable: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: 10,
+                  borderRadius: 8,
+                  background: '#232323',
+                  color: '#fff',
+                  border: '1px solid #444',
+                  fontSize: 15,
+                }}
+              >
+                <option value="">Not a primary tag team</option>
+                {availableStables.map(stable => (
+                  <option key={stable} value={stable}>{stable}</option>
+                ))}
+              </select>
+              <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                Select the stable this tag team represents as primary. Leave blank if not primary.
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Members: * (Select at least 2)
+            </label>
+            
+            {/* Selected Members */}
+            {selectedWrestlers.length > 0 && (
+              <div style={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 8, 
+                marginBottom: 12,
+                padding: 12,
+                background: '#232323',
+                borderRadius: 8,
+              }}>
+                {selectedWrestlers.map(w => (
+                  <div
+                    key={w.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '6px 12px',
+                      background: '#C6A04F',
+                      borderRadius: 6,
+                      color: '#232323',
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {w.name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(w.id)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#232323',
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        fontWeight: 700,
+                        padding: 0,
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Search Input */}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholder="Search wrestlers to add..."
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+                marginBottom: 12,
+              }}
+            />
+
+            {/* Dropdown */}
+            {showDropdown && availableWrestlers.length > 0 && (
+              <div style={{
+                maxHeight: 300,
+                overflow: 'auto',
+                border: '1px solid #444',
+                borderRadius: 8,
+                background: '#232323',
+                marginBottom: 12,
+              }}>
+                {availableWrestlers.slice(0, 50).map(w => (
+                  <div
+                    key={w.id}
+                    onClick={() => handleAddMember(w)}
+                    style={{
+                      padding: '12px',
+                      cursor: 'pointer',
+                      color: '#fff',
+                      borderBottom: '1px solid #333',
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = '#333'}
+                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                  >
+                    {w.name}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ color: '#999', fontSize: 12 }}>
+              {selectedWrestlers.length} member{selectedWrestlers.length !== 1 ? 's' : ''} selected (minimum 2 required)
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 32 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '10px 24px',
+                borderRadius: 8,
+                background: '#333',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 15,
+                fontWeight: 600,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={selectedWrestlers.length < 2}
+              style={{
+                padding: '10px 24px',
+                borderRadius: 8,
+                background: selectedWrestlers.length >= 2 ? '#C6A04F' : '#666',
+                color: selectedWrestlers.length >= 2 ? '#232323' : '#999',
+                border: 'none',
+                cursor: selectedWrestlers.length >= 2 ? 'pointer' : 'not-allowed',
+                fontSize: 15,
+                fontWeight: 600,
+              }}
+            >
+              Create Tag Team
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
