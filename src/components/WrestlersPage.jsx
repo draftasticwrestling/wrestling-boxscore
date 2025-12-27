@@ -141,14 +141,10 @@ function groupWrestlersByClassification(wrestlers) {
         grouped.Active['RAW'].push(w);
       }
     } else if (classification === 'Part-timer') {
-      // Part-timers on hiatus or without roster assignment go to "Not Assigned"
-      // Part-timers shouldn't have brands, so check status
-      if (status === 'On Hiatus' || status === 'Inactive') {
-        grouped['Not Assigned'].push(w);
-      } else {
-        // Active part-timers (no status, available but not on a roster)
-        grouped['Part-timer'].push(w);
-      }
+      // Part-timers are not assigned to a specific roster by definition
+      // All part-timers go to "Not Assigned" section
+      // (The "Part-timer" section can be used for active part-timers if needed in the future)
+      grouped['Not Assigned'].push(w);
     } else if (classification === 'Alumni') {
       grouped.Alumni.push(w);
     } else if (classification === 'Celebrity Guests') {
