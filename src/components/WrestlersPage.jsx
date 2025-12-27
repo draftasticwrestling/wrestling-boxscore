@@ -119,12 +119,14 @@ function groupWrestlersByClassification(wrestlers) {
   const grouped = {
     Active: { RAW: [], SmackDown: [], NXT: [], AAA: [] },
     'Part-timer': [],
+    'Not Assigned': [],
     Alumni: [],
     'Celebrity Guests': []
   };
 
   wrestlers.forEach(w => {
     const classification = w.classification || 'Active'; // Default to Active for backward compatibility
+    const status = w.status || w.Status || '';
     
     if (classification === 'Active') {
       let brand = (w.brand || '').trim();
@@ -139,7 +141,14 @@ function groupWrestlersByClassification(wrestlers) {
         grouped.Active['RAW'].push(w);
       }
     } else if (classification === 'Part-timer') {
-      grouped['Part-timer'].push(w);
+      // Part-timers on hiatus or without roster assignment go to "Not Assigned"
+      // Part-timers shouldn't have brands, so check status
+      if (status === 'On Hiatus' || status === 'Inactive') {
+        grouped['Not Assigned'].push(w);
+      } else {
+        // Active part-timers (no status, available but not on a roster)
+        grouped['Part-timer'].push(w);
+      }
     } else if (classification === 'Alumni') {
       grouped.Alumni.push(w);
     } else if (classification === 'Celebrity Guests') {
@@ -163,6 +172,7 @@ function groupWrestlersByClassification(wrestlers) {
     grouped.Active[brand].sort((a, b) => a.name.localeCompare(b.name));
   });
   grouped['Part-timer'].sort((a, b) => a.name.localeCompare(b.name));
+  grouped['Not Assigned'].sort((a, b) => a.name.localeCompare(b.name));
   grouped.Alumni.sort((a, b) => a.name.localeCompare(b.name));
   grouped['Celebrity Guests'].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -348,30 +358,51 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
           </div>
         )}
         
-        {/* Active Wrestlers by Brand */}
-        {BRAND_ORDER.map(brand => (
-          grouped.Active[brand] && grouped.Active[brand].length > 0 && (
-            <div key={brand} style={{
-              background: '#181818',
-              borderRadius: 14,
-              boxShadow: '0 0 16px #C6A04F22',
-              marginBottom: 36,
-              padding: '24px 20px',
-            }}>
-              <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>{BRAND_LABELS[brand]}</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-                {grouped.Active[brand].map(w => (
-                  <WrestlerCard 
-                    key={w.id} 
-                    w={w} 
-                    onEdit={setEditingWrestler}
-                    isAuthorized={isAuthorized}
-                  />
-                ))}
-              </div>
+        {/* RAW */}
+        {grouped.Active['RAW'] && grouped.Active['RAW'].length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>RAW</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {grouped.Active['RAW'].map(w => (
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
+              ))}
             </div>
-          )
-        ))}
+          </div>
+        )}
+
+        {/* SmackDown */}
+        {grouped.Active['SmackDown'] && grouped.Active['SmackDown'].length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>SmackDown</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {grouped.Active['SmackDown'].map(w => (
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Part-timer Wrestlers */}
         {grouped['Part-timer'].length > 0 && (
@@ -385,6 +416,75 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
             <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Part-timers</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
               {grouped['Part-timer'].map(w => (
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Not Assigned (Part-timers on hiatus or without roster) */}
+        {grouped['Not Assigned'].length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Not Assigned</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {grouped['Not Assigned'].map(w => (
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* NXT */}
+        {grouped.Active['NXT'] && grouped.Active['NXT'].length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>NXT</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {grouped.Active['NXT'].map(w => (
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* AAA */}
+        {grouped.Active['AAA'] && grouped.Active['AAA'].length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>AAA</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {grouped.Active['AAA'].map(w => (
                 <WrestlerCard 
                   key={w.id} 
                   w={w} 
