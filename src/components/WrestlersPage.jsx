@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import MedicalCrossIcon from './MedicalCrossIcon';
 import InactiveIcon from './InactiveIcon';
+import { supabase } from '../supabaseClient';
+import { useUser } from '../hooks/useUser';
+import WrestlerEditModal from './WrestlerEditModal';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'AAA'];
 const BRAND_LABELS = {
@@ -10,6 +13,107 @@ const BRAND_LABELS = {
   NXT: 'NXT',
   AAA: 'AAA',
 };
+
+// Extract wrestler slugs from match participants string
+function extractWrestlerSlugs(participants) {
+  const slugs = new Set();
+  
+  if (!participants) return slugs;
+  
+  // Handle array format (battle royal)
+  if (Array.isArray(participants)) {
+    participants.forEach(slug => {
+      if (slug && typeof slug === 'string') {
+        slugs.add(slug.trim());
+      }
+    });
+    return slugs;
+  }
+  
+  // Handle string format
+  if (typeof participants !== 'string') return slugs;
+  
+  // Split by " vs " to get sides
+  const sides = participants.split(' vs ');
+  
+  sides.forEach(side => {
+    // Check for tag team format: "Team Name (slug1 & slug2)"
+    const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
+    if (teamMatch) {
+      // Extract slugs from parentheses
+      const teamSlugs = teamMatch[2].split('&').map(s => s.trim()).filter(Boolean);
+      teamSlugs.forEach(slug => slugs.add(slug));
+    } else {
+      // Regular format: "slug1 & slug2" or just "slug1"
+      const sideSlugs = side.split('&').map(s => s.trim()).filter(Boolean);
+      sideSlugs.forEach(slug => slugs.add(slug));
+    }
+  });
+  
+  return slugs;
+}
+
+// Parse event date string to Date object
+function parseEventDate(dateStr) {
+  if (!dateStr) return null;
+  
+  // Try ISO format first (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(dateStr);
+  }
+  
+  // Try format like "June 9, 2025" or "Jan 1, 2024"
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+  
+  return null;
+}
+
+// Check if a wrestler has appeared in events within the last 12 months
+async function getWrestlersWithRecentAppearances() {
+  const twelveMonthsAgo = new Date();
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+  twelveMonthsAgo.setHours(0, 0, 0, 0);
+  
+  try {
+    // Fetch all events (we'll filter by date in JavaScript since date format may vary)
+    const { data: events, error } = await supabase
+      .from('events')
+      .select('id, date, matches')
+      .order('date', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching events:', error);
+      return new Set();
+    }
+    
+    const wrestlerSlugs = new Set();
+    
+    // Filter events from the last 12 months and extract wrestler slugs
+    events.forEach(event => {
+      const eventDate = parseEventDate(event.date);
+      
+      // Only process events from the last 12 months
+      if (eventDate && eventDate >= twelveMonthsAgo) {
+        if (event.matches && Array.isArray(event.matches)) {
+          event.matches.forEach(match => {
+            if (match.participants) {
+              const slugs = extractWrestlerSlugs(match.participants);
+              slugs.forEach(slug => wrestlerSlugs.add(slug));
+            }
+          });
+        }
+      }
+    });
+    
+    return wrestlerSlugs;
+  } catch (error) {
+    console.error('Error getting wrestlers with recent appearances:', error);
+    return new Set();
+  }
+}
 
 function groupWrestlersByClassification(wrestlers) {
   const grouped = {
@@ -65,19 +169,48 @@ function groupWrestlersByClassification(wrestlers) {
   return grouped;
 }
 
-function WrestlerCard({ w }) {
+function WrestlerCard({ w, onEdit, isAuthorized }) {
+  const [showEditButton, setShowEditButton] = useState(false);
+
   return (
-    <div style={{
-      width: 120,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      marginBottom: 16,
-      background: 'rgba(34,34,34,0.98)',
-      borderRadius: 10,
-      padding: '12px 8px',
-      boxShadow: '0 0 8px #C6A04F11',
-    }}>
+    <div
+      style={{
+        width: 120,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        marginBottom: 16,
+        background: 'rgba(34,34,34,0.98)',
+        borderRadius: 10,
+        padding: '12px 8px',
+        boxShadow: '0 0 8px #C6A04F11',
+        position: 'relative',
+        cursor: isAuthorized ? 'pointer' : 'default',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={() => isAuthorized && setShowEditButton(true)}
+      onMouseLeave={() => setShowEditButton(false)}
+      onClick={() => isAuthorized && onEdit(w)}
+    >
+      {isAuthorized && showEditButton && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            background: '#C6A04F',
+            color: '#232323',
+            borderRadius: 4,
+            padding: '4px 8px',
+            fontSize: 11,
+            fontWeight: 700,
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        >
+          Edit
+        </div>
+      )}
       <div style={{ position: 'relative', width: 72, height: 72 }}>
         <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
 
@@ -99,10 +232,60 @@ function WrestlerCard({ w }) {
   );
 }
 
-export default function WrestlersPage({ wrestlers = [] }) {
+export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
-  const grouped = groupWrestlersByClassification(safeWrestlers);
+  const [wrestlersWithRecentAppearances, setWrestlersWithRecentAppearances] = useState(new Set());
+  const [loading, setLoading] = useState(true);
+  const [editingWrestler, setEditingWrestler] = useState(null);
+  const user = useUser();
+  const isAuthorized = !!user;
+  
+  // Fetch wrestlers with recent appearances
+  useEffect(() => {
+    async function fetchRecentAppearances() {
+      setLoading(true);
+      const recentWrestlers = await getWrestlersWithRecentAppearances();
+      setWrestlersWithRecentAppearances(recentWrestlers);
+      setLoading(false);
+    }
+    fetchRecentAppearances();
+  }, []);
+  
+  // Filter wrestlers based on brand and recent appearances
+  const filteredWrestlers = safeWrestlers.filter(w => {
+    const brand = (w.brand || '').trim();
+    const normalizedBrand = brand === 'Raw' ? 'RAW' : 
+                           brand === 'Smackdown' ? 'SmackDown' : 
+                           brand && brand.toUpperCase() === 'AAA' ? 'AAA' : brand;
+    
+    // Always show RAW, SmackDown, and NXT wrestlers
+    if (normalizedBrand === 'RAW' || normalizedBrand === 'SmackDown' || normalizedBrand === 'NXT') {
+      return true;
+    }
+    
+    // For all others (AAA, Part-timers, Celebrity Guests, Alumni), 
+    // only show if they appeared in an event within the last 12 months
+    return wrestlersWithRecentAppearances.has(w.id);
+  });
+  
+  const grouped = groupWrestlersByClassification(filteredWrestlers);
+
+  const handleWrestlerUpdate = async (updatedWrestler) => {
+    console.log('Wrestler updated:', updatedWrestler);
+    // Call the parent callback if provided
+    if (onWrestlerUpdate) {
+      onWrestlerUpdate(updatedWrestler);
+    }
+    // Close the modal
+    setEditingWrestler(null);
+    // Refresh the wrestlers list by reloading the page
+    // This ensures all data is up to date
+    // Small delay to ensure database update completes
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
   
   return (
     <>
@@ -114,6 +297,11 @@ export default function WrestlersPage({ wrestlers = [] }) {
       </Helmet>
       <div style={{ color: '#fff', padding: 40, maxWidth: 900, margin: '0 auto' }}>
         <h2 style={{ textAlign: 'center', marginBottom: 32 }}>Wrestlers</h2>
+        {loading && (
+          <div style={{ textAlign: 'center', color: '#C6A04F', marginBottom: 24 }}>
+            Loading recent appearances...
+          </div>
+        )}
         
         {/* Active Wrestlers by Brand */}
         {BRAND_ORDER.map(brand => (
@@ -128,7 +316,12 @@ export default function WrestlersPage({ wrestlers = [] }) {
               <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>{BRAND_LABELS[brand]}</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
                 {grouped.Active[brand].map(w => (
-                  <WrestlerCard key={w.id} w={w} />
+                  <WrestlerCard 
+                    key={w.id} 
+                    w={w} 
+                    onEdit={setEditingWrestler}
+                    isAuthorized={isAuthorized}
+                  />
                 ))}
               </div>
             </div>
@@ -147,7 +340,12 @@ export default function WrestlersPage({ wrestlers = [] }) {
             <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Part-timers</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
               {grouped['Part-timer'].map(w => (
-                <WrestlerCard key={w.id} w={w} />
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
               ))}
             </div>
           </div>
@@ -165,7 +363,12 @@ export default function WrestlersPage({ wrestlers = [] }) {
             <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Celebrity Guests</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
               {grouped['Celebrity Guests'].map(w => (
-                <WrestlerCard key={w.id} w={w} />
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
               ))}
             </div>
           </div>
@@ -183,10 +386,25 @@ export default function WrestlersPage({ wrestlers = [] }) {
             <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Alumni</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
               {grouped.Alumni.map(w => (
-                <WrestlerCard key={w.id} w={w} />
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                />
               ))}
             </div>
           </div>
+        )}
+
+        {/* Edit Modal */}
+        {editingWrestler && (
+          <WrestlerEditModal
+            wrestler={editingWrestler}
+            onClose={() => setEditingWrestler(null)}
+            onSave={handleWrestlerUpdate}
+            allWrestlers={safeWrestlers}
+          />
         )}
       </div>
     </>
