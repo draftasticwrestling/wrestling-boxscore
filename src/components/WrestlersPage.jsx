@@ -6,6 +6,8 @@ import { supabase } from '../supabaseClient';
 import { useUser } from '../hooks/useUser';
 import WrestlerEditModal from './WrestlerEditModal';
 import WrestlerAddModal from './WrestlerAddModal';
+import FactionsView from './FactionsView';
+import TagTeamsView from './TagTeamsView';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'AAA'];
 const BRAND_LABELS = {
@@ -292,6 +294,7 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   const [loading, setLoading] = useState(true);
   const [editingWrestler, setEditingWrestler] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('roster'); // 'roster', 'factions', 'tag-teams'
   const user = useUser();
   const isAuthorized = !!user;
   
@@ -368,10 +371,10 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
         <meta name="keywords" content="WWE wrestlers, WWE roster, RAW, SmackDown, NXT, wrestling brands, WWE superstars" />
         <link rel="canonical" href="https://wrestlingboxscore.com/wrestlers" />
       </Helmet>
-      <div style={{ color: '#fff', padding: 40, maxWidth: 900, margin: '0 auto' }}>
+      <div style={{ color: '#fff', padding: 40, maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <h2 style={{ textAlign: 'center', margin: 0, flex: 1 }}>Wrestlers</h2>
-          {isAuthorized && (
+          {isAuthorized && activeTab === 'roster' && (
             <button
               onClick={() => setShowAddModal(true)}
               style={{
@@ -390,12 +393,73 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
             </button>
           )}
         </div>
-        {loading && (
+
+        {/* Tabs */}
+        <div style={{ 
+          display: 'flex', 
+          gap: 8, 
+          marginBottom: 32,
+          borderBottom: '2px solid #333',
+        }}>
+          <button
+            onClick={() => setActiveTab('roster')}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'roster' ? '#C6A04F' : 'transparent',
+              color: activeTab === 'roster' ? '#232323' : '#fff',
+              border: 'none',
+              borderBottom: activeTab === 'roster' ? '3px solid #C6A04F' : '3px solid transparent',
+              cursor: 'pointer',
+              fontSize: 16,
+              fontWeight: activeTab === 'roster' ? 700 : 500,
+              transition: 'all 0.2s',
+            }}
+          >
+            Roster
+          </button>
+          <button
+            onClick={() => setActiveTab('factions')}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'factions' ? '#C6A04F' : 'transparent',
+              color: activeTab === 'factions' ? '#232323' : '#fff',
+              border: 'none',
+              borderBottom: activeTab === 'factions' ? '3px solid #C6A04F' : '3px solid transparent',
+              cursor: 'pointer',
+              fontSize: 16,
+              fontWeight: activeTab === 'factions' ? 700 : 500,
+              transition: 'all 0.2s',
+            }}
+          >
+            Stables
+          </button>
+          <button
+            onClick={() => setActiveTab('tag-teams')}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'tag-teams' ? '#C6A04F' : 'transparent',
+              color: activeTab === 'tag-teams' ? '#232323' : '#fff',
+              border: 'none',
+              borderBottom: activeTab === 'tag-teams' ? '3px solid #C6A04F' : '3px solid transparent',
+              cursor: 'pointer',
+              fontSize: 16,
+              fontWeight: activeTab === 'tag-teams' ? 700 : 500,
+              transition: 'all 0.2s',
+            }}
+          >
+            Tag Teams
+          </button>
+        </div>
+
+        {loading && activeTab === 'roster' && (
           <div style={{ textAlign: 'center', color: '#C6A04F', marginBottom: 24 }}>
             Loading recent appearances...
           </div>
         )}
-        
+
+        {/* Tab Content */}
+        {activeTab === 'roster' && (
+          <div>
         {/* RAW */}
         {grouped.Active['RAW'] && grouped.Active['RAW'].length > 0 && (
           <div style={{
@@ -578,6 +642,24 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
               ))}
             </div>
           </div>
+        )}
+          </div>
+        )}
+
+        {activeTab === 'factions' && (
+          <FactionsView 
+            wrestlers={safeWrestlers}
+            isAuthorized={isAuthorized}
+            onWrestlerUpdate={handleWrestlerUpdate}
+          />
+        )}
+
+        {activeTab === 'tag-teams' && (
+          <TagTeamsView 
+            wrestlers={safeWrestlers}
+            isAuthorized={isAuthorized}
+            onWrestlerUpdate={handleWrestlerUpdate}
+          />
         )}
 
         {/* Edit Modal */}
