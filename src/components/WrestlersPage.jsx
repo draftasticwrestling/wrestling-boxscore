@@ -171,6 +171,12 @@ function groupWrestlersByClassification(wrestlers) {
 
 function WrestlerCard({ w, onEdit, isAuthorized }) {
   const [showEditButton, setShowEditButton] = useState(false);
+  
+  // Debug: Log status for troubleshooting
+  const status = w.status || w.Status || '';
+  if (status) {
+    console.log(`Wrestler ${w.name} has status:`, status, 'w.status:', w.status, 'w.Status:', w.Status);
+  }
 
   return (
     <div
@@ -214,45 +220,60 @@ function WrestlerCard({ w, onEdit, isAuthorized }) {
       <div style={{ position: 'relative', width: 72, height: 72 }}>
         <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
 
-        {/* Medical cross if status is Injured */}
-        {w.status === 'Injured' && (
-          <div style={{ position: 'absolute', top: -10, right: -10 }}>
-            <MedicalCrossIcon size={28} />
-          </div>
-        )}
-        {/* Inactive TV icon if status is On Hiatus or Inactive */}
-        {(w.status === 'On Hiatus' || w.status === 'Inactive') && (
-          <div style={{ position: 'absolute', bottom: -10, right: -10 }}>
-            <InactiveIcon size={28} />
-          </div>
-        )}
+        {/* Get status - handle both lowercase and capital S (database has "Status") */}
+        {(() => {
+          const status = w.status || w.Status || '';
+          return (
+            <>
+              {/* Medical cross if status is Injured */}
+              {status === 'Injured' && (
+                <div style={{ position: 'absolute', top: -10, right: -10 }}>
+                  <MedicalCrossIcon size={28} />
+                </div>
+              )}
+              {/* Inactive TV icon if status is On Hiatus or Inactive */}
+              {(status === 'On Hiatus' || status === 'Inactive') && (
+                <div style={{ position: 'absolute', bottom: -10, right: -10 }}>
+                  <InactiveIcon size={28} />
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
       <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', textAlign: 'center', wordBreak: 'break-word' }}>{w.name}</div>
       {/* Status indicator text */}
-      {w.status === 'Injured' && (
-        <div style={{
-          marginTop: 4,
-          fontSize: 11,
-          fontWeight: 700,
-          color: '#ff4444',
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-        }}>
-          INJ
-        </div>
-      )}
-      {(w.status === 'On Hiatus' || w.status === 'Inactive') && (
-        <div style={{
-          marginTop: 4,
-          fontSize: 11,
-          fontWeight: 700,
-          color: '#ffa726',
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-        }}>
-          HIATUS
-        </div>
-      )}
+      {(() => {
+        const status = w.status || w.Status || '';
+        return (
+          <>
+            {status === 'Injured' && (
+              <div style={{
+                marginTop: 4,
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#ff4444',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                INJ
+              </div>
+            )}
+            {(status === 'On Hiatus' || status === 'Inactive') && (
+              <div style={{
+                marginTop: 4,
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#ffa726',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                HIATUS
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }
