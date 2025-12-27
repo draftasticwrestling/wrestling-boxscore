@@ -7,6 +7,7 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
   const [editingTeam, setEditingTeam] = useState(null);
   const [editingTeamDetails, setEditingTeamDetails] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [availableStables, setAvailableStables] = useState([]);
 
   // Fetch tag teams and their members
   useEffect(() => {
@@ -59,6 +60,51 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
     fetchTagTeams();
   }, [wrestlers]);
 
+  // Fetch available stables for primary selection
+  useEffect(() => {
+    async function fetchStables() {
+      try {
+        // Get unique stable names from wrestlers
+        const { data: wrestlersData, error } = await supabase
+          .from('wrestlers')
+          .select('stable')
+          .not('stable', 'is', null);
+
+        if (error) {
+          console.error('Error fetching stables:', error);
+          return;
+        }
+
+        // Get unique stable names
+        const stableSet = new Set();
+        wrestlersData.forEach(w => {
+          if (w.stable && w.stable.trim()) {
+            stableSet.add(w.stable.trim());
+          }
+        });
+
+        // Also get stables from tag teams marked as stables
+        const { data: stableTagTeams } = await supabase
+          .from('tag_teams')
+          .select('name')
+          .eq('is_stable', true)
+          .eq('active', true);
+
+        if (stableTagTeams) {
+          stableTagTeams.forEach(team => {
+            stableSet.add(team.name);
+          });
+        }
+
+        setAvailableStables(Array.from(stableSet).sort());
+      } catch (err) {
+        console.error('Error fetching stables:', err);
+      }
+    }
+
+    fetchStables();
+  }, []);
+
   const handleRemoveMember = async (teamId, wrestlerSlug) => {
     if (!isAuthorized) return;
 
@@ -101,6 +147,8 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
       name: team.name,
       brand: team.brand || '',
       description: team.description || '',
+      is_stable: team.is_stable || false,
+      primary_for_stable: team.primary_for_stable || '',
     });
   };
 
@@ -110,13 +158,22 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
     setLoading(true);
     try {
       // Update tag team
+      const updateData = {
+        name: editingTeamDetails.name.trim(),
+        brand: editingTeamDetails.brand && editingTeamDetails.brand.trim() ? editingTeamDetails.brand.trim() : null,
+        description: editingTeamDetails.description && editingTeamDetails.description.trim() ? editingTeamDetails.description.trim() : null,
+      };
+
+      // Only set primary_for_stable if is_stable is true
+      if (editingTeamDetails.is_stable) {
+        updateData.primary_for_stable = editingTeamDetails.primary_for_stable && editingTeamDetails.primary_for_stable.trim() ? editingTeamDetails.primary_for_stable.trim() : null;
+      } else {
+        updateData.primary_for_stable = null; // Clear if not a stable
+      }
+
       const { error: teamError } = await supabase
         .from('tag_teams')
-        .update({
-          name: editingTeamDetails.name.trim(),
-          brand: editingTeamDetails.brand && editingTeamDetails.brand.trim() ? editingTeamDetails.brand.trim() : null,
-          description: editingTeamDetails.description && editingTeamDetails.description.trim() ? editingTeamDetails.description.trim() : null,
-        })
+        .update(updateData)
         .eq('id', editingTeamDetails.id);
 
       if (teamError) throw teamError;
@@ -221,6 +278,61 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
     } catch (err) {
       console.error('Error unmarking tag team as stable:', err);
       alert('Failed to unmark tag team as stable');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetPrimaryForStable = async (teamId, teamName) => {
+    if (!isAuthorized) return;
+
+    // Get the stable name (should be the same as team name if is_stable is true)
+    const team = tagTeams.find(t => t.id === teamId);
+    if (!team || !team.is_stable) {
+      alert('This tag team must be marked as a stable first before it can be set as primary.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('tag_teams')
+        .update({ primary_for_stable: teamName })
+        .eq('id', teamId);
+
+      if (error) throw error;
+
+      // Refresh the page
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 300);
+    } catch (err) {
+      console.error('Error setting primary tag team:', err);
+      alert('Failed to set primary tag team');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnsetPrimaryForStable = async (teamId) => {
+    if (!isAuthorized) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('tag_teams')
+        .update({ primary_for_stable: null })
+        .eq('id', teamId);
+
+      if (error) throw error;
+
+      // Refresh the page
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 300);
+    } catch (err) {
+      console.error('Error unsetting primary tag team:', err);
+      alert('Failed to unset primary tag team');
     } finally {
       setLoading(false);
     }
@@ -349,6 +461,22 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
   }
 
   const activeTeams = tagTeams.filter(t => t.active !== false);
+  
+  // Separate primary and non-primary teams
+  // Also filter out teams that are marked as stables (they should only appear in primary section)
+  const primaryTeams = activeTeams.filter(t => t.primary_for_stable);
+  const nonPrimaryTeams = activeTeams.filter(t => !t.primary_for_stable && !t.is_stable);
+  
+  // Group primary teams by stable
+  const primaryByStable = {};
+  primaryTeams.forEach(team => {
+    const stableName = team.primary_for_stable;
+    if (!primaryByStable[stableName]) {
+      primaryByStable[stableName] = [];
+    }
+    primaryByStable[stableName].push(team);
+  });
+  
   const wrestlersInTeams = new Set();
   tagTeams.forEach(team => {
     team.members.forEach(m => wrestlersInTeams.add(m.id));
@@ -363,8 +491,298 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
         </div>
       )}
 
-      {/* Tag Teams */}
-      {activeTeams.map(team => (
+      {/* Primary Tag Teams (grouped by stable) */}
+      {Object.keys(primaryByStable).length > 0 && (
+        <>
+          {Object.keys(primaryByStable).sort().map(stableName => (
+            <div key={stableName} style={{ marginBottom: 48 }}>
+              <h3 style={{ 
+                color: '#fff', 
+                fontWeight: 700, 
+                fontSize: 20, 
+                marginBottom: 20,
+                paddingBottom: 12,
+                borderBottom: '2px solid #333'
+              }}>
+                {stableName}
+              </h3>
+              {primaryByStable[stableName].map(team => (
+                <div
+                  key={team.id}
+                  style={{
+                    background: '#181818',
+                    borderRadius: 14,
+                    boxShadow: '0 0 16px #C6A04F22',
+                    marginBottom: 24,
+                    padding: '24px 20px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, margin: 0, letterSpacing: 1 }}>
+                                {team.name}
+                              </h3>
+                              {team.is_stable && (
+                                <span
+                                  style={{
+                                    background: '#C6A04F',
+                                    color: '#232323',
+                                    padding: '2px 8px',
+                                    borderRadius: 4,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    textTransform: 'uppercase',
+                                  }}
+                                  title="Also a Stable"
+                                >
+                                  Stable
+                                </span>
+                              )}
+                      </div>
+                      {team.brand && (
+                        <div style={{ color: '#999', fontSize: 14, marginTop: 4 }}>
+                          {team.brand}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <span style={{ color: '#999', fontSize: 14 }}>
+                              {team.members.length} {team.members.length === 1 ? 'member' : 'members'}
+                            </span>
+                            {isAuthorized && (
+                              <>
+                                <button
+                                  onClick={() => handleEditTeam(team)}
+                                  disabled={loading}
+                                  style={{
+                                    padding: '6px 16px',
+                                    borderRadius: 6,
+                                    background: '#C6A04F',
+                                    color: '#232323',
+                                    border: 'none',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    opacity: loading ? 0.6 : 1,
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                                {team.is_stable && (
+                                  <>
+                                    {team.primary_for_stable ? (
+                                      <button
+                                        onClick={() => handleUnsetPrimaryForStable(team.id)}
+                                        disabled={loading}
+                                        style={{
+                                          padding: '6px 16px',
+                                          borderRadius: 6,
+                                          background: '#666',
+                                          color: '#fff',
+                                          border: 'none',
+                                          cursor: loading ? 'not-allowed' : 'pointer',
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          opacity: loading ? 0.6 : 1,
+                                        }}
+                                      >
+                                        Unset Primary
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleSetPrimaryForStable(team.id, team.name)}
+                                        disabled={loading}
+                                        style={{
+                                          padding: '6px 16px',
+                                          borderRadius: 6,
+                                          background: '#4CAF50',
+                                          color: '#fff',
+                                          border: 'none',
+                                          cursor: loading ? 'not-allowed' : 'pointer',
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          opacity: loading ? 0.6 : 1,
+                                        }}
+                                      >
+                                        Set Primary
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleUnmarkAsStable(team.id)}
+                                      disabled={loading}
+                                      style={{
+                                        padding: '6px 16px',
+                                        borderRadius: 6,
+                                        background: '#666',
+                                        color: '#fff',
+                                        border: 'none',
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        opacity: loading ? 0.6 : 1,
+                                      }}
+                                    >
+                                      Unmark Stable
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => handleMarkInactive(team.id)}
+                                  disabled={loading}
+                                  style={{
+                                    padding: '6px 16px',
+                                    borderRadius: 6,
+                                    background: '#ffa726',
+                                    color: '#232323',
+                                    border: 'none',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    opacity: loading ? 0.6 : 1,
+                                  }}
+                                >
+                                  Mark Inactive
+                                </button>
+                              </>
+                            )}
+                    </div>
+                  </div>
+
+                  {team.description && (
+                    <div style={{ color: '#ccc', fontSize: 14, marginBottom: 18, fontStyle: 'italic' }}>
+                      {team.description}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+                          {team.members.map(w => (
+                            <div
+                              key={w.id}
+                              style={{
+                                position: 'relative',
+                                width: 120,
+                                textAlign: 'center',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 120,
+                                  height: 120,
+                                  borderRadius: 12,
+                                  background: '#232323',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginBottom: 8,
+                                  overflow: 'hidden',
+                                  border: '2px solid #333',
+                                }}
+                              >
+                                {w.image_url ? (
+                                  <img
+                                    src={w.image_url}
+                                    alt={w.name}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{ color: '#666', fontSize: 12 }}>No Image</div>
+                                )}
+                              </div>
+                              <div style={{ fontWeight: 700, fontSize: 13, color: '#fff', wordBreak: 'break-word' }}>
+                                {w.name}
+                              </div>
+                              {isAuthorized && (
+                                <button
+                                  onClick={() => handleRemoveMember(team.id, w.id)}
+                                  disabled={loading}
+                                  style={{
+                                    marginTop: 8,
+                                    padding: '4px 12px',
+                                    borderRadius: 6,
+                                    background: '#ff4444',
+                                    color: '#fff',
+                                    border: 'none',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    opacity: loading ? 0.6 : 1,
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                    {isAuthorized && (
+                      <div
+                        style={{
+                          width: 120,
+                          height: 120,
+                          borderRadius: 12,
+                          background: '#232323',
+                          border: '2px dashed #666',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#C6A04F';
+                          e.currentTarget.style.background = '#2a2a2a';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = '#666';
+                          e.currentTarget.style.background = '#232323';
+                        }}
+                        onClick={() => setEditingTeam(team)}
+                      >
+                        <div style={{ color: '#999', fontSize: 12, textAlign: 'center' }}>
+                          + Add Member
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {editingTeam && editingTeam.id === team.id && (
+                    <AddMemberModal
+                      team={team}
+                      availableWrestlers={availableWrestlers}
+                      onAdd={(wrestlerSlug) => {
+                        handleAddMember(team.id, wrestlerSlug);
+                        setEditingTeam(null);
+                      }}
+                      onClose={() => setEditingTeam(null)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Other Tag Teams */}
+      {nonPrimaryTeams.length > 0 && (
+        <>
+          {Object.keys(primaryByStable).length > 0 && (
+            <h2 style={{ 
+              color: '#C6A04F', 
+              fontWeight: 800, 
+              fontSize: 32, 
+              marginBottom: 24, 
+              marginTop: 48,
+              letterSpacing: 1 
+            }}>
+              Other Tag Teams
+            </h2>
+          )}
+          {nonPrimaryTeams.map(team => (
         <div
           key={team.id}
           style={{
@@ -377,7 +795,7 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, margin: 0, letterSpacing: 1 }}>
                   {team.name}
                 </h3>
@@ -428,23 +846,62 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
                     Edit
                   </button>
                   {team.is_stable ? (
-                    <button
-                      onClick={() => handleUnmarkAsStable(team.id)}
-                      disabled={loading}
-                      style={{
-                        padding: '6px 16px',
-                        borderRadius: 6,
-                        background: '#666',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        opacity: loading ? 0.6 : 1,
-                      }}
-                    >
-                      Unmark Stable
-                    </button>
+                    <>
+                      {team.primary_for_stable ? (
+                        <button
+                          onClick={() => handleUnsetPrimaryForStable(team.id)}
+                          disabled={loading}
+                          style={{
+                            padding: '6px 16px',
+                            borderRadius: 6,
+                            background: '#666',
+                            color: '#fff',
+                            border: 'none',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            opacity: loading ? 0.6 : 1,
+                          }}
+                        >
+                          Unset Primary
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSetPrimaryForStable(team.id, team.name)}
+                          disabled={loading}
+                          style={{
+                            padding: '6px 16px',
+                            borderRadius: 6,
+                            background: '#4CAF50',
+                            color: '#fff',
+                            border: 'none',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            opacity: loading ? 0.6 : 1,
+                          }}
+                        >
+                          Set Primary
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleUnmarkAsStable(team.id)}
+                        disabled={loading}
+                        style={{
+                          padding: '6px 16px',
+                          borderRadius: 6,
+                          background: '#666',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: loading ? 'not-allowed' : 'pointer',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          opacity: loading ? 0.6 : 1,
+                        }}
+                      >
+                        Unmark Stable
+                      </button>
+                    </>
                   ) : (
                     <button
                       onClick={() => handleMarkAsStable(team.id, team.name)}
@@ -602,11 +1059,14 @@ export default function TagTeamsView({ wrestlers = [], isAuthorized = false, onW
           )}
         </div>
       ))}
+        </>
+      )}
 
       {/* Edit Team Modal */}
       {editingTeamDetails && (
         <EditTeamModal
           team={editingTeamDetails}
+          availableStables={availableStables}
           onSave={handleSaveTeamEdit}
           onClose={() => setEditingTeamDetails(null)}
           onChange={(field, value) => {
@@ -732,7 +1192,7 @@ function AddMemberModal({ team, availableWrestlers, onAdd, onClose }) {
 }
 
 // Modal for editing tag team details
-function EditTeamModal({ team, onSave, onClose, onChange }) {
+function EditTeamModal({ team, availableStables = [], onSave, onClose, onChange }) {
   const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned'];
 
   return (
@@ -833,6 +1293,35 @@ function EditTeamModal({ team, onSave, onClose, onChange }) {
             }}
           />
         </div>
+
+        {team.is_stable && (
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Primary for Stable:
+            </label>
+            <select
+              value={team.primary_for_stable || ''}
+              onChange={(e) => onChange('primary_for_stable', e.target.value)}
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+            >
+              <option value="">Not a primary tag team</option>
+              {availableStables.map(stable => (
+                <option key={stable} value={stable}>{stable}</option>
+              ))}
+            </select>
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Select the stable this tag team represents as primary. Leave blank if not primary.
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 32 }}>
           <button

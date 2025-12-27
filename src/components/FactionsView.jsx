@@ -16,13 +16,18 @@ export default function FactionsView({ wrestlers = [], isAuthorized = false, onW
       const grouped = {};
       
       // First, group wrestlers by their stable field
+      // Make sure we include gender information
       wrestlers.forEach(w => {
         const stable = w.stable || w.affiliation;
         if (stable && stable.trim()) {
           if (!grouped[stable]) {
             grouped[stable] = [];
           }
-          grouped[stable].push(w);
+          // Ensure gender is included (default to 'male' if not set)
+          grouped[stable].push({
+            ...w,
+            gender: w.gender || 'male'
+          });
         }
       });
 
@@ -227,10 +232,77 @@ export default function FactionsView({ wrestlers = [], isAuthorized = false, onW
     }
   };
 
-  const handleEditStable = (stableName) => {
+  const [availableTagTeams, setAvailableTagTeams] = useState([]);
+
+  // Fetch tag teams that could be primary for stables
+  useEffect(() => {
+    async function fetchTagTeams() {
+      try {
+        const { data: teams, error } = await supabase
+          .from('tag_teams')
+          .select('*')
+          .eq('active', true)
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching tag teams:', error);
+          return;
+        }
+
+        setAvailableTagTeams(teams || []);
+      } catch (err) {
+        console.error('Error fetching tag teams:', err);
+      }
+    }
+
+    fetchTagTeams();
+  }, []);
+
+  const handleEditStable = async (stableName) => {
+    // Find the current primary tag teams for this stable (could be men's and/or women's)
+    const currentPrimaryTeams = availableTagTeams.filter(t => t.primary_for_stable === stableName);
+    
+    let primaryMenMember1 = null;
+    let primaryMenMember2 = null;
+    let primaryWomenMember1 = null;
+    let primaryWomenMember2 = null;
+    
+    // Fetch members for each primary team and determine if they're men's or women's
+    for (const team of currentPrimaryTeams) {
+      const { data: members } = await supabase
+        .from('tag_team_members')
+        .select('wrestler_slug, member_order')
+        .eq('tag_team_id', team.id)
+        .eq('active', true)
+        .order('member_order');
+      
+      if (members && members.length >= 2) {
+        // Get wrestler details to check gender
+        const member1 = wrestlers.find(w => w.id === members[0].wrestler_slug);
+        const member2 = wrestlers.find(w => w.id === members[1].wrestler_slug);
+        
+        if (member1 && member2) {
+          const isWomensTeam = (member1.gender === 'female' || member2.gender === 'female');
+          
+          if (isWomensTeam) {
+            primaryWomenMember1 = members[0].wrestler_slug;
+            primaryWomenMember2 = members[1].wrestler_slug;
+          } else {
+            primaryMenMember1 = members[0].wrestler_slug;
+            primaryMenMember2 = members[1].wrestler_slug;
+          }
+        }
+      }
+    }
+    
     setEditingStableName({
       oldName: stableName,
       newName: stableName,
+      primaryMenMember1: primaryMenMember1,
+      primaryMenMember2: primaryMenMember2,
+      primaryWomenMember1: primaryWomenMember1,
+      primaryWomenMember2: primaryWomenMember2,
+      stableMembers: factions[stableName] || [],
     });
   };
 
@@ -247,25 +319,166 @@ export default function FactionsView({ wrestlers = [], isAuthorized = false, onW
       const oldName = editingStableName.oldName.trim();
       const newName = editingStableName.newName.trim();
 
-      if (oldName === newName) {
-        setEditingStableName(null);
-        setLoading(false);
-        return;
-      }
+      // If name changed, update all wrestlers with the old stable name to have the new stable name
+      if (oldName !== newName) {
+        const members = factions[oldName] || [];
+        
+        for (const wrestler of members) {
+          const { error } = await supabase
+            .from('wrestlers')
+            .update({ stable: newName })
+            .eq('id', wrestler.id);
 
-      // Update all wrestlers with the old stable name to have the new stable name
-      const members = factions[oldName] || [];
-      
-      for (const wrestler of members) {
-        const { error } = await supabase
-          .from('wrestlers')
-          .update({ stable: newName })
-          .eq('id', wrestler.id);
-
-        if (error) {
-          console.error(`Error updating ${wrestler.name} stable:`, error);
+          if (error) {
+            console.error(`Error updating ${wrestler.name} stable:`, error);
+          }
         }
       }
+
+      // Handle primary tag team selection
+      // First, clear primary_for_stable from all tag teams that were set for this stable (or old name)
+      const namesToClear = oldName !== newName ? [oldName, newName] : [newName];
+      for (const name of namesToClear) {
+        const currentPrimaryTeams = availableTagTeams.filter(t => t.primary_for_stable === name);
+        for (const team of currentPrimaryTeams) {
+          await supabase
+            .from('tag_teams')
+            .update({ primary_for_stable: null })
+            .eq('id', team.id);
+        }
+      }
+
+      // Helper function to create or update a primary tag team
+      const createOrUpdatePrimaryTeam = async (member1Id, member2Id, teamType) => {
+        if (!member1Id || !member2Id) return;
+        
+        const member1 = factions[newName]?.find(w => w.id === member1Id);
+        const member2 = factions[newName]?.find(w => w.id === member2Id);
+        
+        if (!member1 || !member2) return;
+        
+        // Check if a tag team already exists with these two members
+        const { data: existingTeams } = await supabase
+          .from('tag_teams')
+          .select('id, name');
+        
+        let tagTeamId = null;
+        
+        // Check each existing team to see if it has these two members
+        if (existingTeams) {
+          for (const team of existingTeams) {
+            const { data: members } = await supabase
+              .from('tag_team_members')
+              .select('wrestler_slug')
+              .eq('tag_team_id', team.id)
+              .eq('active', true);
+            
+            if (members && members.length === 2) {
+              const memberIds = members.map(m => m.wrestler_slug);
+              if (memberIds.includes(member1Id) && memberIds.includes(member2Id)) {
+                tagTeamId = team.id;
+                break;
+              }
+            }
+          }
+        }
+        
+        // If no existing team found, create a new one
+        if (!tagTeamId) {
+          // Create a tag team name from the stable name
+          const teamName = `${newName}`;
+          // Create a unique ID using stable name, member IDs, and team type
+          const teamId = `${newName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${teamType}-${member1Id}-${member2Id}`.substring(0, 50);
+          
+          // Check if this ID already exists
+          const { data: existingTeam } = await supabase
+            .from('tag_teams')
+            .select('id')
+            .eq('id', teamId)
+            .single();
+          
+          if (existingTeam) {
+            tagTeamId = existingTeam.id;
+          } else {
+            // Create the tag team
+            const { data: newTeam, error: createError } = await supabase
+              .from('tag_teams')
+              .insert({
+                id: teamId,
+                name: teamName,
+                is_stable: false,
+                active: true,
+                primary_for_stable: newName,
+              })
+              .select()
+              .single();
+            
+            if (createError) {
+              console.error(`Error creating primary ${teamType} tag team:`, createError);
+              return;
+            } else {
+              tagTeamId = newTeam.id;
+              
+              // Add the two members to the tag team
+              const { error: membersError } = await supabase
+                .from('tag_team_members')
+                .insert([
+                  { tag_team_id: tagTeamId, wrestler_slug: member1Id, member_order: 0, active: true },
+                  { tag_team_id: tagTeamId, wrestler_slug: member2Id, member_order: 1, active: true },
+                ]);
+              
+              if (membersError) {
+                console.error(`Error adding members to ${teamType} tag team:`, membersError);
+              }
+              
+              // Update wrestlers' tag team fields (only if they don't already have a tag team)
+              await supabase
+                .from('wrestlers')
+                .update({ 
+                  tag_team_name: teamName,
+                  tag_team_partner_slug: member2Id,
+                })
+                .eq('id', member1Id)
+                .is('tag_team_name', null);
+              
+              await supabase
+                .from('wrestlers')
+                .update({ 
+                  tag_team_name: teamName,
+                  tag_team_partner_slug: member1Id,
+                })
+                .eq('id', member2Id)
+                .is('tag_team_name', null);
+            }
+          }
+        }
+        
+        // Update the tag team to be primary (whether it was existing or newly created)
+        if (tagTeamId) {
+          const { error: updateError } = await supabase
+            .from('tag_teams')
+            .update({ primary_for_stable: newName })
+            .eq('id', tagTeamId);
+          
+          if (updateError) {
+            console.error(`Error updating primary ${teamType} tag team:`, updateError);
+          }
+        }
+      };
+
+      // Create or update men's primary tag team
+      await createOrUpdatePrimaryTeam(
+        editingStableName.primaryMenMember1,
+        editingStableName.primaryMenMember2,
+        'mens'
+      );
+
+      // Create or update women's primary tag team
+      await createOrUpdatePrimaryTeam(
+        editingStableName.primaryWomenMember1,
+        editingStableName.primaryWomenMember2,
+        'womens'
+      );
 
       setEditingStableName(null);
 
@@ -274,8 +487,8 @@ export default function FactionsView({ wrestlers = [], isAuthorized = false, onW
         window.location.reload(true);
       }, 300);
     } catch (err) {
-      console.error('Error updating stable name:', err);
-      alert('Failed to update stable name');
+      console.error('Error updating stable:', err);
+      alert('Failed to update stable');
     } finally {
       setLoading(false);
     }
@@ -591,8 +804,8 @@ export default function FactionsView({ wrestlers = [], isAuthorized = false, onW
           stableName={editingStableName}
           onSave={handleSaveStableEdit}
           onClose={() => setEditingStableName(null)}
-          onChange={(newName) => {
-            setEditingStableName(prev => ({ ...prev, newName }));
+          onChange={(field, value) => {
+            setEditingStableName(prev => ({ ...prev, [field]: value }));
           }}
         />
       )}
@@ -610,6 +823,184 @@ export default function FactionsView({ wrestlers = [], isAuthorized = false, onW
 
 // Modal for editing stable name
 function EditStableModal({ stableName, onSave, onClose, onChange }) {
+  const stableMembers = stableName.stableMembers || [];
+  
+  // Separate members by gender
+  // Default to 'male' if gender is not set
+  const maleMembers = stableMembers.filter(m => {
+    const gender = (m.gender || 'male').toLowerCase();
+    return gender === 'male';
+  });
+  const femaleMembers = stableMembers.filter(m => {
+    const gender = (m.gender || '').toLowerCase();
+    return gender === 'female';
+  });
+  
+  // Debug: Log member counts
+  console.log('EditStableModal - Total members:', stableMembers.length);
+  console.log('EditStableModal - Male members:', maleMembers.length);
+  console.log('EditStableModal - Female members:', femaleMembers.length);
+  console.log('EditStableModal - Members with genders:', stableMembers.map(m => ({ name: m.name, gender: m.gender })));
+  
+  // If no gender separation, show all members in a single section
+  const hasGenderData = stableMembers.some(m => m.gender !== undefined && m.gender !== null);
+  
+  const handleMenMemberSelect = (memberId) => {
+    if (!stableName.primaryMenMember1) {
+      onChange('primaryMenMember1', memberId);
+    } else if (!stableName.primaryMenMember2) {
+      if (memberId !== stableName.primaryMenMember1) {
+        onChange('primaryMenMember2', memberId);
+      }
+    } else {
+      if (memberId === stableName.primaryMenMember1) {
+        onChange('primaryMenMember1', null);
+      } else if (memberId === stableName.primaryMenMember2) {
+        onChange('primaryMenMember2', null);
+      } else {
+        onChange('primaryMenMember1', memberId);
+      }
+    }
+  };
+
+  const handleWomenMemberSelect = (memberId) => {
+    if (!stableName.primaryWomenMember1) {
+      onChange('primaryWomenMember1', memberId);
+    } else if (!stableName.primaryWomenMember2) {
+      if (memberId !== stableName.primaryWomenMember1) {
+        onChange('primaryWomenMember2', memberId);
+      }
+    } else {
+      if (memberId === stableName.primaryWomenMember1) {
+        onChange('primaryWomenMember1', null);
+      } else if (memberId === stableName.primaryWomenMember2) {
+        onChange('primaryWomenMember2', null);
+      } else {
+        onChange('primaryWomenMember1', memberId);
+      }
+    }
+  };
+
+  const clearMenTagTeam = () => {
+    onChange('primaryMenMember1', null);
+    onChange('primaryMenMember2', null);
+  };
+
+  const clearWomenTagTeam = () => {
+    onChange('primaryWomenMember1', null);
+    onChange('primaryWomenMember2', null);
+  };
+
+  const renderMemberSelection = (members, teamType, selectedMember1, selectedMember2, onSelect, onClear) => {
+    if (members.length < 2) {
+      return (
+        <div style={{ color: '#999', fontSize: 14, padding: 16, background: '#232323', borderRadius: 8 }}>
+          Need at least 2 {teamType === 'men' ? 'male' : 'female'} members in the stable to create a primary {teamType} tag team.
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ color: '#999', fontSize: 12 }}>
+            Select two {teamType === 'men' ? 'male' : 'female'} members from the stable to form the primary {teamType} tag team.
+          </div>
+          {(selectedMember1 || selectedMember2) && (
+            <button
+              onClick={onClear}
+              style={{
+                padding: '4px 12px',
+                borderRadius: 6,
+                background: '#666',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              Clear Selection
+            </button>
+          )}
+        </div>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+          gap: 12,
+          marginBottom: 12,
+        }}>
+          {members.map(member => {
+            const isSelected1 = selectedMember1 === member.id;
+            const isSelected2 = selectedMember2 === member.id;
+            const isSelected = isSelected1 || isSelected2;
+            const isDisabled = !isSelected && selectedMember1 && selectedMember2;
+            
+            return (
+              <div
+                key={member.id}
+                onClick={() => !isDisabled && onSelect(member.id)}
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  background: isSelected ? '#C6A04F' : '#232323',
+                  border: isSelected ? '2px solid #C6A04F' : '2px solid #444',
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  opacity: isDisabled ? 0.5 : 1,
+                  transition: 'all 0.2s',
+                  textAlign: 'center',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isDisabled) {
+                    e.currentTarget.style.background = isSelected ? '#D4B05F' : '#2a2a2a';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDisabled) {
+                    e.currentTarget.style.background = isSelected ? '#C6A04F' : '#232323';
+                  }
+                }}
+              >
+                <div style={{ 
+                  fontWeight: 700, 
+                  fontSize: 13, 
+                  color: isSelected ? '#232323' : '#fff',
+                  wordBreak: 'break-word',
+                }}>
+                  {member.name}
+                </div>
+                {isSelected1 && (
+                  <div style={{ fontSize: 10, color: '#232323', marginTop: 4, fontWeight: 600 }}>
+                    Member 1
+                  </div>
+                )}
+                {isSelected2 && (
+                  <div style={{ fontSize: 10, color: '#232323', marginTop: 4, fontWeight: 600 }}>
+                    Member 2
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {selectedMember1 && selectedMember2 && (
+          <div style={{ 
+            padding: 12, 
+            background: '#4CAF50', 
+            borderRadius: 8, 
+            color: '#fff', 
+            fontSize: 13,
+            textAlign: 'center',
+            fontWeight: 600,
+            marginBottom: 20,
+          }}>
+            ✓ Primary {teamType} tag team selected
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div
       style={{
@@ -631,7 +1022,7 @@ function EditStableModal({ stableName, onSave, onClose, onChange }) {
           background: '#181818',
           borderRadius: 14,
           padding: 32,
-          maxWidth: 500,
+          maxWidth: 600,
           width: '90%',
           maxHeight: '90vh',
           overflow: 'auto',
@@ -640,7 +1031,7 @@ function EditStableModal({ stableName, onSave, onClose, onChange }) {
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ color: '#C6A04F', marginBottom: 24 }}>
-          Edit Stable Name
+          Edit Stable
         </h3>
         
         <div style={{ marginBottom: 20 }}>
@@ -650,7 +1041,7 @@ function EditStableModal({ stableName, onSave, onClose, onChange }) {
           <input
             type="text"
             value={stableName.newName}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => onChange('newName', e.target.value)}
             style={{
               width: '100%',
               padding: 10,
@@ -666,6 +1057,62 @@ function EditStableModal({ stableName, onSave, onClose, onChange }) {
             This will update all members of "{stableName.oldName}" to the new name.
           </div>
         </div>
+
+        {/* Primary Tag Teams */}
+        {stableMembers.length > 0 && (
+          <>
+            {/* Primary Men's Tag Team */}
+            {maleMembers.length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: 'block', color: '#fff', marginBottom: 12, fontWeight: 600, fontSize: 16 }}>
+                  Primary Men's Tag Team:
+                </label>
+                {renderMemberSelection(
+                  maleMembers,
+                  'men',
+                  stableName.primaryMenMember1,
+                  stableName.primaryMenMember2,
+                  handleMenMemberSelect,
+                  clearMenTagTeam
+                )}
+              </div>
+            )}
+
+            {/* Primary Women's Tag Team */}
+            {femaleMembers.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', color: '#fff', marginBottom: 12, fontWeight: 600, fontSize: 16 }}>
+                  Primary Women's Tag Team:
+                </label>
+                {renderMemberSelection(
+                  femaleMembers,
+                  'womens',
+                  stableName.primaryWomenMember1,
+                  stableName.primaryWomenMember2,
+                  handleWomenMemberSelect,
+                  clearWomenTagTeam
+                )}
+              </div>
+            )}
+
+            {/* Fallback: If no gender data, show all members in a single section */}
+            {maleMembers.length === 0 && femaleMembers.length === 0 && stableMembers.length >= 2 && (
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', color: '#fff', marginBottom: 12, fontWeight: 600, fontSize: 16 }}>
+                  Primary Tag Team:
+                </label>
+                {renderMemberSelection(
+                  stableMembers,
+                  'team',
+                  stableName.primaryMenMember1,
+                  stableName.primaryMenMember2,
+                  handleMenMemberSelect,
+                  clearMenTagTeam
+                )}
+              </div>
+            )}
+          </>
+        )}
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 32 }}>
           <button
