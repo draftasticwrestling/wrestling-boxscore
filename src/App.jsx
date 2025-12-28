@@ -919,7 +919,7 @@ function AddEvent({ addEvent, wrestlers }) {
 
   // Handle recording a title vacancy
   const handleRecordVacancy = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!vacancyForm.title || vacancyForm.title === 'None') {
       alert('Please select a championship title.');
       return;
@@ -1113,7 +1113,7 @@ function AddEvent({ addEvent, wrestlers }) {
             </button>
           </div>
           {showVacancyForm && (
-            <form onSubmit={handleRecordVacancy} style={{ border: '1px solid #C6A04F', padding: 16, marginBottom: 16, borderRadius: 8, background: '#222' }}>
+            <div style={{ border: '1px solid #C6A04F', padding: 16, marginBottom: 16, borderRadius: 8, background: '#222' }}>
               <h4 style={{ color: '#C6A04F', marginTop: 0, marginBottom: 16 }}>Record Title Vacancy</h4>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
@@ -1156,7 +1156,8 @@ function AddEvent({ addEvent, wrestlers }) {
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleRecordVacancy}
                   style={{
                     background: '#C6A04F',
                     color: '#232323',
@@ -1190,7 +1191,7 @@ function AddEvent({ addEvent, wrestlers }) {
                   Cancel
                 </button>
               </div>
-            </form>
+            </div>
           )}
           <div style={{ marginBottom: 12 }}>
             <label style={{ color: gold, fontWeight: 600 }}>
@@ -1668,7 +1669,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
 
   // Handle recording a title vacancy
   const handleRecordVacancy = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!vacancyForm.title || vacancyForm.title === 'None') {
       alert('Please select a championship title.');
       return;
@@ -1850,7 +1851,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             </button>
           </div>
           {showVacancyForm && (
-            <form onSubmit={handleRecordVacancy} style={{ border: '1px solid #C6A04F', padding: 16, marginBottom: 16, borderRadius: 8, background: '#222' }}>
+            <div style={{ border: '1px solid #C6A04F', padding: 16, marginBottom: 16, borderRadius: 8, background: '#222' }}>
               <h4 style={{ color: '#C6A04F', marginTop: 0, marginBottom: 16 }}>Record Title Vacancy</h4>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
@@ -1893,7 +1894,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleRecordVacancy}
                   style={{
                     background: '#C6A04F',
                     color: '#232323',
@@ -1927,7 +1929,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                   Cancel
                 </button>
               </div>
-            </form>
+            </div>
           )}
           {matches.length > 0 ? (
             <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
