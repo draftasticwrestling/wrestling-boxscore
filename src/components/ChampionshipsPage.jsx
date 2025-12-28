@@ -167,7 +167,22 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       }
       
       // If champion name contains " & " it might be individual slugs
+      // Also handle format like "The Kabuki Warriors (asuka & kairi-sane)"
       if (championName && championName.includes(' & ')) {
+        // Check if it's in format "Team Name (slug1 & slug2)"
+        const teamMatch = championName.match(/^([^(]+)\s*\(([^)]+)\)$/);
+        if (teamMatch) {
+          const teamName = teamMatch[1].trim();
+          const slugs = teamMatch[2].split('&').map(s => s.trim());
+          // Format individual names in parentheses
+          const names = slugs.map(slug => {
+            const wrestler = wrestlers.find(w => w.id === slug);
+            return wrestler?.name || slug;
+          });
+          return `${teamName} (${names.join(' & ')})`;
+        }
+        
+        // Otherwise, just slugs separated by " & "
         const slugs = championName.split(' & ').map(s => s.trim());
         // Try to find a tag team that contains these members
         for (const team of tagTeams) {
