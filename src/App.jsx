@@ -929,10 +929,14 @@ function AddEvent({ addEvent, wrestlers }) {
       return;
     }
 
+    // Convert slug to name for display
+    const championSlug = vacancyForm.previousChampion;
+    const championName = wrestlers.find(w => w.id === championSlug)?.name || championSlug;
+
     // Create a minimal match entry for the vacancy
     const vacancyMatch = {
-      participants: vacancyForm.previousChampion,
-      result: `${vacancyForm.previousChampion} vacated the ${vacancyForm.title}${vacancyForm.reason ? ` (${vacancyForm.reason})` : ''}`,
+      participants: championSlug, // Store slug for consistency with other matches
+      result: `${championName} vacated the ${vacancyForm.title}${vacancyForm.reason ? ` (${vacancyForm.reason})` : ''}`,
       method: 'Vacated',
       time: '',
       matchType: 'Singles Match',
@@ -940,14 +944,18 @@ function AddEvent({ addEvent, wrestlers }) {
       customStipulation: '',
       title: vacancyForm.title,
       titleOutcome: 'Vacant',
-      defendingChampion: vacancyForm.previousChampion,
+      defendingChampion: championSlug,
       notes: vacancyForm.reason ? `Vacated due to: ${vacancyForm.reason}` : '',
       status: 'completed',
       isLive: false,
       order: matches.length + 1
     };
 
-    setMatches([...matches, vacancyMatch]);
+    console.log('Adding vacancy match:', vacancyMatch);
+    console.log('Current matches before:', matches);
+    const updatedMatches = [...matches, vacancyMatch];
+    console.log('Updated matches:', updatedMatches);
+    setMatches(updatedMatches);
     
     // Reset form
     setVacancyForm({
@@ -1663,10 +1671,14 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       return;
     }
 
+    // Convert slug to name for display
+    const championSlug = vacancyForm.previousChampion;
+    const championName = wrestlers.find(w => w.id === championSlug)?.name || championSlug;
+
     // Create a minimal match entry for the vacancy
     const vacancyMatch = {
-      participants: vacancyForm.previousChampion,
-      result: `${vacancyForm.previousChampion} vacated the ${vacancyForm.title}${vacancyForm.reason ? ` (${vacancyForm.reason})` : ''}`,
+      participants: championSlug, // Store slug for consistency with other matches
+      result: `${championName} vacated the ${vacancyForm.title}${vacancyForm.reason ? ` (${vacancyForm.reason})` : ''}`,
       method: 'Vacated',
       time: '',
       matchType: 'Singles Match',
@@ -1674,14 +1686,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       customStipulation: '',
       title: vacancyForm.title,
       titleOutcome: 'Vacant',
-      defendingChampion: vacancyForm.previousChampion,
+      defendingChampion: championSlug,
       notes: vacancyForm.reason ? `Vacated due to: ${vacancyForm.reason}` : '',
       status: 'completed',
       isLive: false,
       order: matches.length + 1
     };
 
-    setMatches([...matches, vacancyMatch]);
+    console.log('Adding vacancy match:', vacancyMatch);
+    console.log('Current matches before:', matches);
+    const updatedMatches = [...matches, vacancyMatch];
+    console.log('Updated matches:', updatedMatches);
+    setMatches(updatedMatches);
     
     // Reset form
     setVacancyForm({
