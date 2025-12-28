@@ -497,8 +497,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   {formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
-                  {champ.current_champion === 'VACANT' && champ.vacation_reason ? 
-                    `${formatChampionName(champ.previous_champion, champ.previous_champion_slug, champ.type)} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
+                  {champ.current_champion === 'VACANT' || champ.current_champion_slug === 'vacant' ? 
+                    // Title is currently vacant - show who vacated it
+                    champ.vacation_reason ? 
+                      `${formatChampionName(champ.previous_champion, champ.previous_champion_slug, champ.type)} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
+                    champ.previous_champion && champ.previous_champion !== 'VACANT' ?
+                      `${formatChampionName(champ.previous_champion, champ.previous_champion_slug, champ.type)} vacated the title on ${formatDate(champ.date_won)}` :
+                      `Title became vacant on ${formatDate(champ.date_won)}` :
+                    // Title is currently held - show how they won it
                     champ.wonFromVacant || (champ.previous_champion && champ.previous_champion_slug === 'vacant') ?
                       `Won vacant title on ${formatDate(champ.date_won)}` :
                     champ.previous_champion && champ.previous_champion !== 'VACANT' && champ.previous_champion_slug !== 'vacant' && champ.previous_champion !== champ.current_champion ? 
