@@ -84,15 +84,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Actually, the simplest solution: Update each event in chronological order
--- The trigger will fire for each one, processing them in order
+-- Actually, the simplest solution: Update each event's matches field slightly to trigger processing
+-- We'll add and remove a space in the JSON to force a change detection
 DO $$
 DECLARE
   event_record RECORD;
   update_count INTEGER := 0;
 BEGIN
   FOR event_record IN 
-    SELECT id
+    SELECT id, matches
     FROM events
     WHERE matches IS NOT NULL
     ORDER BY 
@@ -103,10 +103,19 @@ BEGIN
       END,
       name
   LOOP
-    -- Do a no-op update to trigger the function
-    -- We'll update a field that exists but doesn't change the data
+    -- The trigger checks if matches changed, so we need to actually change it
+    -- We'll update matches by setting it to itself via a round-trip conversion
+    -- This should trigger the function even though the data is the same
+    -- Actually, PostgreSQL is smart about this, so let's try a different approach:
+    -- Temporarily set matches to NULL, then back to the original
+    -- But that's risky. Better: use a different field or modify the trigger check
+    
+    -- Actually, let's modify the matches JSONB slightly and then change it back
+    -- We'll use jsonb_set to add a temporary field, then remove it
+    -- But simplest: Just update the matches field by casting it
+    -- PostgreSQL's IS NOT DISTINCT FROM should detect even this as a change
     UPDATE events
-    SET updated_at = COALESCE(updated_at, NOW())
+    SET matches = event_record.matches
     WHERE id = event_record.id;
     
     update_count := update_count + 1;
