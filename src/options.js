@@ -12,6 +12,7 @@ export const MATCH_TYPE_OPTIONS = [
   "Gauntlet Match",
   "2 out of 3 Falls",
   "5-on-5 War Games Match",
+  "Survivor Series-style 10-man Tag Team Elimination match",
   "Cash In Match"
 ];
 

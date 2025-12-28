@@ -26,6 +26,7 @@ import VisualMatchBuilder from './components/VisualMatchBuilder';
 import GauntletMatchBuilder from './components/GauntletMatchBuilder';
 import TwoOutOfThreeFallsBuilder from './components/TwoOutOfThreeFallsBuilder';
 import WarGamesMatchBuilder from './components/WarGamesMatchBuilder';
+import SurvivorSeriesMatchBuilder from './components/SurvivorSeriesMatchBuilder';
 import ChampionshipsPage from './components/ChampionshipsPage';
 
 // Place these at the top level, after imports
@@ -863,6 +864,12 @@ function AddEvent({ addEvent, wrestlers }) {
           alert('Please complete the War Games match by selecting the winning team, who got the pin/submission, and the method.');
           return;
         }
+      } else if (match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) {
+        // Validate Survivor Series match data
+        if (!match.survivorSeriesData || !match.survivorSeriesData.survivor || !match.survivorSeriesData.eliminations || match.survivorSeriesData.eliminations.length < 9) {
+          alert('Please complete the Survivor Series match by recording all 9 eliminations and selecting the survivor.');
+          return;
+        }
       } else {
         // For non-Gauntlet matches, require traditional fields
         if (!resultType || (resultType === 'Winner' && !winner) || !match.method) {
@@ -900,6 +907,29 @@ function AddEvent({ addEvent, wrestlers }) {
         }
         
         result = `${winningTeamNames} def. ${losingTeamNames} (${match.warGamesData.method} by ${pinWinnerName}${entryOrderText}${match.warGamesData.time ? `, ${match.warGamesData.time}` : ''})`;
+      } else if ((match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) && match.survivorSeriesData) {
+        // Format Survivor Series result with survivor and elimination order
+        const winningTeamNames = match.survivorSeriesData.winningTeam === 1 
+          ? match.survivorSeriesData.team1Names.join(' & ')
+          : match.survivorSeriesData.team2Names.join(' & ');
+        const losingTeamNames = match.survivorSeriesData.winningTeam === 1 
+          ? match.survivorSeriesData.team2Names.join(' & ')
+          : match.survivorSeriesData.team1Names.join(' & ');
+        const survivorName = match.survivorSeriesData.survivorName || match.survivorSeriesData.survivor;
+        
+        // Format eliminations
+        let eliminationsText = '';
+        if (match.survivorSeriesData.eliminations && Array.isArray(match.survivorSeriesData.eliminations) && match.survivorSeriesData.eliminations.length > 0) {
+          const sortedEliminations = [...match.survivorSeriesData.eliminations].sort((a, b) => a.order - b.order);
+          const elimStrings = sortedEliminations.map(elim => {
+            const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+            const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+            return `${eliminatedName} by ${eliminatedByName} (${elim.method})`;
+          });
+          eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+        }
+        
+        result = `${winningTeamNames} def. ${losingTeamNames} (Survivor: ${survivorName}${eliminationsText}${match.survivorSeriesData.time ? `, ${match.survivorSeriesData.time}` : ''})`;
       } else if ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') && match.gauntletProgression) {
         // For Gauntlet Matches and 2 out of 3 Falls with progression data, format each match result
         const progressionResults = match.gauntletProgression
@@ -1374,6 +1404,32 @@ function AddEvent({ addEvent, wrestlers }) {
                   winner: warGamesResult.winningTeam === 1 ? warGamesResult.team1Names.join(' & ') : warGamesResult.team2Names.join(' & '),
                   method: warGamesResult.method,
                   time: warGamesResult.time
+                }));
+              }}
+            />
+          ) : (match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) ? (
+            // Survivor Series matches always use the SurvivorSeriesMatchBuilder (has elimination tracking)
+            <SurvivorSeriesMatchBuilder
+              key={`survivor-series-${match.matchType}`}
+              wrestlers={wrestlers}
+              value={match.participants}
+              onChange={value => {
+                console.log('SurvivorSeriesMatchBuilder onChange called with value:', value);
+                const newMatch = { ...match, participants: value };
+                setMatch(newMatch);
+              }}
+              onResultChange={survivorResult => {
+                console.log('Survivor Series result:', survivorResult);
+                // Store the survivor series data
+                const winningTeamNames = survivorResult.winningTeam === 1 
+                  ? survivorResult.team1Names.join(' & ')
+                  : survivorResult.team2Names.join(' & ');
+                setMatch(prev => ({
+                  ...prev,
+                  survivorSeriesData: survivorResult,
+                  winner: winningTeamNames,
+                  method: 'Elimination',
+                  time: survivorResult.time
                 }));
               }}
             />
@@ -2299,10 +2355,38 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                   }));
                 }}
               />
+            ) : (match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) ? (
+              // Survivor Series matches always use the SurvivorSeriesMatchBuilder (has elimination tracking)
+              <SurvivorSeriesMatchBuilder
+                key={`survivor-series-edit-${match.matchType}`}
+                wrestlers={wrestlers}
+                value={match.participants}
+                onChange={value => {
+                  console.log('SurvivorSeriesMatchBuilder onChange called with value:', value);
+                  const newMatch = { ...match, participants: value };
+                  setMatch(newMatch);
+                }}
+                onResultChange={survivorResult => {
+                  console.log('Survivor Series result:', survivorResult);
+                  // Store the survivor series data
+                  const winningTeamNames = survivorResult.winningTeam === 1 
+                    ? survivorResult.team1Names.join(' & ')
+                    : survivorResult.team2Names.join(' & ');
+                  const resultText = `${winningTeamNames} def. ${survivorResult.winningTeam === 1 ? survivorResult.team2Names.join(' & ') : survivorResult.team1Names.join(' & ')} (Survivor: ${survivorResult.survivorName}${survivorResult.time ? `, ${survivorResult.time}` : ''})`;
+                  setMatch(prev => ({
+                    ...prev,
+                    survivorSeriesData: survivorResult,
+                    winner: winningTeamNames,
+                    method: 'Elimination',
+                    time: survivorResult.time,
+                    result: resultText
+                  }));
+                }}
+              />
             ) : (
               <>
-                {/* Participant Input Toggle - Hidden for War Games matches */}
-                {match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && (
+                {/* Participant Input Toggle - Hidden for War Games and Survivor Series matches */}
+                {match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series') && (
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <input
@@ -2316,7 +2400,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                   </div>
                 )}
 
-                {useVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') ? (
+                {useVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series') ? (
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                       Participants (Visual Builder):
@@ -2963,6 +3047,12 @@ const getMatchStructureFromMatchType = (matchType) => {
       ];
     case '5-on-5 War Games Match':
       // War Games: 2 teams with 5 participants each
+      return [
+        { type: 'team', participants: ['', '', '', '', ''], name: '' },
+        { type: 'team', participants: ['', '', '', '', ''], name: '' }
+      ];
+    case 'Survivor Series-style 10-man Tag Team Elimination match':
+      // Survivor Series: 2 teams with 5 participants each
       return [
         { type: 'team', participants: ['', '', '', '', ''], name: '' },
         { type: 'team', participants: ['', '', '', '', ''], name: '' }

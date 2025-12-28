@@ -1375,6 +1375,61 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           </div>
         </div>
       )}
+      
+      {(match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) && match.survivorSeriesData && match.survivorSeriesData.eliminations && Array.isArray(match.survivorSeriesData.eliminations) && match.survivorSeriesData.eliminations.length > 0 && (
+        <div style={{
+          background: '#2a2a2a',
+          borderRadius: 8,
+          padding: 12,
+          marginTop: 8,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          border: '1px solid #444',
+          maxWidth: 500
+        }}>
+          <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 14, marginBottom: 8, textAlign: 'center' }}>
+            Eliminations
+          </div>
+          <div style={{ color: '#fff', fontSize: 13, lineHeight: 1.6 }}>
+            {[...match.survivorSeriesData.eliminations].sort((a, b) => a.order - b.order).map((elim, index) => {
+              const eliminatedName = wrestlerMap[elim.eliminated]?.name || elim.eliminated;
+              const eliminatedByName = wrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
+              // Format: "Wrestler eliminates Wrestler (time)" for pinfall/submission
+              // "Wrestler eliminates Wrestler (method, time)" for other methods
+              let eliminationText = `${eliminatedByName} eliminates ${eliminatedName}`;
+              if (elim.time) {
+                if (elim.method === 'Pinfall' || elim.method === 'Submission') {
+                  eliminationText += ` (${elim.time})`;
+                } else {
+                  const methodText = elim.method === 'Count out' ? 'counted out' : elim.method.toLowerCase();
+                  eliminationText += ` (${methodText}, ${elim.time})`;
+                }
+              } else if (elim.method && elim.method !== 'Pinfall' && elim.method !== 'Submission') {
+                const methodText = elim.method === 'Count out' ? 'counted out' : elim.method.toLowerCase();
+                eliminationText += ` (${methodText})`;
+              }
+              return (
+                <div key={index} style={{ marginBottom: 4, textAlign: 'left', paddingLeft: 8 }}>
+                  {eliminationText}
+                </div>
+              );
+            })}
+          </div>
+          {match.survivorSeriesData.survivorName || match.survivorSeriesData.survivor ? (
+            <div style={{ 
+              color: '#C6A04F', 
+              fontWeight: 700, 
+              fontSize: 14, 
+              marginTop: 12, 
+              paddingTop: 12, 
+              borderTop: '1px solid #444',
+              textAlign: 'center'
+            }}>
+              Survivor: {wrestlerMap[match.survivorSeriesData.survivor]?.name || match.survivorSeriesData.survivorName || match.survivorSeriesData.survivor}
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 } 

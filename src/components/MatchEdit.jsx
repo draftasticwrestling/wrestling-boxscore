@@ -14,6 +14,7 @@ import VisualMatchBuilder from './VisualMatchBuilder';
 import GauntletMatchBuilder from './GauntletMatchBuilder';
 import TwoOutOfThreeFallsBuilder from './TwoOutOfThreeFallsBuilder';
 import WarGamesMatchBuilder from './WarGamesMatchBuilder';
+import SurvivorSeriesMatchBuilder from './SurvivorSeriesMatchBuilder';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };
 const inputStyle = {
@@ -279,8 +280,8 @@ export default function MatchEdit({
       }
     }
 
-    // For Gauntlet Match, 2 out of 3 Falls, and War Games, preserve the existing result
-    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls' || match.matchType === '5-on-5 War Games Match') {
+    // For Gauntlet Match, 2 out of 3 Falls, War Games, and Survivor Series, preserve the existing result
+    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls' || match.matchType === '5-on-5 War Games Match' || match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) {
       result = match.result || result;
     }
 
@@ -479,6 +480,12 @@ export default function MatchEdit({
         ];
       case '5-on-5 War Games Match':
         // War Games: 2 teams with 5 participants each
+        return [
+          { type: 'team', participants: ['', '', '', '', ''], name: '' },
+          { type: 'team', participants: ['', '', '', '', ''], name: '' }
+        ];
+      case 'Survivor Series-style 10-man Tag Team Elimination match':
+        // Survivor Series: 2 teams with 5 participants each
         return [
           { type: 'team', participants: ['', '', '', '', ''], name: '' },
           { type: 'team', participants: ['', '', '', '', ''], name: '' }

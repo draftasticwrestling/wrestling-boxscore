@@ -165,6 +165,40 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
           ) : null}
         </div>
       )}
+      {(match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) && match.survivorSeriesData && (
+        <div style={{ marginTop: 16, marginBottom: 24 }}>
+          {match.survivorSeriesData.eliminations && Array.isArray(match.survivorSeriesData.eliminations) && match.survivorSeriesData.eliminations.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <strong style={{ color: gold }}>Eliminations:</strong>
+              <div style={{ color: '#fff', marginTop: 4, marginLeft: 16 }}>
+                {[...match.survivorSeriesData.eliminations].sort((a, b) => a.order - b.order).map((elim, index) => {
+                  const eliminatedName = wrestlerMap && wrestlerMap[elim.eliminated]
+                    ? wrestlerMap[elim.eliminated].name
+                    : elim.eliminated;
+                  const eliminatedByName = wrestlerMap && wrestlerMap[elim.eliminatedBy]
+                    ? wrestlerMap[elim.eliminatedBy].name
+                    : elim.eliminatedBy;
+                  return (
+                    <div key={index} style={{ marginBottom: 2 }}>
+                      #{elim.order}: {eliminatedName} eliminated by {eliminatedByName} ({elim.method}) {index < match.survivorSeriesData.eliminations.length - 1 && '→'}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {match.survivorSeriesData.survivorName || match.survivorSeriesData.survivor ? (
+            <div style={{ marginBottom: 12 }}>
+              <strong style={{ color: gold }}>Survivor:</strong>
+              <div style={{ color: '#fff', marginTop: 4, marginLeft: 16 }}>
+                {wrestlerMap && wrestlerMap[match.survivorSeriesData.survivor]
+                  ? wrestlerMap[match.survivorSeriesData.survivor].name
+                  : (match.survivorSeriesData.survivorName || match.survivorSeriesData.survivor)}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
       {match.notes && (
         <div style={{ marginBottom: 24 }}>
           <strong style={{ color: gold }}>Notes:</strong>

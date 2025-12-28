@@ -180,6 +180,31 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
               ) : null}
             </div>
           )}
+          {(match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) && match.survivorSeriesData && (
+            <div style={{ marginTop: 8, marginBottom: 8 }}>
+              {match.survivorSeriesData.eliminations && Array.isArray(match.survivorSeriesData.eliminations) && match.survivorSeriesData.eliminations.length > 0 && (
+                <div style={{ marginBottom: 8 }}>
+                  <b>Eliminations:</b>
+                  <div style={{ marginLeft: 16, marginTop: 4 }}>
+                    {[...match.survivorSeriesData.eliminations].sort((a, b) => a.order - b.order).map((elim, index) => {
+                      const eliminatedName = safeWrestlerMap[elim.eliminated]?.name || elim.eliminated;
+                      const eliminatedByName = safeWrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
+                      return (
+                        <div key={index} style={{ marginBottom: 2 }}>
+                          #{elim.order}: {eliminatedName} eliminated by {eliminatedByName} ({elim.method}) {index < match.survivorSeriesData.eliminations.length - 1 && '→'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {match.survivorSeriesData.survivorName || match.survivorSeriesData.survivor ? (
+                <div style={{ marginBottom: 4 }}>
+                  <b>Survivor:</b> {safeWrestlerMap[match.survivorSeriesData.survivor]?.name || match.survivorSeriesData.survivorName || match.survivorSeriesData.survivor}
+                </div>
+              ) : null}
+            </div>
+          )}
           <div><b>Winner:</b> {getWinnerDisplay(match, safeWrestlerMap)}</div>
           <div><b>Method:</b> {match.method}</div>
           <div><b>Time:</b> {match.time}</div>
