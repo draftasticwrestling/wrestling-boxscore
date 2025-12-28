@@ -196,6 +196,23 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       }
     }
     
+    // Check if championName looks like a slug (contains hyphens and is lowercase)
+    // This handles cases where the database stores slugs instead of names
+    if (championName && championName.includes('-') && championName === championName.toLowerCase()) {
+      // Try to look up by the name itself (treating it as a slug)
+      const wrestler = wrestlers.find(w => w.id === championName);
+      if (wrestler?.name) {
+        return wrestler.name;
+      }
+      // Also try with the championSlug parameter
+      if (championSlug && championSlug !== championName) {
+        const wrestlerBySlug = wrestlers.find(w => w.id === championSlug);
+        if (wrestlerBySlug?.name) {
+          return wrestlerBySlug.name;
+        }
+      }
+    }
+    
     // For individuals, if name is "Unknown" or empty but we have a slug, look up by slug
     if ((!championName || championName === 'Unknown') && championSlug && championSlug !== 'unknown' && championSlug !== 'vacant') {
       const wrestler = wrestlers.find(w => w.id === championSlug);
