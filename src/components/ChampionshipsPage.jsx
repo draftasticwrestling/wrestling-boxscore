@@ -153,13 +153,46 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   };
 
   // Helper function to format champion name (handles both individuals and tag teams)
-  const formatChampionName = (championName, championSlug) => {
-    // If it looks like a slug (all lowercase with hyphens), try to get the tag team name
-    if (championSlug && championSlug === championName.toLowerCase().replace(/\s+/g, '-')) {
-      const teamName = getTagTeamName(championSlug);
-      if (teamName) return teamName;
+  const formatChampionName = (championName, championSlug, champType = null) => {
+    // If it's a tag team championship, try to find the tag team
+    if (champType === 'Tag Team') {
+      // First try to get tag team name from slug directly
+      if (championSlug) {
+        const teamName = getTagTeamName(championSlug);
+        if (teamName) return teamName;
+      }
+      
+      // If champion name contains " & " it might be individual slugs
+      if (championName && championName.includes(' & ')) {
+        const slugs = championName.split(' & ').map(s => s.trim());
+        // Try to find a tag team that contains these members
+        for (const team of tagTeams) {
+          const teamId = team.id;
+          const members = tagTeamMembers[teamId] || [];
+          // Check if all slugs are in this team and team has exactly these members
+          const hasAllMembers = slugs.every(slug => members.includes(slug));
+          const hasOnlyTheseMembers = members.length === slugs.length;
+          if (hasAllMembers && hasOnlyTheseMembers) {
+            return team.name;
+          }
+        }
+        
+        // If no team found, format as individual names
+        const names = slugs.map(slug => {
+          const wrestler = wrestlers.find(w => w.id === slug);
+          return wrestler?.name || slug;
+        });
+        return names.join(' & ');
+      }
+      
+      // If champion name looks like a slug, try to get tag team name
+      if (championSlug && championName && championSlug === championName.toLowerCase().replace(/\s+/g, '-')) {
+        const teamName = getTagTeamName(championSlug);
+        if (teamName) return teamName;
+      }
     }
-    // Otherwise return as-is (might already be a proper name)
+    
+    // For individuals, just return the name (should already be a proper name)
     return championName;
   };
 
@@ -461,15 +494,15 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                 )}
                 
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-                  {formatChampionName(champ.current_champion, champ.current_champion_slug)}
+                  {formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
                   {champ.current_champion === 'VACANT' && champ.vacation_reason ? 
-                    `${formatChampionName(champ.previous_champion, champ.previous_champion_slug)} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
+                    `${formatChampionName(champ.previous_champion, champ.previous_champion_slug, champ.type)} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
                     champ.wonFromVacant || (champ.previous_champion && champ.previous_champion_slug === 'vacant') ?
                       `Won vacant title on ${formatDate(champ.date_won)}` :
-                    champ.previous_champion && champ.previous_champion !== 'VACANT' && champ.previous_champion_slug !== 'vacant' ? 
-                      `Defeated ${formatChampionName(champ.previous_champion, champ.previous_champion_slug)} on ${formatDate(champ.date_won)}` :
+                    champ.previous_champion && champ.previous_champion !== 'VACANT' && champ.previous_champion_slug !== 'vacant' && champ.previous_champion !== champ.current_champion ? 
+                      `Defeated ${formatChampionName(champ.previous_champion, champ.previous_champion_slug, champ.type)} on ${formatDate(champ.date_won)}` :
                       `Won on ${formatDate(champ.date_won)}`
                   }
                 </div>
@@ -487,7 +520,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ color: '#ccc' }}>Champion:</span>
-                  <span style={{ fontWeight: 600 }}>{formatChampionName(champ.current_champion, champ.current_champion_slug)}</span>
+                  <span style={{ fontWeight: 600 }}>{formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
