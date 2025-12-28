@@ -15,7 +15,6 @@ const menuItems = [
   { label: 'Events', path: '/' },
   { label: 'Wrestlers', path: '/wrestlers' },
   { label: 'Championships', path: '/championships' },
-  { label: 'Promos', path: '/promos' },
   { label: 'About', path: '/about' },
   { label: 'Contact', path: '/contact' },
 ];

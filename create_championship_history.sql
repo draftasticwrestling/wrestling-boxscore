@@ -45,7 +45,11 @@ BEGIN
       AND date_lost IS NULL;
   END IF;
   
-  -- Insert new history record for the new champion
+  -- If title became vacant, we don't create a new history record for "VACANT"
+  -- The previous champion's record is already updated above with date_lost
+  -- When a new champion wins the vacant title, that will create a new history record
+  
+  -- Insert new history record for the new champion (only if not vacant)
   IF NEW.current_champion IS NOT NULL AND NEW.current_champion != 'VACANT' THEN
     INSERT INTO championship_history (
       championship_id,

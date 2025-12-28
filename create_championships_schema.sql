@@ -236,6 +236,8 @@ DECLARE
   match_participants TEXT;
   loser_name TEXT;
   loser_slug TEXT;
+  match_notes TEXT;
+  vacation_reason_text TEXT;
 BEGIN
   -- Only process if matches array changed
   IF OLD.matches IS NOT DISTINCT FROM NEW.matches THEN
@@ -340,30 +342,56 @@ BEGIN
         
     ELSIF title_outcome = 'Vacant' THEN
       -- Set title to vacant
+      -- Get current champion before vacating
       SELECT current_champion, current_champion_slug INTO current_champ_record
       FROM championships
       WHERE id = championship_id;
       
+      -- Extract vacation reason from match notes if present
+      match_notes := match_record->>'notes';
+      IF match_notes IS NOT NULL AND match_notes LIKE 'Vacated due to: %' THEN
+        vacation_reason_text := SUBSTRING(match_notes FROM 'Vacated due to: (.+)');
+      ELSIF match_notes IS NOT NULL AND match_notes != '' THEN
+        -- Fallback: use notes as reason if it doesn't match the pattern
+        vacation_reason_text := match_notes;
+      ELSE
+        vacation_reason_text := NULL;
+      END IF;
+      
+      -- If we have a participant (previous champion) from the match, use it
+      IF match_participants IS NOT NULL AND match_participants != '' THEN
+        loser_name := match_participants;
+        loser_slug := find_wrestler_slug(match_participants);
+        IF loser_slug IS NULL THEN
+          loser_slug := LOWER(REGEXP_REPLACE(match_participants, '[^a-z0-9]+', '-', 'gi'));
+        END IF;
+      ELSE
+        loser_name := COALESCE(current_champ_record.current_champion, 'Unknown');
+        loser_slug := COALESCE(current_champ_record.current_champion_slug, 'unknown');
+      END IF;
+      
       INSERT INTO championships (
         id, title_name, current_champion, current_champion_slug,
         previous_champion, previous_champion_slug,
-        date_won, event_id, event_name, brand, type
+        date_won, event_id, event_name, brand, type, vacation_reason
       )
       VALUES (
         championship_id, title_name, 'VACANT', 'vacant',
-        COALESCE(current_champ_record.current_champion, 'Unknown'),
-        COALESCE(current_champ_record.current_champion_slug, 'unknown'),
+        loser_name,
+        loser_slug,
         event_date, NEW.id, NEW.name,
-        title_to_brand(title_name), title_to_type(title_name)
+        title_to_brand(title_name), title_to_type(title_name),
+        vacation_reason_text
       )
       ON CONFLICT (id) DO UPDATE SET
-        previous_champion = championships.current_champion,
-        previous_champion_slug = championships.current_champion_slug,
+        previous_champion = COALESCE(loser_name, championships.current_champion),
+        previous_champion_slug = COALESCE(loser_slug, championships.current_champion_slug),
         current_champion = 'VACANT',
         current_champion_slug = 'vacant',
         date_won = EXCLUDED.date_won,
         event_id = EXCLUDED.event_id,
         event_name = EXCLUDED.event_name,
+        vacation_reason = EXCLUDED.vacation_reason,
         updated_at = NOW();
         
     ELSIF title_outcome = 'Champion Retains' THEN
