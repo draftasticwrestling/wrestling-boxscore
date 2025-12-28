@@ -87,10 +87,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       
       // Transform data and check if titles were won from vacant status
       // Check if previous_champion_slug is 'vacant' which indicates title was won from vacant
+      // Note: Only check for titles that are currently held (not currently vacant)
       const transformedData = (data || []).map(champ => {
-        const wonFromVacant = champ.previous_champion_slug === 'vacant' || 
-                              champ.previous_champion === 'VACANT' ||
-                              champ.current_champion_slug === 'vacant';
+        // Only mark as wonFromVacant if title is currently held (not vacant) and was won from vacant
+        const isCurrentlyVacant = champ.current_champion === 'VACANT' || champ.current_champion_slug === 'vacant';
+        const wonFromVacant = !isCurrentlyVacant && (
+          champ.previous_champion_slug === 'vacant' || 
+          champ.previous_champion === 'VACANT'
+        );
         
         return {
           ...champ,
