@@ -943,7 +943,8 @@ function AddEvent({ addEvent, wrestlers }) {
       defendingChampion: vacancyForm.previousChampion,
       notes: vacancyForm.reason ? `Vacated due to: ${vacancyForm.reason}` : '',
       status: 'completed',
-      isLive: false
+      isLive: false,
+      order: matches.length + 1
     };
 
     setMatches([...matches, vacancyMatch]);
@@ -1676,7 +1677,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       defendingChampion: vacancyForm.previousChampion,
       notes: vacancyForm.reason ? `Vacated due to: ${vacancyForm.reason}` : '',
       status: 'completed',
-      isLive: false
+      isLive: false,
+      order: matches.length + 1
     };
 
     setMatches([...matches, vacancyMatch]);
