@@ -46,6 +46,36 @@ function extractWinner(result) {
   return null;
 }
 
+// Helper function to extract loser from result
+function extractLoser(result, participants, winnerName) {
+  if (!result || !winnerName) return null;
+  
+  // Extract loser from "Winner def. Loser" format
+  if (result.includes(' def. ')) {
+    let loser = result.split(' def. ')[1].trim();
+    // Remove method/time info if present (e.g., "Loser (Pinfall)" or "Loser, 12:34")
+    loser = loser.split(' (')[0].trim();
+    loser = loser.split(', ')[0].trim();
+    return loser;
+  }
+  
+  // If we have participants, find who wasn't the winner
+  if (participants) {
+    const sides = participants.split(' vs ').map(side => side.trim());
+    for (const side of sides) {
+      // Check if this side contains the winner
+      const sideLower = side.toLowerCase();
+      const winnerLower = winnerName.toLowerCase();
+      if (!sideLower.includes(winnerLower) && !winnerLower.includes(sideLower)) {
+        // This side doesn't contain the winner, so it's likely the loser
+        return side;
+      }
+    }
+  }
+  
+  return null;
+}
+
 // Helper function to parse date
 function parseDate(dateStr) {
   if (!dateStr) return null;
@@ -288,8 +318,21 @@ async function processHistoricalEvents() {
             continue;
           }
           
-          const previousChampion = championshipStates[championshipId]?.current_champion || 'Unknown';
-          const previousChampionSlug = championshipStates[championshipId]?.current_champion_slug || 'unknown';
+          // Extract loser from match result (who they defeated)
+          const loserRaw = extractLoser(matchResult, match.participants, winnerRaw);
+          let previousChampion = 'Unknown';
+          let previousChampionSlug = 'unknown';
+          
+          if (loserRaw) {
+            // Resolve loser to get proper name and slug
+            const loserInfo = await findWrestlerInfo(loserRaw);
+            previousChampion = loserInfo.name || loserRaw;
+            previousChampionSlug = loserInfo.slug || loserRaw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+          } else {
+            // Fallback to database state if we couldn't extract loser
+            previousChampion = championshipStates[championshipId]?.current_champion || 'Unknown';
+            previousChampionSlug = championshipStates[championshipId]?.current_champion_slug || 'unknown';
+          }
           
           // Update championship state
           championshipStates[championshipId] = {
@@ -306,7 +349,7 @@ async function processHistoricalEvents() {
             type: getType(titleName)
           };
           
-          console.log(`✓ ${titleName}: ${winnerInfo.name} won at ${event.name}`);
+          console.log(`✓ ${titleName}: ${winnerInfo.name} defeated ${previousChampion} at ${event.name}`);
           
         } else if (titleOutcome === 'Vacant') {
           const previousChampion = championshipStates[championshipId]?.current_champion || 'Unknown';
@@ -332,21 +375,55 @@ async function processHistoricalEvents() {
       }
     }
     
-    // Now update the database with final states
-    console.log('\nUpdating database with championship states...');
+    // Now update the database with final states and create history
+    console.log('\nUpdating database with championship states and history...');
     
     const championships = Object.values(championshipStates);
     
     for (const champ of championships) {
+      // Upsert championship record
       const { error: upsertError } = await supabase
         .from('championships')
         .upsert(champ, { onConflict: 'id' });
       
       if (upsertError) {
         console.error(`Error upserting ${champ.title_name}:`, upsertError);
-      } else {
-        console.log(`✓ Updated ${champ.title_name}`);
+        continue;
       }
+      
+      // Create history record for current champion (if not already exists)
+      if (champ.current_champion && champ.current_champion !== 'VACANT') {
+        // Check if history record already exists
+        const { data: existingHistory } = await supabase
+          .from('championship_history')
+          .select('id')
+          .eq('championship_id', champ.id)
+          .eq('champion_slug', champ.current_champion_slug)
+          .eq('date_won', champ.date_won)
+          .maybeSingle();
+        
+        if (!existingHistory) {
+          const { error: historyError } = await supabase
+            .from('championship_history')
+            .insert({
+              championship_id: champ.id,
+              champion: champ.current_champion,
+              champion_slug: champ.current_champion_slug,
+              previous_champion: champ.previous_champion,
+              previous_champion_slug: champ.previous_champion_slug,
+              date_won: champ.date_won,
+              event_id: champ.event_id,
+              event_name: champ.event_name,
+              days_held: null  // Current reign, will be calculated when they lose
+            });
+          
+          if (historyError) {
+            console.warn(`Warning: Could not create history for ${champ.title_name}:`, historyError);
+          }
+        }
+      }
+      
+      console.log(`✓ Updated ${champ.title_name}`);
     }
     
     console.log(`\n✅ Processing complete! Updated ${championships.length} championships.`);

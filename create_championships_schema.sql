@@ -111,6 +111,54 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 5b. Function to extract loser from match result
+-- This extracts who was defeated from the match result
+CREATE OR REPLACE FUNCTION extract_loser_from_result(
+  result_text TEXT,
+  participants_text TEXT,
+  winner_name TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  loser TEXT;
+  participants_array TEXT[];
+  participant TEXT;
+BEGIN
+  IF result_text IS NULL OR result_text = '' OR winner_name IS NULL THEN
+    RETURN NULL;
+  END IF;
+  
+  -- Extract loser from "Winner def. Loser" format
+  IF result_text LIKE '% def. %' THEN
+    loser := TRIM(SPLIT_PART(result_text, ' def. ', 2));
+    -- Remove method/time info if present (e.g., "Loser (Pinfall)" or "Loser, 12:34")
+    loser := TRIM(SPLIT_PART(loser, ' (', 1));
+    loser := TRIM(SPLIT_PART(loser, ', ', 1));
+    RETURN loser;
+  END IF;
+  
+  -- If we have participants, find who wasn't the winner
+  IF participants_text IS NOT NULL AND participants_text != '' THEN
+    -- Split participants by " vs " or " & "
+    participants_array := string_to_array(REPLACE(REPLACE(participants_text, ' vs ', '|'), ' & ', '|'), '|');
+    
+    FOREACH participant IN ARRAY participants_array
+    LOOP
+      participant := TRIM(participant);
+      -- Check if this participant is not the winner
+      IF participant != winner_name AND 
+         NOT (participant LIKE '%' || winner_name || '%') AND
+         NOT (winner_name LIKE '%' || participant || '%') THEN
+        -- This might be the loser, but we need to check if it's a valid participant
+        -- For now, return the first non-winner we find
+        RETURN participant;
+      END IF;
+    END LOOP;
+  END IF;
+  
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 6. Function to find wrestler slug from name
 -- This tries to match the winner name to a wrestler in the database
 CREATE OR REPLACE FUNCTION find_wrestler_slug(winner_name TEXT)
@@ -186,6 +234,8 @@ DECLARE
   event_date DATE;
   current_champ_record RECORD;
   match_participants TEXT;
+  loser_name TEXT;
+  loser_slug TEXT;
 BEGIN
   -- Only process if matches array changed
   IF OLD.matches IS NOT DISTINCT FROM NEW.matches THEN
@@ -246,10 +296,24 @@ BEGIN
       -- Try to find wrestler slug
       winner_slug := find_wrestler_slug(winner_name);
       
-      -- Get current champion info
-      SELECT current_champion, current_champion_slug INTO current_champ_record
-      FROM championships
-      WHERE id = championship_id;
+      -- Extract loser from match result (this is who they defeated)
+      loser_name := extract_loser_from_result(match_result, match_participants, winner_name);
+      
+      -- If we couldn't extract loser from result, try to get from database
+      IF loser_name IS NULL OR loser_name = '' THEN
+        SELECT current_champion, current_champion_slug INTO current_champ_record
+        FROM championships
+        WHERE id = championship_id;
+        
+        loser_name := COALESCE(current_champ_record.current_champion, 'Unknown');
+        loser_slug := COALESCE(current_champ_record.current_champion_slug, 'unknown');
+      ELSE
+        -- Resolve loser slug
+        loser_slug := find_wrestler_slug(loser_name);
+        IF loser_slug IS NULL THEN
+          loser_slug := LOWER(REGEXP_REPLACE(loser_name, '[^a-z0-9]+', '-', 'gi'));
+        END IF;
+      END IF;
       
       -- Update or insert championship record
       INSERT INTO championships (
@@ -259,14 +323,14 @@ BEGIN
       )
       VALUES (
         championship_id, title_name, winner_name, COALESCE(winner_slug, LOWER(REGEXP_REPLACE(winner_name, '[^a-z0-9]+', '-', 'gi'))),
-        COALESCE(current_champ_record.current_champion, 'Unknown'),
-        COALESCE(current_champ_record.current_champion_slug, 'unknown'),
+        loser_name,
+        loser_slug,
         event_date, NEW.id, NEW.name,
         title_to_brand(title_name), title_to_type(title_name)
       )
       ON CONFLICT (id) DO UPDATE SET
-        previous_champion = championships.current_champion,
-        previous_champion_slug = championships.current_champion_slug,
+        previous_champion = COALESCE(loser_name, championships.current_champion),
+        previous_champion_slug = COALESCE(loser_slug, championships.current_champion_slug),
         current_champion = EXCLUDED.current_champion,
         current_champion_slug = EXCLUDED.current_champion_slug,
         date_won = EXCLUDED.date_won,
