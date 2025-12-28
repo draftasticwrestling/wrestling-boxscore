@@ -465,11 +465,11 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
                   {champ.current_champion === 'VACANT' && champ.vacation_reason ? 
-                    `${champ.previous_champion} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
+                    `${formatChampionName(champ.previous_champion, champ.previous_champion_slug)} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
                     champ.wonFromVacant || (champ.previous_champion && champ.previous_champion_slug === 'vacant') ?
                       `Won vacant title on ${formatDate(champ.date_won)}` :
                     champ.previous_champion && champ.previous_champion !== 'VACANT' && champ.previous_champion_slug !== 'vacant' ? 
-                      `Defeated ${champ.previous_champion} on ${formatDate(champ.date_won)}` :
+                      `Defeated ${formatChampionName(champ.previous_champion, champ.previous_champion_slug)} on ${formatDate(champ.date_won)}` :
                       `Won on ${formatDate(champ.date_won)}`
                   }
                 </div>
@@ -487,7 +487,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ color: '#ccc' }}>Champion:</span>
-                  <span style={{ fontWeight: 600 }}>{champ.current_champion}</span>
+                  <span style={{ fontWeight: 600 }}>{formatChampionName(champ.current_champion, champ.current_champion_slug)}</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
