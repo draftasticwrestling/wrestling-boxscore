@@ -1558,6 +1558,12 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [brWinner, setBrWinner] = useState('');
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
+  const [showVacancyForm, setShowVacancyForm] = useState(false);
+  const [vacancyForm, setVacancyForm] = useState({
+    title: '',
+    previousChampion: '',
+    reason: ''
+  });
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
