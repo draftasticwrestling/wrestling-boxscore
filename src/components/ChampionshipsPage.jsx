@@ -196,8 +196,24 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       }
     }
     
-    // For individuals, just return the name (should already be a proper name)
-    return championName;
+    // For individuals, if name is "Unknown" or empty but we have a slug, look up by slug
+    if ((!championName || championName === 'Unknown') && championSlug && championSlug !== 'unknown' && championSlug !== 'vacant') {
+      const wrestler = wrestlers.find(w => w.id === championSlug);
+      if (wrestler?.name) {
+        return wrestler.name;
+      }
+    }
+    
+    // For individuals, return the name (should already be a proper name)
+    // But if it's empty or null, try slug lookup as fallback
+    if (!championName && championSlug && championSlug !== 'unknown' && championSlug !== 'vacant') {
+      const wrestler = wrestlers.find(w => w.id === championSlug);
+      if (wrestler?.name) {
+        return wrestler.name;
+      }
+    }
+    
+    return championName || 'Unknown';
   };
 
   // Helper function to get wrestler image
