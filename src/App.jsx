@@ -892,6 +892,9 @@ function AddEvent({ addEvent, wrestlers }) {
           const others = winnerOptions.filter(name => name !== winner);
           result = formatResult(winner, others);
         }
+      } else if (resultType === 'No Winner') {
+        // Handle matches with no winner (No Contest, Draw, etc.)
+        result = match.method === 'No Contest' ? 'No Contest' : 'No winner';
       }
     }
     setMatches([
