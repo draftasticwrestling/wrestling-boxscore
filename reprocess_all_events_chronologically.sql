@@ -103,19 +103,16 @@ BEGIN
       END,
       name
   LOOP
-    -- The trigger checks if matches changed, so we need to actually change it
-    -- We'll update matches by setting it to itself via a round-trip conversion
-    -- This should trigger the function even though the data is the same
-    -- Actually, PostgreSQL is smart about this, so let's try a different approach:
-    -- Temporarily set matches to NULL, then back to the original
-    -- But that's risky. Better: use a different field or modify the trigger check
-    
-    -- Actually, let's modify the matches JSONB slightly and then change it back
-    -- We'll use jsonb_set to add a temporary field, then remove it
-    -- But simplest: Just update the matches field by casting it
-    -- PostgreSQL's IS NOT DISTINCT FROM should detect even this as a change
+    -- The trigger checks "IF OLD.matches IS NOT DISTINCT FROM NEW.matches"
+    -- So we need to actually change the matches JSONB to trigger processing
+    -- We'll add a temporary field, then immediately remove it
+    -- This forces PostgreSQL to see it as a change
     UPDATE events
-    SET matches = event_record.matches
+    SET matches = matches || '{"_temp": null}'::jsonb  -- Add temp field
+    WHERE id = event_record.id;
+    
+    UPDATE events
+    SET matches = matches - '_temp'  -- Remove temp field (this triggers the function)
     WHERE id = event_record.id;
     
     update_count := update_count + 1;
