@@ -362,20 +362,20 @@ BEGIN
         loser_name := COALESCE(current_champ_record.current_champion, 'Unknown');
         loser_slug := COALESCE(current_champ_record.current_champion_slug, 'unknown');
       ELSE
-        -- Resolve loser slug from extracted name/slug
-        loser_slug := find_wrestler_slug(loser_name);
-        IF loser_slug IS NULL THEN
-          loser_slug := LOWER(REGEXP_REPLACE(loser_name, '[^a-z0-9]+', '-', 'gi'));
-        END IF;
-        
-        -- If the extracted loser_name looks like a slug (contains hyphens and is lowercase),
-        -- try to get the actual name from slug
+        -- Check if the extracted loser_name looks like a slug (contains hyphens and is lowercase)
         -- This handles cases where match results store slugs like "dominik-mysterio" instead of names
         IF loser_name LIKE '%-%' AND loser_name = LOWER(loser_name) THEN
-          -- loser_name might be a slug, try to get actual name
+          -- loser_name is likely a slug, use it as the slug and look up the actual name
+          loser_slug := loser_name;
           actual_wrestler_name := get_wrestler_name_from_slug(loser_slug);
           IF actual_wrestler_name IS NOT NULL THEN
             loser_name := actual_wrestler_name;
+          END IF;
+        ELSE
+          -- Resolve loser slug from extracted name
+          loser_slug := find_wrestler_slug(loser_name);
+          IF loser_slug IS NULL THEN
+            loser_slug := LOWER(REGEXP_REPLACE(loser_name, '[^a-z0-9]+', '-', 'gi'));
           END IF;
         END IF;
       END IF;
