@@ -155,6 +155,31 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
               </div>
             </div>
           )}
+          {match.matchType === '5-on-5 War Games Match' && match.warGamesData && (
+            <div style={{ marginTop: 8, marginBottom: 8 }}>
+              {match.warGamesData.entryOrder && Array.isArray(match.warGamesData.entryOrder) && match.warGamesData.entryOrder.length > 0 && (
+                <div style={{ marginBottom: 8 }}>
+                  <b>Entry Order:</b>
+                  <div style={{ marginLeft: 16, marginTop: 4 }}>
+                    {[...match.warGamesData.entryOrder].sort((a, b) => a.entryNumber - b.entryNumber).map((entry, index) => {
+                      const wrestlerName = safeWrestlerMap[entry.wrestler]?.name || entry.wrestler;
+                      const isStart = entry.entryNumber <= 2;
+                      return (
+                        <div key={index} style={{ marginBottom: 2 }}>
+                          Entry #{entry.entryNumber}{isStart ? ' (Starts)' : ''}: {wrestlerName} {index < match.warGamesData.entryOrder.length - 1 && '→'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {match.warGamesData.pinWinnerName || match.warGamesData.pinSubmissionWinner ? (
+                <div style={{ marginBottom: 4 }}>
+                  <b>Pin/Submission by:</b> {safeWrestlerMap[match.warGamesData.pinSubmissionWinner]?.name || match.warGamesData.pinWinnerName || match.warGamesData.pinSubmissionWinner}
+                </div>
+              ) : null}
+            </div>
+          )}
           <div><b>Winner:</b> {getWinnerDisplay(match, safeWrestlerMap)}</div>
           <div><b>Method:</b> {match.method}</div>
           <div><b>Time:</b> {match.time}</div>

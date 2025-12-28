@@ -133,6 +133,38 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
           <tr><td style={tdStyle}>Title Outcome</td><td style={tdStyle}>{match.titleOutcome || 'None'}</td></tr>
         </tbody>
       </table>
+      {match.matchType === '5-on-5 War Games Match' && match.warGamesData && (
+        <div style={{ marginTop: 16, marginBottom: 24 }}>
+          {match.warGamesData.entryOrder && Array.isArray(match.warGamesData.entryOrder) && match.warGamesData.entryOrder.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <strong style={{ color: gold }}>Entry Order:</strong>
+              <div style={{ color: '#fff', marginTop: 4, marginLeft: 16 }}>
+                {[...match.warGamesData.entryOrder].sort((a, b) => a.entryNumber - b.entryNumber).map((entry, index) => {
+                  const wrestlerName = wrestlerMap && wrestlerMap[entry.wrestler] 
+                    ? wrestlerMap[entry.wrestler].name 
+                    : entry.wrestler;
+                  const isStart = entry.entryNumber <= 2;
+                  return (
+                    <div key={index} style={{ marginBottom: 2 }}>
+                      Entry #{entry.entryNumber}{isStart ? ' (Starts)' : ''}: {wrestlerName} {index < match.warGamesData.entryOrder.length - 1 && '→'}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {match.warGamesData.pinWinnerName || match.warGamesData.pinSubmissionWinner ? (
+            <div style={{ marginBottom: 12 }}>
+              <strong style={{ color: gold }}>Pin/Submission by:</strong>
+              <div style={{ color: '#fff', marginTop: 4, marginLeft: 16 }}>
+                {wrestlerMap && wrestlerMap[match.warGamesData.pinSubmissionWinner]
+                  ? wrestlerMap[match.warGamesData.pinSubmissionWinner].name
+                  : (match.warGamesData.pinWinnerName || match.warGamesData.pinSubmissionWinner)}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
       {match.notes && (
         <div style={{ marginBottom: 24 }}>
           <strong style={{ color: gold }}>Notes:</strong>

@@ -13,6 +13,7 @@ import WrestlerAutocomplete from './WrestlerAutocomplete';
 import VisualMatchBuilder from './VisualMatchBuilder';
 import GauntletMatchBuilder from './GauntletMatchBuilder';
 import TwoOutOfThreeFallsBuilder from './TwoOutOfThreeFallsBuilder';
+import WarGamesMatchBuilder from './WarGamesMatchBuilder';
 
 const labelStyle = { color: '#fff', fontWeight: 500, marginBottom: 4, display: 'block' };
 const inputStyle = {
@@ -278,8 +279,8 @@ export default function MatchEdit({
       }
     }
 
-    // For Gauntlet Match and 2 out of 3 Falls, preserve the existing result
-    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
+    // For Gauntlet Match, 2 out of 3 Falls, and War Games, preserve the existing result
+    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls' || match.matchType === '5-on-5 War Games Match') {
       result = match.result || result;
     }
 
@@ -475,6 +476,12 @@ export default function MatchEdit({
         return [
           { type: 'individual', participants: [''] },
           { type: 'individual', participants: [''] }
+        ];
+      case '5-on-5 War Games Match':
+        // War Games: 2 teams with 5 participants each
+        return [
+          { type: 'team', participants: ['', '', '', '', ''], name: '' },
+          { type: 'team', participants: ['', '', '', '', ''], name: '' }
         ];
       case 'Battle Royal':
         // Battle Royal uses separate interface, so return null
@@ -736,6 +743,53 @@ export default function MatchEdit({
                       winner: fallsResult.winner,
                       method: fallsResult.method,
                       time: fallsResult.time
+                    }));
+                  }}
+                />
+              ) : match.matchType === '5-on-5 War Games Match' ? (
+                <WarGamesMatchBuilder
+                  wrestlers={safeWrestlers}
+                  value={match.participants}
+                  onChange={(value, matchType) => {
+                    console.log('WarGamesMatchBuilder onChange called with value:', value, 'matchType:', matchType);
+                    const newMatch = { ...match, participants: value };
+                    if (matchType) {
+                      newMatch.matchType = matchType;
+                    }
+                    setMatch(newMatch);
+                  }}
+                  onResultChange={warGamesResult => {
+                    console.log('War Games result:', warGamesResult);
+                    // Store the war games data
+                    const winningTeamNames = warGamesResult.winningTeam === 1 
+                      ? warGamesResult.team1Names.join(' & ')
+                      : warGamesResult.team2Names.join(' & ');
+                    const losingTeamNames = warGamesResult.winningTeam === 1 
+                      ? warGamesResult.team2Names.join(' & ')
+                      : warGamesResult.team1Names.join(' & ');
+                    const pinWinnerName = warGamesResult.pinWinnerName || warGamesResult.pinSubmissionWinner;
+                    
+                    // Format entry order
+                    let entryOrderText = '';
+                    if (warGamesResult.entryOrder && Array.isArray(warGamesResult.entryOrder) && warGamesResult.entryOrder.length > 0) {
+                      // Sort entry order by entry number
+                      const sortedEntries = [...warGamesResult.entryOrder].sort((a, b) => a.entryNumber - b.entryNumber);
+                      const entryNames = sortedEntries.map(entry => {
+                        const wrestler = safeWrestlers.find(w => w.id === entry.wrestler);
+                        return wrestler ? wrestler.name : entry.wrestler;
+                      });
+                      entryOrderText = ` [Entry Order: ${entryNames.join(' → ')}]`;
+                    }
+                    
+                    const resultText = `${winningTeamNames} def. ${losingTeamNames} (${warGamesResult.method} by ${pinWinnerName}${entryOrderText}${warGamesResult.time ? `, ${warGamesResult.time}` : ''})`;
+                    
+                    setMatch(prev => ({
+                      ...prev,
+                      warGamesData: warGamesResult,
+                      winner: winningTeamNames,
+                      method: warGamesResult.method,
+                      time: warGamesResult.time,
+                      result: resultText
                     }));
                   }}
                 />

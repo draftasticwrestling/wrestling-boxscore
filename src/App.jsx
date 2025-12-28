@@ -25,6 +25,7 @@ import ParticipantSelectionDemo from './components/ParticipantSelectionDemo';
 import VisualMatchBuilder from './components/VisualMatchBuilder';
 import GauntletMatchBuilder from './components/GauntletMatchBuilder';
 import TwoOutOfThreeFallsBuilder from './components/TwoOutOfThreeFallsBuilder';
+import WarGamesMatchBuilder from './components/WarGamesMatchBuilder';
 import ChampionshipsPage from './components/ChampionshipsPage';
 
 // Place these at the top level, after imports
@@ -841,7 +842,7 @@ function AddEvent({ addEvent, wrestlers }) {
         return;
       }
       
-      // For Gauntlet Matches and 2 out of 3 Falls, validate progression data instead of traditional fields
+      // For Gauntlet Matches, 2 out of 3 Falls, and War Games, validate special data instead of traditional fields
       if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
         if (!match.gauntletProgression || match.gauntletProgression.length === 0) {
           const matchTypeText = match.matchType === 'Gauntlet Match' ? 'Gauntlet Match' : '2 out of 3 Falls';
@@ -854,6 +855,12 @@ function AddEvent({ addEvent, wrestlers }) {
         if (incompleteMatches.length > 0) {
           const matchTypeText = match.matchType === 'Gauntlet Match' ? 'Gauntlet' : '2 out of 3 Falls';
           alert(`Please select a winner and method for each match in the ${matchTypeText}`);
+          return;
+        }
+      } else if (match.matchType === '5-on-5 War Games Match') {
+        // Validate War Games match data
+        if (!match.warGamesData || !match.warGamesData.winningTeam || !match.warGamesData.pinSubmissionWinner || !match.warGamesData.method) {
+          alert('Please complete the War Games match by selecting the winning team, who got the pin/submission, and the method.');
           return;
         }
       } else {
@@ -870,7 +877,30 @@ function AddEvent({ addEvent, wrestlers }) {
     
     let result = '';
     if (eventStatus === 'completed') {
-      if ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') && match.gauntletProgression) {
+      if (match.matchType === '5-on-5 War Games Match' && match.warGamesData) {
+        // Format War Games result with entry order and pin/submission winner
+        const winningTeamNames = match.warGamesData.winningTeam === 1 
+          ? match.warGamesData.team1Names.join(' & ')
+          : match.warGamesData.team2Names.join(' & ');
+        const losingTeamNames = match.warGamesData.winningTeam === 1 
+          ? match.warGamesData.team2Names.join(' & ')
+          : match.warGamesData.team1Names.join(' & ');
+        const pinWinnerName = match.warGamesData.pinWinnerName || match.warGamesData.pinSubmissionWinner;
+        
+        // Format entry order
+        let entryOrderText = '';
+        if (match.warGamesData.entryOrder && Array.isArray(match.warGamesData.entryOrder) && match.warGamesData.entryOrder.length > 0) {
+          // Sort entry order by entry number
+          const sortedEntries = [...match.warGamesData.entryOrder].sort((a, b) => a.entryNumber - b.entryNumber);
+          const entryNames = sortedEntries.map(entry => {
+            const wrestler = wrestlers.find(w => w.id === entry.wrestler);
+            return wrestler ? wrestler.name : entry.wrestler;
+          });
+          entryOrderText = ` [Entry Order: ${entryNames.join(' → ')}]`;
+        }
+        
+        result = `${winningTeamNames} def. ${losingTeamNames} (${match.warGamesData.method} by ${pinWinnerName}${entryOrderText}${match.warGamesData.time ? `, ${match.warGamesData.time}` : ''})`;
+      } else if ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') && match.gauntletProgression) {
         // For Gauntlet Matches and 2 out of 3 Falls with progression data, format each match result
         const progressionResults = match.gauntletProgression
           .filter(prog => prog.winner && prog.method)
@@ -1323,22 +1353,48 @@ function AddEvent({ addEvent, wrestlers }) {
                 </select>
               </div>
             </>
+          ) : (match.matchType === '5-on-5 War Games Match' || match.matchType?.includes('War Games')) ? (
+            // War Games matches always use the WarGamesMatchBuilder (has entry order and result tracking)
+            // Ignore the Visual Builder toggle for War Games matches
+            <WarGamesMatchBuilder
+              key={`war-games-${match.matchType}`}
+              wrestlers={wrestlers}
+              value={match.participants}
+              onChange={value => {
+                console.log('WarGamesMatchBuilder onChange called with value:', value);
+                const newMatch = { ...match, participants: value };
+                setMatch(newMatch);
+              }}
+              onResultChange={warGamesResult => {
+                console.log('War Games result:', warGamesResult);
+                // Store the war games data
+                setMatch(prev => ({
+                  ...prev,
+                  warGamesData: warGamesResult,
+                  winner: warGamesResult.winningTeam === 1 ? warGamesResult.team1Names.join(' & ') : warGamesResult.team2Names.join(' & '),
+                  method: warGamesResult.method,
+                  time: warGamesResult.time
+                }));
+              }}
+            />
           ) : (
             <>
-              {/* Participant Input Toggle */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={useVisualBuilder}
-                    onChange={e => setUseVisualBuilder(e.target.checked)}
-                    style={{ marginRight: 8 }}
-                  />
-                  Use Visual Match Builder
-                </label>
-              </div>
+              {/* Participant Input Toggle - Hidden for War Games matches */}
+              {match.matchType !== '5-on-5 War Games Match' && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={useVisualBuilder}
+                      onChange={e => setUseVisualBuilder(e.target.checked)}
+                      style={{ marginRight: 8 }}
+                    />
+                    Use Visual Match Builder
+                  </label>
+                </div>
+              )}
 
-              {useVisualBuilder ? (
+              {useVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') ? (
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                     Participants (Visual Builder):
@@ -2220,22 +2276,47 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                   </select>
                 </div>
               </>
+            ) : (match.matchType === '5-on-5 War Games Match' || match.matchType?.includes('War Games')) ? (
+              // War Games matches always use the WarGamesMatchBuilder (has entry order and result tracking)
+              <WarGamesMatchBuilder
+                key={`war-games-edit-${match.matchType}`}
+                wrestlers={wrestlers}
+                value={match.participants}
+                onChange={value => {
+                  console.log('WarGamesMatchBuilder onChange called with value:', value);
+                  const newMatch = { ...match, participants: value };
+                  setMatch(newMatch);
+                }}
+                onResultChange={warGamesResult => {
+                  console.log('War Games result:', warGamesResult);
+                  // Store the war games data
+                  setMatch(prev => ({
+                    ...prev,
+                    warGamesData: warGamesResult,
+                    winner: warGamesResult.winningTeam === 1 ? warGamesResult.team1Names.join(' & ') : warGamesResult.team2Names.join(' & '),
+                    method: warGamesResult.method,
+                    time: warGamesResult.time
+                  }));
+                }}
+              />
             ) : (
               <>
-                {/* Participant Input Toggle */}
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={useVisualBuilder}
-                      onChange={e => setUseVisualBuilder(e.target.checked)}
-                      style={{ marginRight: 8 }}
-                    />
-                    Use Visual Match Builder
-                  </label>
-                </div>
+                {/* Participant Input Toggle - Hidden for War Games matches */}
+                {match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && (
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={useVisualBuilder}
+                        onChange={e => setUseVisualBuilder(e.target.checked)}
+                        style={{ marginRight: 8 }}
+                      />
+                      Use Visual Match Builder
+                    </label>
+                  </div>
+                )}
 
-                {useVisualBuilder ? (
+                {useVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') ? (
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                       Participants (Visual Builder):
@@ -2879,6 +2960,12 @@ const getMatchStructureFromMatchType = (matchType) => {
       return [
         { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] }
+      ];
+    case '5-on-5 War Games Match':
+      // War Games: 2 teams with 5 participants each
+      return [
+        { type: 'team', participants: ['', '', '', '', ''], name: '' },
+        { type: 'team', participants: ['', '', '', '', ''], name: '' }
       ];
     case 'Battle Royal':
       // Battle Royal uses separate interface, so return null

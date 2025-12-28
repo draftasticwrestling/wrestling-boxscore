@@ -11,6 +11,7 @@ export const MATCH_TYPE_OPTIONS = [
   "Triple Threat match",
   "Gauntlet Match",
   "2 out of 3 Falls",
+  "5-on-5 War Games Match",
   "Cash In Match"
 ];
 
