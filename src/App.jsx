@@ -934,8 +934,10 @@ function AddEvent({ addEvent, wrestlers }) {
     const championName = wrestlers.find(w => w.id === championSlug)?.name || championSlug;
 
     // Create a minimal match entry for the vacancy
+    // Note: For vacancy matches, we store the champion's NAME in participants field
+    // because the SQL function expects the name (not slug) to store as previous_champion
     const vacancyMatch = {
-      participants: championSlug, // Store slug for consistency with other matches
+      participants: championName, // Store name because SQL uses this directly as previous_champion name
       result: `${championName} vacated the ${vacancyForm.title}${vacancyForm.reason ? ` (${vacancyForm.reason})` : ''}`,
       method: 'Vacated',
       time: '',
@@ -1681,8 +1683,10 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     const championName = wrestlers.find(w => w.id === championSlug)?.name || championSlug;
 
     // Create a minimal match entry for the vacancy
+    // Note: For vacancy matches, we store the champion's NAME in participants field
+    // because the SQL function expects the name (not slug) to store as previous_champion
     const vacancyMatch = {
-      participants: championSlug, // Store slug for consistency with other matches
+      participants: championName, // Store name because SQL uses this directly as previous_champion name
       result: `${championName} vacated the ${vacancyForm.title}${vacancyForm.reason ? ` (${vacancyForm.reason})` : ''}`,
       method: 'Vacated',
       time: '',
