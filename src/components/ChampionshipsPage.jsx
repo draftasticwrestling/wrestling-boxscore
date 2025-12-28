@@ -85,11 +85,19 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
 
       if (fetchError) throw fetchError;
       
-      // Transform data to match expected format (event_name -> event)
-      let transformedData = (data || []).map(champ => ({
-        ...champ,
-        event: champ.event_name || champ.event || 'Unknown Event'
-      }));
+      // Transform data and check if titles were won from vacant status
+      // Check if previous_champion_slug is 'vacant' which indicates title was won from vacant
+      const transformedData = (data || []).map(champ => {
+        const wonFromVacant = champ.previous_champion_slug === 'vacant' || 
+                              champ.previous_champion === 'VACANT' ||
+                              champ.current_champion_slug === 'vacant';
+        
+        return {
+          ...champ,
+          event: champ.event_name || champ.event || 'Unknown Event',
+          wonFromVacant: wonFromVacant
+        };
+      });
       
       // Sort by custom championship order
       transformedData.sort((a, b) => {
@@ -135,6 +143,25 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   };
 
 
+
+  // Helper function to get tag team name from slug
+  const getTagTeamName = (slug) => {
+    if (!slug || slug === 'vacant') return null;
+    // Try to find tag team by slug
+    const team = tagTeams.find(t => t.id === slug || t.id === slug.replace(/^the-/, ''));
+    return team?.name || null;
+  };
+
+  // Helper function to format champion name (handles both individuals and tag teams)
+  const formatChampionName = (championName, championSlug) => {
+    // If it looks like a slug (all lowercase with hyphens), try to get the tag team name
+    if (championSlug && championSlug === championName.toLowerCase().replace(/\s+/g, '-')) {
+      const teamName = getTagTeamName(championSlug);
+      if (teamName) return teamName;
+    }
+    // Otherwise return as-is (might already be a proper name)
+    return championName;
+  };
 
   // Helper function to get wrestler image
   const getWrestlerImage = (championSlug) => {
@@ -434,12 +461,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                 )}
                 
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-                  {champ.current_champion}
+                  {formatChampionName(champ.current_champion, champ.current_champion_slug)}
                 </div>
                 <div style={{ fontSize: 14, color: '#ccc' }}>
-                  {champ.vacation_reason ? 
+                  {champ.current_champion === 'VACANT' && champ.vacation_reason ? 
                     `${champ.previous_champion} vacated the title due to ${champ.vacation_reason} on ${formatDate(champ.date_won)}` :
-                    champ.previous_champion ? 
+                    champ.wonFromVacant || (champ.previous_champion && champ.previous_champion_slug === 'vacant') ?
+                      `Won vacant title on ${formatDate(champ.date_won)}` :
+                    champ.previous_champion && champ.previous_champion !== 'VACANT' && champ.previous_champion_slug !== 'vacant' ? 
                       `Defeated ${champ.previous_champion} on ${formatDate(champ.date_won)}` :
                       `Won on ${formatDate(champ.date_won)}`
                   }

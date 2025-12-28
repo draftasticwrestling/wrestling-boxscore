@@ -301,16 +301,22 @@ BEGIN
       -- Extract loser from match result (this is who they defeated)
       loser_name := extract_loser_from_result(match_result, match_participants, winner_name);
       
-      -- If we couldn't extract loser from result, try to get from database
-      IF loser_name IS NULL OR loser_name = '' THEN
-        SELECT current_champion, current_champion_slug INTO current_champ_record
-        FROM championships
-        WHERE id = championship_id;
-        
+      -- Check if title is currently vacant BEFORE processing
+      SELECT current_champion, current_champion_slug, previous_champion, previous_champion_slug INTO current_champ_record
+      FROM championships
+      WHERE id = championship_id;
+      
+      -- If title is currently vacant, the new champion is winning it from vacant status
+      -- Set previous_champion_slug to 'vacant' to indicate this
+      IF current_champ_record.current_champion = 'VACANT' THEN
+        loser_name := 'VACANT';
+        loser_slug := 'vacant';
+      ELSIF loser_name IS NULL OR loser_name = '' THEN
+        -- If we couldn't extract loser from result, use current champion (who they defeated)
         loser_name := COALESCE(current_champ_record.current_champion, 'Unknown');
         loser_slug := COALESCE(current_champ_record.current_champion_slug, 'unknown');
       ELSE
-        -- Resolve loser slug
+        -- Resolve loser slug from extracted name
         loser_slug := find_wrestler_slug(loser_name);
         IF loser_slug IS NULL THEN
           loser_slug := LOWER(REGEXP_REPLACE(loser_name, '[^a-z0-9]+', '-', 'gi'));
