@@ -219,6 +219,41 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 6b. Function to get wrestler name from slug
+CREATE OR REPLACE FUNCTION get_wrestler_name_from_slug(wrestler_slug TEXT)
+RETURNS TEXT AS $$
+DECLARE
+  wrestler_name TEXT;
+BEGIN
+  IF wrestler_slug IS NULL OR wrestler_slug = '' THEN
+    RETURN NULL;
+  END IF;
+  
+  -- Try to get name from wrestlers table
+  SELECT name INTO wrestler_name
+  FROM wrestlers
+  WHERE id = wrestler_slug
+  LIMIT 1;
+  
+  IF wrestler_name IS NOT NULL THEN
+    RETURN wrestler_name;
+  END IF;
+  
+  -- Try to get name from tag_teams table
+  SELECT name INTO wrestler_name
+  FROM tag_teams
+  WHERE id = wrestler_slug
+  LIMIT 1;
+  
+  IF wrestler_name IS NOT NULL THEN
+    RETURN wrestler_name;
+  END IF;
+  
+  -- If no match found, return NULL
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 7. Main trigger function to process championship changes
 CREATE OR REPLACE FUNCTION process_championship_changes()
 RETURNS TRIGGER AS $$
@@ -238,6 +273,7 @@ DECLARE
   loser_slug TEXT;
   match_notes TEXT;
   vacation_reason_text TEXT;
+  actual_wrestler_name TEXT;
 BEGIN
   -- Only process if matches array changed
   IF OLD.matches IS NOT DISTINCT FROM NEW.matches THEN
@@ -298,6 +334,16 @@ BEGIN
       -- Try to find wrestler slug
       winner_slug := find_wrestler_slug(winner_name);
       
+      -- If the extracted winner_name looks like a slug (contains hyphens and is lowercase),
+      -- try to get the actual name from slug
+      -- This handles cases where match results store slugs like "john-cena" instead of names
+      IF winner_name LIKE '%-%' AND winner_name = LOWER(winner_name) THEN
+        actual_wrestler_name := get_wrestler_name_from_slug(winner_slug);
+        IF actual_wrestler_name IS NOT NULL THEN
+          winner_name := actual_wrestler_name;
+        END IF;
+      END IF;
+      
       -- Extract loser from match result (this is who they defeated)
       loser_name := extract_loser_from_result(match_result, match_participants, winner_name);
       
@@ -316,10 +362,21 @@ BEGIN
         loser_name := COALESCE(current_champ_record.current_champion, 'Unknown');
         loser_slug := COALESCE(current_champ_record.current_champion_slug, 'unknown');
       ELSE
-        -- Resolve loser slug from extracted name
+        -- Resolve loser slug from extracted name/slug
         loser_slug := find_wrestler_slug(loser_name);
         IF loser_slug IS NULL THEN
           loser_slug := LOWER(REGEXP_REPLACE(loser_name, '[^a-z0-9]+', '-', 'gi'));
+        END IF;
+        
+        -- If the extracted loser_name looks like a slug (contains hyphens and is lowercase),
+        -- try to get the actual name from slug
+        -- This handles cases where match results store slugs like "dominik-mysterio" instead of names
+        IF loser_name LIKE '%-%' AND loser_name = LOWER(loser_name) THEN
+          -- loser_name might be a slug, try to get actual name
+          actual_wrestler_name := get_wrestler_name_from_slug(loser_slug);
+          IF actual_wrestler_name IS NOT NULL THEN
+            loser_name := actual_wrestler_name;
+          END IF;
         END IF;
       END IF;
       
