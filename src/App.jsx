@@ -1542,7 +1542,12 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [name, setName] = useState(event.name);
   const [date, setDate] = useState(event.date);
   const [location, setLocation] = useState(event.location);
-  const [matches, setMatches] = useState(event.matches);
+  const [matches, setMatches] = useState(Array.isArray(event.matches) ? event.matches : []);
+  
+  // Debug: Log matches changes
+  useEffect(() => {
+    console.log('Matches state updated:', matches);
+  }, [matches]);
   const [match, setMatch] = useState({
     participants: '',
     result: '',
@@ -1695,9 +1700,23 @@ function EditEvent({ events, updateEvent, wrestlers }) {
 
     console.log('Adding vacancy match:', vacancyMatch);
     console.log('Current matches before:', matches);
-    const updatedMatches = [...matches, vacancyMatch];
+    console.log('Matches is array?', Array.isArray(matches));
+    console.log('Matches length:', matches?.length);
+    
+    // Ensure matches is an array
+    const currentMatches = Array.isArray(matches) ? matches : [];
+    const updatedMatches = [...currentMatches, vacancyMatch];
+    
     console.log('Updated matches:', updatedMatches);
-    setMatches(updatedMatches);
+    console.log('Updated matches length:', updatedMatches.length);
+    
+    // Use functional update to ensure React detects the change
+    setMatches(prevMatches => {
+      const prev = Array.isArray(prevMatches) ? prevMatches : [];
+      const newMatches = [...prev, vacancyMatch];
+      console.log('setMatches callback - prev:', prev, 'new:', newMatches);
+      return newMatches;
+    });
     
     // Reset form
     setVacancyForm({
@@ -1906,10 +1925,12 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               </div>
             </form>
           )}
-          {matches.length > 0 && (
+          {matches.length > 0 ? (
             <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {matches.map((m, idx) => (
-                <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333' }}>
+              {matches.map((m, idx) => {
+                console.log('Rendering match:', idx, m);
+                return (
+                <li key={m.order || idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333' }}>
                   {editingMatchIdx === idx ? (
                     <div style={{ flex: 1, width: '100%' }}>
                       <MatchEdit
