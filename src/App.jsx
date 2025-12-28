@@ -1934,7 +1934,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               {matches.map((m, idx) => {
                 console.log('Rendering match:', idx, m);
                 return (
-                <li key={m.order || idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333' }}>
+                  <li key={m.order || idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333' }}>
                   {editingMatchIdx === idx ? (
                     <div style={{ flex: 1, width: '100%' }}>
                       <MatchEdit
@@ -2072,9 +2072,12 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                       </button>
                     </>
                   )}
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ol>
+          ) : (
+            <p style={{ color: '#bbb', marginTop: 16 }}>No matches yet. Add matches or record a title vacancy.</p>
           )}
         </form>
         {user && (
@@ -2146,6 +2149,34 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 </select>
               </label>
             </div>
+            {match.title && match.title !== 'None' && (
+              <div style={{ marginTop: 12, marginBottom: 12, padding: 12, background: '#2a2a2a', borderRadius: 4, border: '1px solid #C6A04F' }}>
+                <div style={{ color: '#C6A04F', fontWeight: 600, marginBottom: 8 }}>Title Vacancy Option</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVacancyForm(true);
+                    setVacancyForm({
+                      title: match.title,
+                      previousChampion: '',
+                      reason: ''
+                    });
+                  }}
+                  style={{
+                    background: '#C6A04F',
+                    color: '#232323',
+                    border: 'none',
+                    borderRadius: 4,
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}
+                >
+                  Record Title Vacancy Instead
+                </button>
+              </div>
+            )}
             {match.stipulation === 'Battle Royal' ? (
               <>
                 <div>
@@ -2412,6 +2443,34 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
                   Select who entered the match as the defending champion. This helps determine who shows the belt when "Champion Retains" is selected.
                 </div>
+              </div>
+            )}
+            {match.title && match.title !== 'None' && (
+              <div style={{ marginTop: 12, marginBottom: 12, padding: 12, background: '#2a2a2a', borderRadius: 4, border: '1px solid #C6A04F' }}>
+                <div style={{ color: '#C6A04F', fontWeight: 600, marginBottom: 8 }}>Title Vacancy Option</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVacancyForm(true);
+                    setVacancyForm({
+                      title: match.title,
+                      previousChampion: '',
+                      reason: ''
+                    });
+                  }}
+                  style={{
+                    background: '#C6A04F',
+                    color: '#232323',
+                    border: 'none',
+                    borderRadius: 4,
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}
+                >
+                  Record Title Vacancy Instead
+                </button>
               </div>
             )}
             <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
