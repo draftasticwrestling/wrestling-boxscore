@@ -288,6 +288,33 @@ export default function MatchEdit({
     // If the match has a result, it should not be live
     const shouldBeLive = isLive && !result;
     
+    // Automatically set "Champion Retains" when champion loses by DQ or Count Out
+    let titleOutcome = match.titleOutcome;
+    if (status === 'completed' && match.title && match.title !== 'None' && match.defendingChampion) {
+      const method = match.method?.toLowerCase() || '';
+      const isDQOrCountOut = method === 'dq' || method === 'count out' || method === 'double count out';
+      
+      if (isDQOrCountOut && match.defendingChampion && winner) {
+        // Normalize function for string comparison (same as MatchCard uses)
+        const normalize = (str) => (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+        
+        // Check if the winner is NOT the defending champion
+        // If champion loses by DQ/Count Out, they retain
+        const winnerStr = String(winner).trim();
+        const defendingChampionStr = String(match.defendingChampion).trim();
+        
+        // Compare using normalized strings for better matching
+        const winnerMatchesChampion = normalize(winnerStr) === normalize(defendingChampionStr) ||
+          normalize(winnerStr).includes(normalize(defendingChampionStr)) ||
+          normalize(defendingChampionStr).includes(normalize(winnerStr));
+        
+        if (!winnerMatchesChampion) {
+          // Champion lost by DQ/Count Out, so they retain
+          titleOutcome = 'Champion Retains';
+        }
+      }
+    }
+    
     const updatedMatch = {
       ...match,
       result,
@@ -296,6 +323,7 @@ export default function MatchEdit({
       liveStart,
       liveEnd,
       commentary,
+      titleOutcome: titleOutcome || match.titleOutcome,
     };
 
     onSave(updatedMatch);
@@ -687,20 +715,37 @@ export default function MatchEdit({
         </>
       ) : (
         <>
-          {/* Participant Input Toggle */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={useVisualBuilder}
-                onChange={e => setUseVisualBuilder(e.target.checked)}
-                style={{ marginRight: 8 }}
-              />
-              Use Visual Match Builder
-            </label>
-          </div>
+          {/* Check if this is a title match - if so, always use visual builder */}
+          {(() => {
+            const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
+            const shouldUseVisualBuilder = isTitleMatch ? true : useVisualBuilder;
+            
+            return (
+              <>
+                {/* Participant Input Toggle - hide for title matches since visual builder is required */}
+                {!isTitleMatch && (
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={useVisualBuilder}
+                        onChange={e => setUseVisualBuilder(e.target.checked)}
+                        style={{ marginRight: 8 }}
+                      />
+                      Use Visual Match Builder
+                    </label>
+                  </div>
+                )}
+                
+                {isTitleMatch && (
+                  <div style={{ marginBottom: 16, padding: 8, background: '#2a2a2a', borderRadius: 4, border: '1px solid #C6A04F' }}>
+                    <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 14 }}>
+                      💡 Title Match: Use the "C" button next to participants to mark the defending champion
+                    </div>
+                  </div>
+                )}
 
-          {useVisualBuilder ? (
+                {shouldUseVisualBuilder ? (
             <div style={{ marginBottom: 16 }}>
               <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                 Participants (Visual Builder):
@@ -837,6 +882,9 @@ export default function MatchEdit({
               </label>
             </div>
           )}
+              </>
+            );
+          })()}
         </>
       )}
       {status === 'completed' && (

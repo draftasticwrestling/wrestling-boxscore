@@ -1443,22 +1443,37 @@ function AddEvent({ addEvent, wrestlers }) {
             />
           ) : (
             <>
-              {/* Participant Input Toggle - Hidden for War Games matches */}
-              {match.matchType !== '5-on-5 War Games Match' && (
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={useVisualBuilder}
-                      onChange={e => setUseVisualBuilder(e.target.checked)}
-                      style={{ marginRight: 8 }}
-                    />
-                    Use Visual Match Builder
-                  </label>
-                </div>
-              )}
+              {/* Check if this is a title match - if so, always use visual builder */}
+              {(() => {
+                const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
+                const shouldUseVisualBuilder = isTitleMatch ? true : useVisualBuilder;
+                
+                return (
+                  <>
+                    {/* Participant Input Toggle - Hidden for War Games matches and title matches */}
+                    {match.matchType !== '5-on-5 War Games Match' && !isTitleMatch && (
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input
+                            type="checkbox"
+                            checked={useVisualBuilder}
+                            onChange={e => setUseVisualBuilder(e.target.checked)}
+                            style={{ marginRight: 8 }}
+                          />
+                          Use Visual Match Builder
+                        </label>
+                      </div>
+                    )}
+                    
+                    {isTitleMatch && (
+                      <div style={{ marginBottom: 16, padding: 8, background: '#2a2a2a', borderRadius: 4, border: '1px solid #C6A04F' }}>
+                        <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 14 }}>
+                          💡 Title Match: Use the "C" button next to participants to mark the defending champion
+                        </div>
+                      </div>
+                    )}
 
-              {useVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') ? (
+                    {shouldUseVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') ? (
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                     Participants (Visual Builder):
@@ -1538,6 +1553,9 @@ function AddEvent({ addEvent, wrestlers }) {
                   </label>
                 </div>
               )}
+                  </>
+                );
+              })()}
             </>
           )}
           {eventStatus === 'completed' && (
@@ -2393,22 +2411,37 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               />
             ) : (
               <>
-                {/* Participant Input Toggle - Hidden for War Games and Survivor Series matches */}
-                {match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series') && (
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input
-                        type="checkbox"
-                        checked={useVisualBuilder}
-                        onChange={e => setUseVisualBuilder(e.target.checked)}
-                        style={{ marginRight: 8 }}
-                      />
-                      Use Visual Match Builder
-                    </label>
-                  </div>
-                )}
+                {/* Check if this is a title match - if so, always use visual builder */}
+                {(() => {
+                  const isTitleMatch = match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match';
+                  const shouldUseVisualBuilder = isTitleMatch ? true : useVisualBuilder;
+                  
+                  return (
+                    <>
+                      {/* Participant Input Toggle - Hidden for War Games, Survivor Series matches, and title matches */}
+                      {match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series') && !isTitleMatch && (
+                        <div style={{ marginBottom: 16 }}>
+                          <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input
+                              type="checkbox"
+                              checked={useVisualBuilder}
+                              onChange={e => setUseVisualBuilder(e.target.checked)}
+                              style={{ marginRight: 8 }}
+                            />
+                            Use Visual Match Builder
+                          </label>
+                        </div>
+                      )}
+                      
+                      {isTitleMatch && (
+                        <div style={{ marginBottom: 16, padding: 8, background: '#2a2a2a', borderRadius: 4, border: '1px solid #C6A04F' }}>
+                          <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 14 }}>
+                            💡 Title Match: Use the "C" button next to participants to mark the defending champion
+                          </div>
+                        </div>
+                      )}
 
-                {useVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series') ? (
+                      {shouldUseVisualBuilder && match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series') ? (
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                       Participants (Visual Builder):
@@ -2465,6 +2498,11 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                         }}
                         maxParticipants={30}
                         initialStructure={getMatchStructureFromMatchType(match.matchType)}
+                        isTitleMatch={match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match'}
+                        defendingChampion={match.defendingChampion || null}
+                        onDefendingChampionChange={(champion) => {
+                          setMatch({ ...match, defendingChampion: champion || '' });
+                        }}
                       />
                     )}
                   </div>
@@ -2481,6 +2519,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                     </label>
                   </div>
                 )}
+                    </>
+                  );
+                })()}
               </>
             )}
             {eventStatus === 'completed' && (
