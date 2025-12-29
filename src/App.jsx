@@ -2812,6 +2812,189 @@ function App() {
   };
 
   // Update event in Supabase
+  // Helper function to extract winner slug from match
+  const extractWinnerSlug = (match, wrestlerMap) => {
+    if (!match || !match.status || match.status !== 'completed') return null;
+    
+    // Try to get winner from match.winner field
+    if (match.winner) {
+      // Check if it's already a slug in wrestlerMap
+      if (wrestlerMap[match.winner]) {
+        return match.winner;
+      }
+      // Try to find by name (case-insensitive, handle variations)
+      const normalize = (str) => (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+      const found = Object.entries(wrestlerMap).find(([slug, wrestler]) => {
+        const matchWinnerNorm = normalize(match.winner);
+        const wrestlerNameNorm = normalize(wrestler.name);
+        return wrestlerNameNorm === matchWinnerNorm || 
+               wrestler.name === match.winner || 
+               wrestler.name.toLowerCase() === match.winner.toLowerCase();
+      });
+      if (found) return found[0];
+    }
+    
+    // Try to extract from result string (e.g., "Winner def. Loser")
+    if (match.result && match.result.includes(' def. ')) {
+      const winnerPart = match.result.split(' def. ')[0].trim();
+      
+      // Check if it's a team with parentheses (e.g., "Team Name (slug1 & slug2)")
+      const teamMatch = winnerPart.match(/^([^(]+)\s*\(([^)]+)\)$/);
+      if (teamMatch) {
+        // For tag teams, return the team identifier (could be team name or first slug)
+        const slugs = teamMatch[2].split('&').map(s => s.trim()).filter(Boolean);
+        // Try to find tag team by slugs, or return first slug
+        return slugs[0] || null;
+      }
+      
+      // Check if it's multiple slugs (e.g., "slug1 & slug2")
+      if (winnerPart.includes('&')) {
+        const slugs = winnerPart.split('&').map(s => s.trim()).filter(Boolean);
+        return slugs[0] || null;
+      }
+      
+      // Check if it's a slug in wrestlerMap
+      if (wrestlerMap[winnerPart]) {
+        return winnerPart;
+      }
+      
+      // Try to find by name (case-insensitive, handle variations)
+      const normalize = (str) => (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+      const found = Object.entries(wrestlerMap).find(([slug, wrestler]) => {
+        const winnerPartNorm = normalize(winnerPart);
+        const wrestlerNameNorm = normalize(wrestler.name);
+        return wrestlerNameNorm === winnerPartNorm ||
+               wrestler.name === winnerPart || 
+               wrestler.name.toLowerCase() === winnerPart.toLowerCase();
+      });
+      if (found) return found[0];
+    }
+    
+    // Also check participants if winner is listed there
+    if (match.participants && typeof match.participants === 'string') {
+      const parts = match.participants.split(' vs ');
+      if (parts.length >= 2 && match.winner) {
+        // Check which side the winner is on
+        for (const side of parts) {
+          const sideSlugs = side.split('&').map(s => s.trim()).filter(Boolean);
+          // Check if winner name or slug matches any part of this side
+          const normalize = (str) => (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+          const matchWinnerNorm = normalize(match.winner);
+          
+          for (const slug of sideSlugs) {
+            if (wrestlerMap[slug]) {
+              const wrestlerNameNorm = normalize(wrestlerMap[slug].name);
+              if (wrestlerNameNorm === matchWinnerNorm || slug === match.winner) {
+                return slug;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  // Helper function to extract winner name from match
+  const extractWinnerName = (match, wrestlerMap) => {
+    if (!match || !match.status || match.status !== 'completed') return null;
+    
+    if (match.winner) {
+      // Check if it's a slug
+      if (wrestlerMap[match.winner]) {
+        return wrestlerMap[match.winner].name;
+      }
+      // Might already be a name
+      return match.winner;
+    }
+    
+    if (match.result && match.result.includes(' def. ')) {
+      return match.result.split(' def. ')[0].trim();
+    }
+    
+    return null;
+  };
+
+  // Function to update championships when matches are completed
+  const updateChampionships = async (matches, eventId, eventDate, wrestlerMap) => {
+    try {
+      // Find all matches with title changes
+      const titleMatches = matches.filter(match => 
+        match.title && 
+        match.title !== 'None' && 
+        match.status === 'completed' &&
+        match.titleOutcome === 'New Champion'
+      );
+
+      console.log('Updating championships - found title matches:', titleMatches.length);
+      
+      for (const match of titleMatches) {
+        console.log(`Processing title match: ${match.title}`, {
+          matchResult: match.result,
+          matchWinner: match.winner,
+          matchParticipants: match.participants,
+          titleOutcome: match.titleOutcome
+        });
+        
+        const winnerSlug = extractWinnerSlug(match, wrestlerMap);
+        const winnerName = extractWinnerName(match, wrestlerMap);
+        
+        console.log(`Extracted winner - slug: ${winnerSlug}, name: ${winnerName}`);
+        
+        if (!winnerSlug || !winnerName) {
+          console.warn(`Could not extract winner for title match: ${match.title}`, {
+            match,
+            wrestlerMapKeys: Object.keys(wrestlerMap).slice(0, 10) // Show first 10 keys for debugging
+          });
+          continue;
+        }
+
+        // Get the previous champion from the championships table
+        const { data: currentChamp, error: fetchError } = await supabase
+          .from('championships')
+          .select('*')
+          .eq('title_name', match.title)
+          .single();
+
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found"
+          console.error(`Error fetching current champion for ${match.title}:`, fetchError);
+          continue;
+        }
+
+        const previousChampion = currentChamp?.current_champion || 'VACANT';
+        const previousChampionSlug = currentChamp?.current_champion_slug || 'vacant';
+
+        // Update the championship
+        const { error: updateError } = await supabase
+          .from('championships')
+          .upsert({
+            title_name: match.title,
+            current_champion: winnerName,
+            current_champion_slug: winnerSlug,
+            previous_champion: previousChampion,
+            previous_champion_slug: previousChampionSlug,
+            date_won: eventDate,
+            event_id: eventId,
+            match_order: match.order || 1
+          }, {
+            onConflict: 'title_name'
+          });
+
+        if (updateError) {
+          console.error(`Error updating championship ${match.title}:`, updateError);
+        } else {
+          console.log(`✅ Updated ${match.title}: ${winnerName} (${winnerSlug})`);
+          console.log(`   Previous: ${previousChampion} (${previousChampionSlug})`);
+          console.log(`   Event: ${eventId}, Date: ${eventDate}, Match Order: ${match.order || 1}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating championships:', error);
+      // Don't throw - we don't want to block event updates if championship update fails
+    }
+  };
+
   const updateEvent = async (updatedEvent) => {
     try {
       // Only send allowed fields to Supabase
@@ -2832,6 +3015,19 @@ function App() {
       if (error) {
         console.error('Supabase update error details:', error);
         throw error;
+      }
+      
+      // Update championships if there are any completed title matches with "New Champion"
+      if (updatedEvent.matches && Array.isArray(updatedEvent.matches)) {
+        const hasNewChampion = updatedEvent.matches.some(match => 
+          match.title && 
+          match.title !== 'None' && 
+          match.status === 'completed' &&
+          match.titleOutcome === 'New Champion'
+        );
+        if (hasNewChampion) {
+          await updateChampionships(updatedEvent.matches, updatedEvent.id, updatedEvent.date, wrestlerMap);
+        }
       }
       
       // Update local state with the sanitized event data (always include promos in local state)
