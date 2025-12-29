@@ -2812,6 +2812,34 @@ function App() {
   };
 
   // Update event in Supabase
+  // Helper function to convert human-readable date to YYYY-MM-DD format
+  const convertDateToISO = (dateStr) => {
+    if (!dateStr) return null;
+    
+    // If already in YYYY-MM-DD format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+    
+    // Try to parse human-readable format (e.g., "November 1, 2025")
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        console.warn(`Could not parse date: ${dateStr}`);
+        return dateStr; // Return original if parsing fails
+      }
+      
+      // Format as YYYY-MM-DD in local timezone (not UTC) to avoid day shift
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.warn(`Error parsing date: ${dateStr}`, error);
+      return dateStr; // Return original if parsing fails
+    }
+  };
+
   // Helper function to extract winner slug from match
   const extractWinnerSlug = (match, wrestlerMap) => {
     if (!match || !match.status || match.status !== 'completed') return null;
@@ -2965,6 +2993,10 @@ function App() {
         const previousChampion = currentChamp?.current_champion || 'VACANT';
         const previousChampionSlug = currentChamp?.current_champion_slug || 'vacant';
 
+        // Convert event date to YYYY-MM-DD format to avoid timezone issues
+        const formattedDate = convertDateToISO(eventDate);
+        console.log(`Date conversion: "${eventDate}" -> "${formattedDate}"`);
+
         // Update the championship
         const { error: updateError } = await supabase
           .from('championships')
@@ -2974,7 +3006,7 @@ function App() {
             current_champion_slug: winnerSlug,
             previous_champion: previousChampion,
             previous_champion_slug: previousChampionSlug,
-            date_won: eventDate,
+            date_won: formattedDate,
             event_id: eventId,
             match_order: match.order || 1
           }, {

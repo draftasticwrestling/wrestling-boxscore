@@ -128,7 +128,21 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
 
   const formatDate = (dateStr) => {
     if (!dateStr || dateStr === '2025-01-01') return 'TBD';
+    
+    // If date is in YYYY-MM-DD format, parse it in local timezone to avoid day shift
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // Use local timezone, not UTC
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+    
+    // For other formats, try to parse normally
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr; // Return original if parsing fails
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
