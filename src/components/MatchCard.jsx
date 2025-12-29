@@ -1122,6 +1122,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               marginBottom: 16,
               gap: 24,
               flexWrap: 'wrap',
+              width: '100%',
+              overflow: 'hidden',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 {renderGrid(left)}
