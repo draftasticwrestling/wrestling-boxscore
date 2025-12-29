@@ -490,6 +490,8 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   
   const matchesWithCardType = sortedMatches.map((match, idx, arr) => ({
     ...match,
+    // Ensure order is set - use existing order or index + 1
+    order: match.order || (idx + 1),
     cardType: shouldDesignateMainEvent && idx === arr.length - 1 ? "Main Event" : "Undercard"
   }));
 
@@ -553,13 +555,19 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {matchesWithCardType.map((match, index) => {
             const [expanded, setExpanded] = React.useState(false);
+            // Use index for navigation - it's stable and reliable
+            const matchIndex = index; // 0-based index
+            // Use both order and index for key to ensure uniqueness
+            const uniqueKey = `match-${match.order || index}-${index}`;
             return (
-              <div key={match.order}>
+              <div key={uniqueKey}>
                 <MatchCard 
+                  key={uniqueKey}
                   match={match} 
                   event={event} 
                   wrestlerMap={wrestlerMap} 
                   isClickable={true}
+                  matchIndex={matchIndex}
                 />
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
                   <button
@@ -2917,12 +2925,28 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   const user = useUser();
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
-  const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
-  const match = event && matchIndex !== -1 ? event.matches[matchIndex] : null;
+  
+  if (!event) {
+    return <div style={{ padding: 24, color: '#fff' }}>Event not found.</div>;
+  }
+  
+  // Sort matches by order (same as event page) to ensure consistent lookup
+  const sortedMatches = [...event.matches].sort((a, b) => {
+    const orderA = a.order || 0;
+    const orderB = b.order || 0;
+    return orderA - orderB;
+  });
+  
+  // Use the matchOrder as an index (1-based) to find the match in the sorted array
+  // matchOrder comes from the URL and represents the position in the sorted list
+  const matchOrderNum = parseInt(matchOrder, 10);
+  const matchIndex = !isNaN(matchOrderNum) && matchOrderNum > 0 ? matchOrderNum - 1 : -1;
+  const match = matchIndex >= 0 && matchIndex < sortedMatches.length ? sortedMatches[matchIndex] : null;
+  
   const [isEditing, setIsEditing] = React.useState(false);
 
-  if (!event || !match) {
-    return <div style={{ padding: 24 }}>Match not found.</div>;
+  if (!match) {
+    return <div style={{ padding: 24, color: '#fff' }}>Match not found.</div>;
   }
 
   const handleEdit = () => {

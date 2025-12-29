@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import BeltIcon from './BeltIcon';
 import BriefcaseIcon from './BriefcaseIcon';
 import CrownIcon from './CrownIcon';
@@ -107,14 +107,28 @@ const getCurrentChampionForTitle = (titleName) => {
   return titleToChampion[titleName] || null;
 };
 
-export default function MatchCard({ match, event, wrestlerMap, isClickable = true }) {
+export default function MatchCard({ match, event, wrestlerMap, isClickable = true, matchIndex }) {
   const navigate = useNavigate();
 
-  const handleClick = () => {
-    if (isClickable && event) {
-      navigate(`/event/${event.id}/match/${match.order}`);
+  // Create handler inline to ensure correct closure capture
+  // Use matchIndex (array index) for navigation - it's more reliable than order
+  const eventId = event?.id;
+  // matchIndex is 0-based, but we'll use 1-based for URL (1, 2, 3...)
+  const navigationIndex = matchIndex !== undefined ? matchIndex + 1 : (match?.order || 1);
+  
+  const handleClick = React.useCallback((e) => {
+    if (!isClickable || !eventId || navigationIndex == null) {
+      return;
     }
-  };
+    
+    // Prevent event bubbling
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
+    navigate(`/event/${eventId}/match/${navigationIndex}`);
+  }, [isClickable, eventId, navigationIndex, navigate]);
 
   // Early return for 2 out of 3 Falls
   if (match.matchType === '2 out of 3 Falls' && typeof match.participants === 'string') {
@@ -152,7 +166,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     
     return (
       <div
-        onClick={handleClick}
+        onClick={(e) => {
+          if (isClickable && eventId && navigationIndex != null) {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(`/event/${eventId}/match/${navigationIndex}`);
+          }
+        }}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -166,6 +186,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           minHeight: 120,
           marginBottom: 2,
           transition: 'background 0.2s',
+          zIndex: 1,
         }}
       >
         {match.cardType === 'Main Event' && (
@@ -455,7 +476,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     
     return (
       <div
-        onClick={handleClick}
+        onClick={(e) => {
+          if (isClickable && eventId && navigationIndex != null) {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(`/event/${eventId}/match/${navigationIndex}`);
+          }
+        }}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -469,6 +496,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           position: 'relative',
           minHeight: 120,
           marginBottom: 2,
+          zIndex: 1,
         }}
       >
         {match.cardType === 'Main Event' && (
@@ -770,7 +798,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
 
   return (
     <div
-      onClick={handleClick}
+      onClick={(e) => {
+        if (isClickable && eventId && navigationIndex != null) {
+          e.preventDefault();
+          e.stopPropagation();
+          navigate(`/event/${eventId}/match/${navigationIndex}`);
+        }
+      }}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -784,6 +818,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         position: 'relative',
         minHeight: 120,
         marginBottom: 2,
+        zIndex: 1,
       }}
     >
       {match.cardType === 'Main Event' && (

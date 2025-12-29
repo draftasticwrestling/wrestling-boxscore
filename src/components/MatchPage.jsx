@@ -41,8 +41,22 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
   const user = useUser();
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
-  const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
-  const match = event && matchIndex !== -1 ? event.matches[matchIndex] : null;
+  
+  // Sort matches by order (same as event page) to ensure consistent lookup
+  const sortedMatches = event ? [...event.matches].sort((a, b) => {
+    const orderA = a.order || 0;
+    const orderB = b.order || 0;
+    return orderA - orderB;
+  }) : [];
+  
+  // Use the matchOrder as an index (1-based) to find the match in the sorted array
+  // matchOrder comes from the URL and represents the position in the sorted list
+  const matchOrderNum = parseInt(matchOrder, 10);
+  const matchIndex = !isNaN(matchOrderNum) && matchOrderNum > 0 ? matchOrderNum - 1 : -1;
+  const match = matchIndex >= 0 && matchIndex < sortedMatches.length ? sortedMatches[matchIndex] : null;
+  
+  // Find the original index in event.matches for editing
+  const originalMatchIndex = event && match ? event.matches.findIndex(m => m === match || (m.order === match.order && m.participants === match.participants)) : -1;
   const [isEditing, setIsEditing] = React.useState(false);
 
   if (!event || !match) {
@@ -72,9 +86,13 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
           eventDate={event.date}
           onSave={updatedMatch => {
             const updatedMatches = [...event.matches];
-            updatedMatches[matchIndex] = updatedMatch;
-            onEditMatch(event.id, updatedMatches);
-            setIsEditing(false);
+            // Use originalMatchIndex if available, otherwise fall back to matchIndex
+            const indexToUpdate = originalMatchIndex !== -1 ? originalMatchIndex : matchIndex;
+            if (indexToUpdate !== -1) {
+              updatedMatches[indexToUpdate] = updatedMatch;
+              onEditMatch(event.id, updatedMatches);
+              setIsEditing(false);
+            }
           }}
           onCancel={() => setIsEditing(false)}
         />

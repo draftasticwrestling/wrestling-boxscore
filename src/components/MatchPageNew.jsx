@@ -244,18 +244,69 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const user = useUser();
-  
-  // Debug logging
-  console.log('MatchPageNewWrapper user:', user);
-  console.log('MatchPageNewWrapper user.email:', user?.email);
   const { eventId, matchOrder } = useParams();
   const event = events.find(e => e.id === eventId);
-  const matchIndex = event ? event.matches.findIndex(m => String(m.order) === String(matchOrder)) : -1;
-  const match = event && matchIndex !== -1 ? event.matches[matchIndex] : null;
+  
+  if (!event) {
+    return <div style={{ padding: 24, color: '#fff' }}>Event not found.</div>;
+  }
+  
+  // Sort matches by order (same as event page) to ensure consistent lookup
+  const sortedMatches = [...event.matches].sort((a, b) => {
+    const orderA = a.order || 0;
+    const orderB = b.order || 0;
+    return orderA - orderB;
+  });
+  
+  // Use the matchOrder as an index (1-based) to find the match in the sorted array
+  // matchOrder comes from the URL and represents the position in the sorted list
+  const matchOrderNum = parseInt(matchOrder, 10);
+  const matchIndex = !isNaN(matchOrderNum) && matchOrderNum > 0 ? matchOrderNum - 1 : -1;
+  const match = matchIndex >= 0 && matchIndex < sortedMatches.length ? sortedMatches[matchIndex] : null;
+  
+  // Find the original index in event.matches for editing
+  const originalMatchIndex = event && match ? event.matches.findIndex(m => m === match || (m.order === match.order && m.participants === match.participants)) : -1;
   const [isEditing, setIsEditing] = React.useState(false);
 
-  if (!event || !match) {
-    return <div style={{ padding: 24 }}>Match not found.</div>;
+  if (!event) {
+    return (
+      <div style={{ padding: 24, color: '#fff' }}>
+        <div style={{ fontSize: 18, marginBottom: 16 }}>Event not found.</div>
+        <div style={{ fontSize: 14, color: '#999' }}>
+          Looking for eventId: <strong>{eventId}</strong><br/>
+          Total events loaded: {events.length}<br/>
+          Event IDs: {events.slice(0, 5).map(e => e.id).join(', ')}...
+        </div>
+      </div>
+    );
+  }
+
+  if (!match) {
+    return (
+      <div style={{ padding: 24, color: '#fff' }}>
+        <div style={{ fontSize: 18, marginBottom: 16 }}>Match not found.</div>
+        <div style={{ fontSize: 14, color: '#999', lineHeight: 1.6 }}>
+          <div>Event: <strong>{event.name}</strong></div>
+          <div>Event ID: {eventId}</div>
+          <div>Match Order from URL: <strong>{matchOrder}</strong></div>
+          <div>Parsed as number: {matchOrderNum}</div>
+          <div>Calculated index (0-based): {matchIndex}</div>
+          <div>Total matches in event: {event.matches.length}</div>
+          <div>Sorted matches length: {sortedMatches.length}</div>
+          <div style={{ marginTop: 16 }}>
+            Match indices available: 1-{sortedMatches.length}
+          </div>
+          {sortedMatches.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              First match participants: {sortedMatches[0]?.participants || 'N/A'}<br/>
+              {matchIndex >= 0 && matchIndex < sortedMatches.length && (
+                <div>Match at index {matchIndex}: {sortedMatches[matchIndex]?.participants || 'N/A'}</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   const handleEdit = () => {
@@ -264,9 +315,13 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
 
   const handleSave = (updatedMatch) => {
     const updatedMatches = [...event.matches];
-    updatedMatches[matchIndex] = updatedMatch;
-    onEditMatch(event.id, updatedMatches);
-    setIsEditing(false);
+    // Use originalMatchIndex if available, otherwise fall back to matchIndex
+    const indexToUpdate = originalMatchIndex !== -1 ? originalMatchIndex : matchIndex;
+    if (indexToUpdate !== -1) {
+      updatedMatches[indexToUpdate] = updatedMatch;
+      onEditMatch(event.id, updatedMatches);
+      setIsEditing(false);
+    }
   };
 
   const handleCancel = () => {
