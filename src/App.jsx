@@ -781,6 +781,16 @@ function AddEvent({ addEvent, wrestlers }) {
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
   const [brEliminations, setBrEliminations] = useState([]);
+  // Royal Rumble state (always 30 participants)
+  const [rrParticipants, setRrParticipants] = useState(Array(30).fill(''));
+  const [rrWinner, setRrWinner] = useState('');
+  const [rrEliminations, setRrEliminations] = useState([]);
+  // Elimination Chamber state (2 starters, 4 pod entrants)
+  const [ecStarter1, setEcStarter1] = useState('');
+  const [ecStarter2, setEcStarter2] = useState('');
+  const [ecPodEntrants, setEcPodEntrants] = useState(Array(4).fill(''));
+  const [ecWinner, setEcWinner] = useState('');
+  const [ecEliminations, setEcEliminations] = useState([]);
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
   const [showVacancyForm, setShowVacancyForm] = useState(false);
@@ -867,6 +877,178 @@ function AddEvent({ addEvent, wrestlers }) {
       setBrParticipants(Array(10).fill(''));
       setBrWinner('');
       setBrEliminations([]);
+      return;
+    }
+    // --- Royal Rumble branch ---
+    if (match.matchType === 'Royal Rumble' || match.stipulation === 'Royal Rumble') {
+      const rrPart = rrParticipants.filter(Boolean);
+      const rrWin = rrWinner;
+      let rrResult = '';
+      
+      if (eventStatus === 'completed' && rrWin && rrPart.length === 30) {
+        const winnerName = wrestlers.find(w => w.id === rrWin)?.name || rrWin;
+        
+        // Format eliminations if they exist
+        let eliminationsText = '';
+        if (rrEliminations && Array.isArray(rrEliminations) && rrEliminations.length > 0) {
+          const validEliminations = rrEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          if (validEliminations.length > 0) {
+            const elimStrings = validEliminations.map(elim => {
+              const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+              const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              if (eliminatedByName2) {
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+              }
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+            });
+            eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          }
+        }
+        
+        rrResult = `${winnerName} won the Royal Rumble${eliminationsText}`;
+      } else if (eventStatus === 'completed') {
+        rrResult = 'No winner';
+      }
+      
+      // Calculate entry order (1-30 based on array index)
+      // Helper function to format entry time (entry #1 = 0:00, #2 = 1:30, etc.)
+      const formatEntryTime = (entryIndex) => {
+        const totalSeconds = entryIndex * 120; // 2 minutes per entry
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      };
+      
+      const entryOrder = rrPart.map((slug, index) => ({
+        slug,
+        entryNumber: index + 1,
+        entryTime: formatEntryTime(index)
+      }));
+      
+      const newMatch = { 
+        ...match, 
+        participants: rrPart, 
+        winner: rrWin, 
+        result: rrResult, 
+        isLive: match.isLive || false 
+      };
+      
+      // Store Royal Rumble data with entry order and times
+      const clonedEliminations = (rrEliminations || []).map(elim => ({ ...elim }));
+      newMatch.royalRumbleData = {
+        eliminations: clonedEliminations,
+        participants: rrPart,
+        entryOrder: entryOrder
+      };
+      
+      setMatches([...matches, newMatch]);
+      setMatch({
+        participants: '',
+        result: '',
+        method: '',
+        time: '',
+        matchType: 'Singles Match',
+        stipulation: 'None',
+        customStipulation: '',
+        title: '',
+        titleOutcome: '',
+        defendingChampion: '',
+        notes: '',
+        isLive: false
+      });
+      setResultType('');
+      setWinner('');
+      setFormResetKey(prev => prev + 1);
+      setRrParticipants(Array(30).fill(''));
+      setRrWinner('');
+      setRrEliminations([]);
+      return;
+    }
+    // --- Elimination Chamber branch ---
+    if (match.matchType === 'Elimination Chamber' || match.stipulation === 'Elimination Chamber') {
+      const starters = [ecStarter1, ecStarter2].filter(Boolean);
+      const podEntrants = ecPodEntrants.filter(Boolean);
+      const ecWin = ecWinner;
+      let ecResult = '';
+      
+      if (eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4) {
+        const winnerName = wrestlers.find(w => w.id === ecWin)?.name || ecWin;
+        
+        // Format eliminations if they exist
+        let eliminationsText = '';
+        if (ecEliminations && Array.isArray(ecEliminations) && ecEliminations.length > 0) {
+          const validEliminations = ecEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          if (validEliminations.length > 0) {
+            const elimStrings = validEliminations.map(elim => {
+              const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+              const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              if (eliminatedByName2) {
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+              }
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+            });
+            eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          }
+        }
+        
+        ecResult = `${winnerName} won the Elimination Chamber${eliminationsText}`;
+      } else if (eventStatus === 'completed') {
+        ecResult = 'No winner';
+      }
+      
+      // Use manually entered entry times for pod entrants
+      const entryOrder = podEntrants.map((slug, index) => ({
+        slug,
+        entryNumber: index + 1,
+        entryTime: ecPodEntryTimes[index] || '' // Use manually entered time
+      }));
+      
+      const allParticipants = [...starters, ...podEntrants];
+      
+      const newMatch = { 
+        ...match, 
+        participants: allParticipants, 
+        winner: ecWin, 
+        result: ecResult, 
+        isLive: match.isLive || false 
+      };
+      
+      // Store Elimination Chamber data
+      const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
+      newMatch.eliminationChamberData = {
+        starters: starters,
+        podEntrants: podEntrants,
+        entryOrder: entryOrder,
+        eliminations: clonedEliminations,
+        participants: allParticipants
+      };
+      
+      setMatches([...matches, newMatch]);
+      setMatch({
+        participants: '',
+        result: '',
+        method: '',
+        time: '',
+        matchType: 'Singles Match',
+        stipulation: 'None',
+        customStipulation: '',
+        title: '',
+        titleOutcome: '',
+        defendingChampion: '',
+        notes: '',
+        isLive: false
+      });
+      setResultType('');
+      setWinner('');
+      setFormResetKey(prev => prev + 1);
+      setEcStarter1('');
+      setEcStarter2('');
+      setEcPodEntrants(Array(4).fill(''));
+      setEcPodEntryTimes(Array(4).fill(''));
+      setEcWinner('');
+      setEcEliminations([]);
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -1612,6 +1794,790 @@ function AddEvent({ addEvent, wrestlers }) {
                 </div>
               )}
             </>
+          ) : match.matchType === 'Royal Rumble' ? (
+            <>
+              <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
+                Royal Rumble (30 Participants)
+              </div>
+              <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
+                Participants enter every 2 minutes. Entry #1 enters at 0:00, Entry #2 at 2:00, etc.
+              </div>
+              {rrParticipants.map((slug, i) => {
+                const entryNumber = i + 1;
+                const entryTimeSeconds = i * 120;
+                const entryMinutes = Math.floor(entryTimeSeconds / 60);
+                const entrySeconds = entryTimeSeconds % 60;
+                const entryTime = `${entryMinutes}:${entrySeconds.toString().padStart(2, '0')}`;
+                
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                    <div style={{ minWidth: 80, color: gold, fontWeight: 600, fontSize: 12 }}>
+                      #{entryNumber} ({entryTime})
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <WrestlerAutocomplete
+                        wrestlers={wrestlers}
+                        value={slug}
+                        onChange={val => setRrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+                        placeholder={`Entry #${entryNumber}`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Winner Selection */}
+              {rrParticipants.filter(Boolean).length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                    Winner:
+                  </label>
+                  <select
+                    value={rrWinner}
+                    onChange={e => setRrWinner(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">Select winner...</option>
+                    {rrParticipants.filter(Boolean).map(slug => (
+                      <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* Eliminations Section */}
+              {rrParticipants.filter(Boolean).length >= 2 && (
+                <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                  <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>
+                    Eliminations
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
+                    Track each elimination in order. Include elimination time.
+                  </div>
+                  
+                  {rrEliminations.map((elimination, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#333', borderRadius: 4, marginBottom: 8, border: '1px solid #555' }}>
+                      <span style={{ color: '#fff', minWidth: '80px', fontSize: 12 }}>Elimination #{index + 1}:</span>
+                      
+                      <div style={{ flex: 1 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Eliminated:
+                        </label>
+                        <select
+                          value={elimination.eliminated || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...rrEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminated: e.target.value };
+                            setRrEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {rrParticipants.filter(Boolean).filter(p => {
+                            const alreadyEliminated = rrEliminations
+                              .filter((_, i) => i !== index)
+                              .map(e => e.eliminated)
+                              .includes(p);
+                            return !alreadyEliminated && p !== rrWinner;
+                          }).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                            Eliminated by:
+                          </label>
+                          {!elimination.eliminatedBy2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newEliminations = [...rrEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: '' };
+                                setRrEliminations(newEliminations);
+                              }}
+                              style={{
+                                background: gold,
+                                color: '#232323',
+                                border: 'none',
+                                borderRadius: 4,
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                height: 'fit-content'
+                              }}
+                              title="Add second eliminator"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                        <select
+                          value={elimination.eliminatedBy || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...rrEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminatedBy: e.target.value };
+                            setRrEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {rrParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                        {elimination.eliminatedBy2 !== undefined && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                                Second eliminator:
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newEliminations = [...rrEliminations];
+                                  const updatedElim = { ...newEliminations[index] };
+                                  delete updatedElim.eliminatedBy2;
+                                  newEliminations[index] = updatedElim;
+                                  setRrEliminations(newEliminations);
+                                }}
+                                style={{
+                                  background: '#d32f2f',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: 4,
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  height: 'fit-content'
+                                }}
+                                title="Remove second eliminator"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <select
+                              value={elimination.eliminatedBy2 || ''}
+                              onChange={(e) => {
+                                const newEliminations = [...rrEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: e.target.value };
+                                setRrEliminations(newEliminations);
+                              }}
+                              style={inputStyle}
+                            >
+                              <option value="">Select second wrestler...</option>
+                              {rrParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
+                                <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ flex: 0.8 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Elimination Time:
+                        </label>
+                        <input
+                          type="text"
+                          value={elimination.time || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...rrEliminations];
+                            newEliminations[index] = { ...newEliminations[index], time: e.target.value };
+                            setRrEliminations(newEliminations);
+                          }}
+                          placeholder="e.g. 45:30"
+                          style={inputStyle}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newEliminations = rrEliminations.filter((_, i) => i !== index);
+                          setRrEliminations(newEliminations);
+                        }}
+                        style={{
+                          background: '#d32f2f',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          height: 'fit-content',
+                          marginTop: 20
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  {rrEliminations.length < rrParticipants.filter(Boolean).length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRrEliminations([...rrEliminations, { eliminated: '', eliminatedBy: '', time: '' }]);
+                      }}
+                      style={{
+                        background: gold,
+                        color: '#232323',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginTop: 8
+                      }}
+                    >
+                      + Add Elimination
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          ) : match.matchType === 'Royal Rumble' ? (
+            <>
+              <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
+                Royal Rumble (30 Participants)
+              </div>
+              <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
+                Participants enter every 2 minutes. Entry #1 enters at 0:00, Entry #2 at 2:00, etc.
+              </div>
+              {rrParticipants.map((slug, i) => {
+                const entryNumber = i + 1;
+                const entryTimeSeconds = i * 120;
+                const entryMinutes = Math.floor(entryTimeSeconds / 60);
+                const entrySeconds = entryTimeSeconds % 60;
+                const entryTime = `${entryMinutes}:${entrySeconds.toString().padStart(2, '0')}`;
+                
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                    <div style={{ minWidth: 80, color: gold, fontWeight: 600, fontSize: 12 }}>
+                      #{entryNumber} ({entryTime})
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <WrestlerAutocomplete
+                        wrestlers={wrestlers}
+                        value={slug}
+                        onChange={val => setRrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+                        placeholder={`Entry #${entryNumber}`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Winner Selection */}
+              {rrParticipants.filter(Boolean).length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                    Winner:
+                  </label>
+                  <select
+                    value={rrWinner}
+                    onChange={e => setRrWinner(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">Select winner...</option>
+                    {rrParticipants.filter(Boolean).map(slug => (
+                      <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* Eliminations Section */}
+              {rrParticipants.filter(Boolean).length >= 2 && (
+                <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                  <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>
+                    Eliminations
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
+                    Track each elimination in order. Include elimination time.
+                  </div>
+                  
+                  {rrEliminations.map((elimination, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#333', borderRadius: 4, marginBottom: 8, border: '1px solid #555' }}>
+                      <span style={{ color: '#fff', minWidth: '80px', fontSize: 12 }}>Elimination #{index + 1}:</span>
+                      
+                      <div style={{ flex: 1 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Eliminated:
+                        </label>
+                        <select
+                          value={elimination.eliminated || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...rrEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminated: e.target.value };
+                            setRrEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {rrParticipants.filter(Boolean).filter(p => {
+                            const alreadyEliminated = rrEliminations
+                              .filter((_, i) => i !== index)
+                              .map(e => e.eliminated)
+                              .includes(p);
+                            return !alreadyEliminated && p !== rrWinner;
+                          }).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                            Eliminated by:
+                          </label>
+                          {!elimination.eliminatedBy2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newEliminations = [...rrEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: '' };
+                                setRrEliminations(newEliminations);
+                              }}
+                              style={{
+                                background: gold,
+                                color: '#232323',
+                                border: 'none',
+                                borderRadius: 4,
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                height: 'fit-content'
+                              }}
+                              title="Add second eliminator"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                        <select
+                          value={elimination.eliminatedBy || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...rrEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminatedBy: e.target.value };
+                            setRrEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {rrParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                        {elimination.eliminatedBy2 !== undefined && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                                Second eliminator:
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newEliminations = [...rrEliminations];
+                                  const updatedElim = { ...newEliminations[index] };
+                                  delete updatedElim.eliminatedBy2;
+                                  newEliminations[index] = updatedElim;
+                                  setRrEliminations(newEliminations);
+                                }}
+                                style={{
+                                  background: '#d32f2f',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: 4,
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  height: 'fit-content'
+                                }}
+                                title="Remove second eliminator"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <select
+                              value={elimination.eliminatedBy2 || ''}
+                              onChange={(e) => {
+                                const newEliminations = [...rrEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: e.target.value };
+                                setRrEliminations(newEliminations);
+                              }}
+                              style={inputStyle}
+                            >
+                              <option value="">Select second wrestler...</option>
+                              {rrParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
+                                <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ flex: 0.8 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Elimination Time:
+                        </label>
+                        <input
+                          type="text"
+                          value={elimination.time || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...rrEliminations];
+                            newEliminations[index] = { ...newEliminations[index], time: e.target.value };
+                            setRrEliminations(newEliminations);
+                          }}
+                          placeholder="e.g. 45:30"
+                          style={inputStyle}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newEliminations = rrEliminations.filter((_, i) => i !== index);
+                          setRrEliminations(newEliminations);
+                        }}
+                        style={{
+                          background: '#d32f2f',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          height: 'fit-content',
+                          marginTop: 20
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  {rrEliminations.length < rrParticipants.filter(Boolean).length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRrEliminations([...rrEliminations, { eliminated: '', eliminatedBy: '', time: '' }]);
+                      }}
+                      style={{
+                        background: gold,
+                        color: '#232323',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginTop: 8
+                      }}
+                    >
+                      + Add Elimination
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          ) : match.matchType === 'Elimination Chamber' ? (
+            <>
+              <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
+                Elimination Chamber (6 Participants)
+              </div>
+              <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
+                2 wrestlers start in the ring. 4 wrestlers start in pods. Enter the time each pod entrant entered.
+              </div>
+              
+              {/* Starters */}
+              <div style={{ marginBottom: 16, padding: 12, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
+                  Starters (In Ring)
+                </div>
+                <WrestlerAutocomplete
+                  wrestlers={wrestlers}
+                  value={ecStarter1}
+                  onChange={val => setEcStarter1(val)}
+                  placeholder="Starter 1"
+                />
+                <div style={{ marginTop: 8 }}>
+                  <WrestlerAutocomplete
+                    wrestlers={wrestlers}
+                    value={ecStarter2}
+                    onChange={val => setEcStarter2(val)}
+                    placeholder="Starter 2"
+                  />
+                </div>
+              </div>
+              
+              {/* Pod Entrants */}
+              <div style={{ marginBottom: 16, padding: 12, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
+                  Pod Entrants (Entry Order)
+                </div>
+                <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
+                  Enter the wrestler and the time they entered from their pod.
+                </div>
+                {ecPodEntrants.map((slug, i) => {
+                  const entryNumber = i + 1;
+                  
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                      <div style={{ minWidth: 60, color: gold, fontWeight: 600, fontSize: 12 }}>
+                        #{entryNumber}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <WrestlerAutocomplete
+                          wrestlers={wrestlers}
+                          value={slug}
+                          onChange={val => setEcPodEntrants(prev => prev.map((s, idx) => idx === i ? val : s))}
+                          placeholder={`Pod Entrant #${entryNumber}`}
+                        />
+                      </div>
+                      <div style={{ minWidth: 100 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Entry Time:
+                        </label>
+                        <input
+                          type="text"
+                          value={ecPodEntryTimes[i] || ''}
+                          onChange={(e) => {
+                            const newTimes = [...ecPodEntryTimes];
+                            newTimes[i] = e.target.value;
+                            setEcPodEntryTimes(newTimes);
+                          }}
+                          placeholder="e.g. 5:00"
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Winner Selection */}
+              {([ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).length === 6) && (
+                <div style={{ marginTop: 16 }}>
+                  <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                    Winner:
+                  </label>
+                  <select
+                    value={ecWinner}
+                    onChange={e => setEcWinner(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">Select winner...</option>
+                    {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).map(slug => (
+                      <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* Eliminations Section */}
+              {([ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).length === 6) && (
+                <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                  <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>
+                    Eliminations
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
+                    Track each elimination in order. Include elimination time.
+                  </div>
+                  
+                  {ecEliminations.map((elimination, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#333', borderRadius: 4, marginBottom: 8, border: '1px solid #555' }}>
+                      <span style={{ color: '#fff', minWidth: '80px', fontSize: 12 }}>Elimination #{index + 1}:</span>
+                      
+                      <div style={{ flex: 1 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Eliminated:
+                        </label>
+                        <select
+                          value={elimination.eliminated || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...ecEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminated: e.target.value };
+                            setEcEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => {
+                            const alreadyEliminated = ecEliminations
+                              .filter((_, i) => i !== index)
+                              .map(e => e.eliminated)
+                              .includes(p);
+                            return !alreadyEliminated && p !== ecWinner;
+                          }).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                            Eliminated by:
+                          </label>
+                          {!elimination.eliminatedBy2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newEliminations = [...ecEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: '' };
+                                setEcEliminations(newEliminations);
+                              }}
+                              style={{
+                                background: gold,
+                                color: '#232323',
+                                border: 'none',
+                                borderRadius: 4,
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                height: 'fit-content'
+                              }}
+                              title="Add second eliminator"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                        <select
+                          value={elimination.eliminatedBy || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...ecEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminatedBy: e.target.value };
+                            setEcEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                        {elimination.eliminatedBy2 !== undefined && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                                Second eliminator:
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newEliminations = [...ecEliminations];
+                                  const updatedElim = { ...newEliminations[index] };
+                                  delete updatedElim.eliminatedBy2;
+                                  newEliminations[index] = updatedElim;
+                                  setEcEliminations(newEliminations);
+                                }}
+                                style={{
+                                  background: '#d32f2f',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: 4,
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  height: 'fit-content'
+                                }}
+                                title="Remove second eliminator"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <select
+                              value={elimination.eliminatedBy2 || ''}
+                              onChange={(e) => {
+                                const newEliminations = [...ecEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: e.target.value };
+                                setEcEliminations(newEliminations);
+                              }}
+                              style={inputStyle}
+                            >
+                              <option value="">Select second wrestler...</option>
+                              {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
+                                <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ flex: 0.8 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Elimination Time:
+                        </label>
+                        <input
+                          type="text"
+                          value={elimination.time || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...ecEliminations];
+                            newEliminations[index] = { ...newEliminations[index], time: e.target.value };
+                            setEcEliminations(newEliminations);
+                          }}
+                          placeholder="e.g. 12:30"
+                          style={inputStyle}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newEliminations = ecEliminations.filter((_, i) => i !== index);
+                          setEcEliminations(newEliminations);
+                        }}
+                        style={{
+                          background: '#d32f2f',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          height: 'fit-content',
+                          marginTop: 20
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  {ecEliminations.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEcEliminations([...ecEliminations, { eliminated: '', eliminatedBy: '', time: '' }]);
+                      }}
+                      style={{
+                        background: gold,
+                        color: '#232323',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginTop: 8
+                      }}
+                    >
+                      + Add Elimination
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           ) : (match.matchType === '5-on-5 War Games Match' || match.matchType?.includes('War Games')) ? (
             // War Games matches always use the WarGamesMatchBuilder (has entry order and result tracking)
             // Ignore the Visual Builder toggle for War Games matches
@@ -1936,6 +2902,16 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
   const [brEliminations, setBrEliminations] = useState([]);
+  // Royal Rumble state (always 30 participants)
+  const [rrParticipants, setRrParticipants] = useState(Array(30).fill(''));
+  const [rrWinner, setRrWinner] = useState('');
+  const [rrEliminations, setRrEliminations] = useState([]);
+  // Elimination Chamber state (2 starters, 4 pod entrants)
+  const [ecStarter1, setEcStarter1] = useState('');
+  const [ecStarter2, setEcStarter2] = useState('');
+  const [ecPodEntrants, setEcPodEntrants] = useState(Array(4).fill(''));
+  const [ecWinner, setEcWinner] = useState('');
+  const [ecEliminations, setEcEliminations] = useState([]);
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
   const [showVacancyForm, setShowVacancyForm] = useState(false);
@@ -2022,6 +2998,177 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       setBrParticipants(Array(10).fill(''));
       setBrWinner('');
       setBrEliminations([]);
+      return;
+    }
+    // --- Royal Rumble branch ---
+    if (match.matchType === 'Royal Rumble' || match.stipulation === 'Royal Rumble') {
+      const rrPart = rrParticipants.filter(Boolean);
+      const rrWin = rrWinner;
+      let rrResult = '';
+      
+      if (eventStatus === 'completed' && rrWin && rrPart.length === 30) {
+        const winnerName = wrestlers.find(w => w.id === rrWin)?.name || rrWin;
+        
+        // Format eliminations if they exist
+        let eliminationsText = '';
+        if (rrEliminations && Array.isArray(rrEliminations) && rrEliminations.length > 0) {
+          const validEliminations = rrEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          if (validEliminations.length > 0) {
+            const elimStrings = validEliminations.map(elim => {
+              const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+              const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              if (eliminatedByName2) {
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+              }
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+            });
+            eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          }
+        }
+        
+        rrResult = `${winnerName} won the Royal Rumble${eliminationsText}`;
+      } else if (eventStatus === 'completed') {
+        rrResult = 'No winner';
+      }
+      
+      // Calculate entry order (1-30 based on array index)
+      const formatEntryTime = (entryIndex) => {
+        const totalSeconds = entryIndex * 120; // 2 minutes per entry
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      };
+      
+      const entryOrder = rrPart.map((slug, index) => ({
+        slug,
+        entryNumber: index + 1,
+        entryTime: formatEntryTime(index)
+      }));
+      
+      const newMatch = { 
+        ...match, 
+        participants: rrPart, 
+        winner: rrWin, 
+        result: rrResult, 
+        isLive: match.isLive || false,
+        order: matches.length + 1
+      };
+      
+      // Store Royal Rumble data with entry order and times
+      const clonedEliminations = (rrEliminations || []).map(elim => ({ ...elim }));
+      newMatch.royalRumbleData = {
+        eliminations: clonedEliminations,
+        participants: rrPart,
+        entryOrder: entryOrder
+      };
+      
+      setMatches([...matches, newMatch]);
+      setMatch({
+        participants: '',
+        result: '',
+        method: '',
+        time: '',
+        matchType: 'Singles Match',
+        stipulation: 'None',
+        customStipulation: '',
+        title: '',
+        titleOutcome: '',
+        defendingChampion: '',
+        notes: '',
+        isLive: false
+      });
+      setResultType('');
+      setWinner('');
+      setRrParticipants(Array(30).fill(''));
+      setRrWinner('');
+      setRrEliminations([]);
+      return;
+    }
+    // --- Elimination Chamber branch ---
+    if (match.matchType === 'Elimination Chamber' || match.stipulation === 'Elimination Chamber') {
+      const starters = [ecStarter1, ecStarter2].filter(Boolean);
+      const podEntrants = ecPodEntrants.filter(Boolean);
+      const ecWin = ecWinner;
+      let ecResult = '';
+      
+      if (eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4) {
+        const winnerName = wrestlers.find(w => w.id === ecWin)?.name || ecWin;
+        
+        // Format eliminations if they exist
+        let eliminationsText = '';
+        if (ecEliminations && Array.isArray(ecEliminations) && ecEliminations.length > 0) {
+          const validEliminations = ecEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          if (validEliminations.length > 0) {
+            const elimStrings = validEliminations.map(elim => {
+              const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+              const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              if (eliminatedByName2) {
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+              }
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+            });
+            eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          }
+        }
+        
+        ecResult = `${winnerName} won the Elimination Chamber${eliminationsText}`;
+      } else if (eventStatus === 'completed') {
+        ecResult = 'No winner';
+      }
+      
+      // Use manually entered entry times for pod entrants
+      const entryOrder = podEntrants.map((slug, index) => ({
+        slug,
+        entryNumber: index + 1,
+        entryTime: ecPodEntryTimes[index] || '' // Use manually entered time
+      }));
+      
+      const allParticipants = [...starters, ...podEntrants];
+      
+      const newMatch = { 
+        ...match, 
+        participants: allParticipants, 
+        winner: ecWin, 
+        result: ecResult, 
+        isLive: match.isLive || false,
+        order: matches.length + 1
+      };
+      
+      // Store Elimination Chamber data
+      const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
+      newMatch.eliminationChamberData = {
+        starters: starters,
+        podEntrants: podEntrants,
+        entryOrder: entryOrder,
+        eliminations: clonedEliminations,
+        participants: allParticipants
+      };
+      
+      setMatches([...matches, newMatch]);
+      setMatch({
+        participants: '',
+        result: '',
+        method: '',
+        time: '',
+        matchType: 'Singles Match',
+        stipulation: 'None',
+        customStipulation: '',
+        title: '',
+        titleOutcome: '',
+        defendingChampion: '',
+        notes: '',
+        isLive: false
+      });
+      setResultType('');
+      setWinner('');
+      setEcStarter1('');
+      setEcStarter2('');
+      setEcPodEntrants(Array(4).fill(''));
+      setEcPodEntryTimes(Array(4).fill(''));
+      setEcWinner('');
+      setEcEliminations([]);
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -2163,6 +3310,72 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     return match.result; // Return existing result if not a Battle Royal or no winner
   };
 
+  // Helper function to regenerate Royal Rumble result format
+  const regenerateRoyalRumbleResult = (match, wrestlersList) => {
+    if ((match.matchType === 'Royal Rumble' || match.stipulation === 'Royal Rumble') && 
+        match.winner && eventStatus === 'completed') {
+      
+      const winnerName = wrestlersList.find(w => w.id === match.winner)?.name || match.winner;
+      
+      // Check if there are eliminations to format
+      if (match.royalRumbleData && match.royalRumbleData.eliminations && 
+          Array.isArray(match.royalRumbleData.eliminations)) {
+        const validEliminations = match.royalRumbleData.eliminations.filter(e => e.eliminated && e.eliminatedBy);
+        
+        if (validEliminations.length > 0) {
+          const elimStrings = validEliminations.map(elim => {
+            const eliminatedName = wrestlersList.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+            const eliminatedByName = wrestlersList.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+            const eliminatedByName2 = elim.eliminatedBy2 ? wrestlersList.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+            if (eliminatedByName2) {
+              return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+            }
+            return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+          });
+          const eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          return `${winnerName} won the Royal Rumble${eliminationsText}`;
+        }
+      }
+      
+      // If no eliminations data but there's a winner, return the basic result
+      return `${winnerName} won the Royal Rumble`;
+    }
+    return match.result; // Return existing result if not a Royal Rumble or no winner
+  };
+
+  // Helper function to regenerate Elimination Chamber result format
+  const regenerateEliminationChamberResult = (match, wrestlersList) => {
+    if ((match.matchType === 'Elimination Chamber' || match.stipulation === 'Elimination Chamber') && 
+        match.winner && eventStatus === 'completed') {
+      
+      const winnerName = wrestlersList.find(w => w.id === match.winner)?.name || match.winner;
+      
+      // Check if there are eliminations to format
+      if (match.eliminationChamberData && match.eliminationChamberData.eliminations && 
+          Array.isArray(match.eliminationChamberData.eliminations)) {
+        const validEliminations = match.eliminationChamberData.eliminations.filter(e => e.eliminated && e.eliminatedBy);
+        
+        if (validEliminations.length > 0) {
+          const elimStrings = validEliminations.map(elim => {
+            const eliminatedName = wrestlersList.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+            const eliminatedByName = wrestlersList.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+            const eliminatedByName2 = elim.eliminatedBy2 ? wrestlersList.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+            if (eliminatedByName2) {
+              return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+            }
+            return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+          });
+          const eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          return `${winnerName} won the Elimination Chamber${eliminationsText}`;
+        }
+      }
+      
+      // If no eliminations data but there's a winner, return the basic result
+      return `${winnerName} won the Elimination Chamber`;
+    }
+    return match.result; // Return existing result if not an Elimination Chamber or no winner
+  };
+
   // Save the edited event
   const handleSaveEvent = (e) => {
     e.preventDefault();
@@ -2174,7 +3387,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     // Debug: Log the matches state at the start of handleSaveEvent
     console.log('handleSaveEvent - matches state at start:', JSON.stringify(matches, null, 2));
     
-    // Regenerate Battle Royal results with new format
+    // Regenerate Battle Royal, Royal Rumble, and Elimination Chamber results with new format
     const updatedMatches = matches.map(match => {
       if ((match.matchType === 'Battle Royal' || match.stipulation === 'Battle Royal') && 
           match.battleRoyalData && match.battleRoyalData.eliminations) {
@@ -2191,6 +3404,38 @@ function EditEvent({ events, updateEvent, wrestlers }) {
           result: newResult,
           battleRoyalData: {
             ...match.battleRoyalData,
+            eliminations: preservedEliminations
+          }
+        };
+      }
+      if ((match.matchType === 'Royal Rumble' || match.stipulation === 'Royal Rumble') && 
+          match.royalRumbleData && match.royalRumbleData.eliminations) {
+        const newResult = regenerateRoyalRumbleResult(match, wrestlers);
+        // Preserve royalRumbleData structure including eliminatedBy2
+        const preservedEliminations = match.royalRumbleData.eliminations.map(elim => {
+          return { ...elim };
+        });
+        return { 
+          ...match, 
+          result: newResult,
+          royalRumbleData: {
+            ...match.royalRumbleData,
+            eliminations: preservedEliminations
+          }
+        };
+      }
+      if ((match.matchType === 'Elimination Chamber' || match.stipulation === 'Elimination Chamber') && 
+          match.eliminationChamberData && match.eliminationChamberData.eliminations) {
+        const newResult = regenerateEliminationChamberResult(match, wrestlers);
+        // Preserve eliminationChamberData structure including eliminatedBy2
+        const preservedEliminations = match.eliminationChamberData.eliminations.map(elim => {
+          return { ...elim };
+        });
+        return { 
+          ...match, 
+          result: newResult,
+          eliminationChamberData: {
+            ...match.eliminationChamberData,
             eliminations: preservedEliminations
           }
         };

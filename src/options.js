@@ -7,6 +7,8 @@ export const MATCH_TYPE_OPTIONS = [
   "6-person Tag Team",
   "8-person Tag Team",
   "Battle Royal",
+  "Royal Rumble",
+  "Elimination Chamber",
   "Fatal Four-way match",
   "Triple Threat match",
   "Gauntlet Match",

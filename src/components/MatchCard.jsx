@@ -1188,6 +1188,603 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             ))}
           </div>
         )
+      ) : match.matchType === 'Royal Rumble' && Array.isArray(match.participants) ? (
+        match.winner ? (() => {
+          const others = match.participants.filter(slug => slug !== match.winner);
+          const half = Math.ceil(others.length / 2);
+          const left = others.slice(0, half);
+          const right = others.slice(half);
+          
+          const renderGrid = (arr) => {
+            const numCols = 2;
+            const numRows = Math.ceil(arr.length / numCols);
+            let grid = [];
+            for (let row = 0; row < numRows; row++) {
+              let rowItems = [];
+              for (let col = 0; col < numCols; col++) {
+                const idx = row + col * numRows;
+                if (arr[idx]) {
+                  rowItems.push(
+                    <img
+                      key={arr[idx]}
+                      src={wrestlerMap[arr[idx]]?.image_url || '/images/placeholder.png'}
+                      alt={wrestlerMap[arr[idx]]?.name || arr[idx]}
+                      title={wrestlerMap[arr[idx]]?.name || arr[idx]}
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #888',
+                        background: '#222',
+                        margin: 6,
+                        boxShadow: '0 0 6px #0008',
+                        transition: 'all 0.2s',
+                        display: 'block',
+                      }}
+                    />
+                  );
+                } else {
+                  rowItems.push(<div key={`empty-${col}-${row}`} style={{ width: 38, height: 38, margin: 6 }} />);
+                }
+              }
+              grid.push(
+                <div key={row} style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>{rowItems}</div>
+              );
+            }
+            return grid;
+          };
+          
+          // Calculate Royal Rumble stats
+          const calculateRoyalRumbleStats = () => {
+            if (!match.royalRumbleData) return null;
+            
+            const { entryOrder = [], eliminations = [] } = match.royalRumbleData;
+            
+            // Helper to parse time string (MM:SS) to seconds
+            const parseTime = (timeStr) => {
+              if (!timeStr) return 0;
+              const parts = timeStr.split(':');
+              if (parts.length === 2) {
+                return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+              }
+              return 0;
+            };
+            
+            // Helper to format seconds to MM:SS
+            const formatTime = (seconds) => {
+              const mins = Math.floor(seconds / 60);
+              const secs = seconds % 60;
+              return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+            
+            // Calculate time in Rumble for each participant
+            const participantStats = {};
+            
+            // Initialize with entry times
+            entryOrder.forEach(entry => {
+              const entrySeconds = parseTime(entry.entryTime);
+              participantStats[entry.slug] = {
+                entryNumber: entry.entryNumber,
+                entryTime: entry.entryTime,
+                entrySeconds: entrySeconds,
+                eliminationTime: null,
+                eliminationSeconds: null,
+                timeInRumble: null,
+                eliminations: 0
+              };
+            });
+            
+            // Find elimination times and count eliminations
+            eliminations.forEach(elim => {
+              if (elim.eliminated && elim.time) {
+                const elimSeconds = parseTime(elim.time);
+                if (participantStats[elim.eliminated]) {
+                  participantStats[elim.eliminated].eliminationTime = elim.time;
+                  participantStats[elim.eliminated].eliminationSeconds = elimSeconds;
+                  participantStats[elim.eliminated].timeInRumble = elimSeconds - participantStats[elim.eliminated].entrySeconds;
+                }
+              }
+              
+              // Count eliminations
+              if (elim.eliminatedBy && participantStats[elim.eliminatedBy]) {
+                participantStats[elim.eliminatedBy].eliminations++;
+              }
+              if (elim.eliminatedBy2 && participantStats[elim.eliminatedBy2]) {
+                participantStats[elim.eliminatedBy2].eliminations++;
+              }
+            });
+            
+            // For the winner, use match time if available, or calculate from last elimination
+            if (match.winner && participantStats[match.winner]) {
+              const winnerStats = participantStats[match.winner];
+              if (!winnerStats.eliminationTime && match.time) {
+                const matchSeconds = parseTime(match.time);
+                winnerStats.timeInRumble = matchSeconds - winnerStats.entrySeconds;
+              }
+            }
+            
+            // Find Ironman/Ironwoman (longest time in Rumble)
+            let ironman = null;
+            let maxTime = -1;
+            Object.entries(participantStats).forEach(([slug, stats]) => {
+              if (stats.timeInRumble !== null && stats.timeInRumble > maxTime) {
+                maxTime = stats.timeInRumble;
+                ironman = { slug, time: formatTime(stats.timeInRumble), timeSeconds: stats.timeInRumble };
+              }
+            });
+            
+            // Find Most Eliminations
+            let mostEliminations = null;
+            let maxElims = -1;
+            Object.entries(participantStats).forEach(([slug, stats]) => {
+              if (stats.eliminations > maxElims) {
+                maxElims = stats.eliminations;
+                mostEliminations = { slug, count: stats.eliminations };
+              }
+            });
+            
+            return { ironman, mostEliminations, entryOrder };
+          };
+          
+          const stats = calculateRoyalRumbleStats();
+          
+          return (
+            <>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                gap: 24,
+                flexWrap: 'wrap',
+                width: '100%',
+                overflow: 'hidden',
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  {renderGrid(left)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120 }}>
+                  <img
+                    src={wrestlerMap[match.winner]?.image_url || '/images/placeholder.png'}
+                    alt={wrestlerMap[match.winner]?.name || match.winner}
+                    title={wrestlerMap[match.winner]?.name || match.winner}
+                    style={{
+                      width: 90,
+                      height: 90,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '5px solid #C6A04F',
+                      boxShadow: '0 0 18px #C6A04F88',
+                      background: '#222',
+                      margin: 2,
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                  <div style={{ fontWeight: 800, fontSize: 20, color: '#C6A04F', marginTop: 10, textAlign: 'center' }}>
+                    {wrestlerMap[match.winner]?.name || match.winner}
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 15, textAlign: 'center' }}>Winner</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  {renderGrid(right)}
+                </div>
+              </div>
+              
+              {/* Royal Rumble Stats */}
+              {stats && (stats.ironman || stats.mostEliminations) && (
+                <div style={{
+                  background: '#2a2a2a',
+                  borderRadius: 8,
+                  padding: 16,
+                  marginTop: 8,
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  border: '1px solid #444',
+                  maxWidth: 600
+                }}>
+                  <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 16, marginBottom: 12, textAlign: 'center' }}>
+                    Royal Rumble Statistics
+                  </div>
+                  
+                  {stats.ironman && (
+                    <div style={{ marginBottom: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+                        Ironman/Ironwoman
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 14 }}>
+                        <strong>{wrestlerMap[stats.ironman.slug]?.name || stats.ironman.slug}</strong> - {stats.ironman.time}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {stats.mostEliminations && stats.mostEliminations.count > 0 && (
+                    <div style={{ padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+                        Most Eliminations
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 14 }}>
+                        <strong>{wrestlerMap[stats.mostEliminations.slug]?.name || stats.mostEliminations.slug}</strong> - {stats.mostEliminations.count} elimination{stats.mostEliminations.count !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Entry Order */}
+                  {stats.entryOrder && stats.entryOrder.length > 0 && (
+                    <div style={{ marginTop: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+                        Entry Order
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
+                        {stats.entryOrder.map((entry, idx) => (
+                          <span key={entry.slug} style={{ marginRight: 8 }}>
+                            #{entry.entryNumber}: {wrestlerMap[entry.slug]?.name || entry.slug} ({entry.entryTime})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Eliminations */}
+                  {match.royalRumbleData && match.royalRumbleData.eliminations && match.royalRumbleData.eliminations.length > 0 && (
+                    <div style={{ marginTop: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+                        Eliminations
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
+                        {match.royalRumbleData.eliminations.map((elim, idx) => {
+                          const eliminatedName = wrestlerMap[elim.eliminated]?.name || elim.eliminated;
+                          const eliminatedByName = wrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
+                          const eliminatedByName2 = elim.eliminatedBy2 ? wrestlerMap[elim.eliminatedBy2]?.name || elim.eliminatedBy2 : null;
+                          let elimText = eliminatedByName2 
+                            ? `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}`
+                            : `${eliminatedByName} eliminated ${eliminatedName}`;
+                          if (elim.time) {
+                            elimText += ` (${elim.time})`;
+                          }
+                          return (
+                            <div key={idx} style={{ marginBottom: 4 }}>
+                              {elimText}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })() : (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            justifyContent: 'center',
+            marginBottom: 16,
+            maxWidth: 600,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}>
+            {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
+              <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
+                <img
+                  src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                  alt={wrestlerMap[slug]?.name || slug}
+                  title={wrestlerMap[slug]?.name || slug}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid #888',
+                    background: '#222',
+                    margin: 2,
+                    transition: 'all 0.2s',
+                  }}
+                />
+                {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
+              </div>
+            ))}
+          </div>
+        )
+      ) : match.matchType === 'Elimination Chamber' && Array.isArray(match.participants) ? (
+        match.winner ? (() => {
+          const others = match.participants.filter(slug => slug !== match.winner);
+          const half = Math.ceil(others.length / 2);
+          const left = others.slice(0, half);
+          const right = others.slice(half);
+          
+          const renderGrid = (arr) => {
+            const numCols = 2;
+            const numRows = Math.ceil(arr.length / numCols);
+            let grid = [];
+            for (let row = 0; row < numRows; row++) {
+              let rowItems = [];
+              for (let col = 0; col < numCols; col++) {
+                const idx = row + col * numRows;
+                if (arr[idx]) {
+                  rowItems.push(
+                    <img
+                      key={arr[idx]}
+                      src={wrestlerMap[arr[idx]]?.image_url || '/images/placeholder.png'}
+                      alt={wrestlerMap[arr[idx]]?.name || arr[idx]}
+                      title={wrestlerMap[arr[idx]]?.name || arr[idx]}
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #888',
+                        background: '#222',
+                        margin: 6,
+                        boxShadow: '0 0 6px #0008',
+                        transition: 'all 0.2s',
+                        display: 'block',
+                      }}
+                    />
+                  );
+                } else {
+                  rowItems.push(<div key={`empty-${col}-${row}`} style={{ width: 38, height: 38, margin: 6 }} />);
+                }
+              }
+              grid.push(
+                <div key={row} style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>{rowItems}</div>
+              );
+            }
+            return grid;
+          };
+          
+          // Calculate longest lasting participant
+          const calculateLongestLasting = () => {
+            if (!match.eliminationChamberData) return null;
+            
+            const { starters = [], entryOrder = [], eliminations = [] } = match.eliminationChamberData;
+            
+            // Helper to parse time string (MM:SS) to seconds
+            const parseTime = (timeStr) => {
+              if (!timeStr) return 0;
+              const parts = timeStr.split(':');
+              if (parts.length === 2) {
+                return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+              }
+              return 0;
+            };
+            
+            // Helper to format seconds to MM:SS
+            const formatTime = (seconds) => {
+              const mins = Math.floor(seconds / 60);
+              const secs = seconds % 60;
+              return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+            
+            // Calculate time in match for each participant
+            const participantStats = {};
+            
+            // Starters enter at 0:00
+            starters.forEach(slug => {
+              participantStats[slug] = {
+                entryTime: '0:00',
+                entrySeconds: 0,
+                eliminationTime: null,
+                eliminationSeconds: null,
+                timeInMatch: null
+              };
+            });
+            
+            // Pod entrants enter at their entry time
+            entryOrder.forEach(entry => {
+              const entrySeconds = parseTime(entry.entryTime);
+              participantStats[entry.slug] = {
+                entryTime: entry.entryTime,
+                entrySeconds: entrySeconds,
+                eliminationTime: null,
+                eliminationSeconds: null,
+                timeInMatch: null
+              };
+            });
+            
+            // Find elimination times
+            eliminations.forEach(elim => {
+              if (elim.eliminated && elim.time && participantStats[elim.eliminated]) {
+                const elimSeconds = parseTime(elim.time);
+                participantStats[elim.eliminated].eliminationTime = elim.time;
+                participantStats[elim.eliminated].eliminationSeconds = elimSeconds;
+                participantStats[elim.eliminated].timeInMatch = elimSeconds - participantStats[elim.eliminated].entrySeconds;
+              }
+            });
+            
+            // For the winner, use match time if available
+            if (match.winner && participantStats[match.winner]) {
+              const winnerStats = participantStats[match.winner];
+              if (!winnerStats.eliminationTime && match.time) {
+                const matchSeconds = parseTime(match.time);
+                winnerStats.timeInMatch = matchSeconds - winnerStats.entrySeconds;
+              }
+            }
+            
+            // Find longest lasting participant
+            let longestLasting = null;
+            let maxTime = -1;
+            Object.entries(participantStats).forEach(([slug, stats]) => {
+              if (stats.timeInMatch !== null && stats.timeInMatch > maxTime) {
+                maxTime = stats.timeInMatch;
+                longestLasting = { slug, time: formatTime(stats.timeInMatch), timeSeconds: stats.timeInMatch };
+              }
+            });
+            
+            return longestLasting;
+          };
+          
+          const longestLasting = calculateLongestLasting();
+          
+          return (
+            <>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                gap: 24,
+                flexWrap: 'wrap',
+                width: '100%',
+                overflow: 'hidden',
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  {renderGrid(left)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120 }}>
+                  <img
+                    src={wrestlerMap[match.winner]?.image_url || '/images/placeholder.png'}
+                    alt={wrestlerMap[match.winner]?.name || match.winner}
+                    title={wrestlerMap[match.winner]?.name || match.winner}
+                    style={{
+                      width: 90,
+                      height: 90,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '5px solid #C6A04F',
+                      boxShadow: '0 0 18px #C6A04F88',
+                      background: '#222',
+                      margin: 2,
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                  <div style={{ fontWeight: 800, fontSize: 20, color: '#C6A04F', marginTop: 10, textAlign: 'center' }}>
+                    {wrestlerMap[match.winner]?.name || match.winner}
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 15, textAlign: 'center' }}>Winner</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  {renderGrid(right)}
+                </div>
+              </div>
+              
+              {/* Elimination Chamber Stats */}
+              {match.eliminationChamberData && (
+                <div style={{
+                  background: '#2a2a2a',
+                  borderRadius: 8,
+                  padding: 16,
+                  marginTop: 8,
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  border: '1px solid #444',
+                  maxWidth: 600
+                }}>
+                  <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 16, marginBottom: 12, textAlign: 'center' }}>
+                    Elimination Chamber Statistics
+                  </div>
+                  
+                  {/* Longest Lasting */}
+                  {longestLasting && (
+                    <div style={{ marginBottom: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+                        Longest Lasting
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 14 }}>
+                        <strong>{wrestlerMap[longestLasting.slug]?.name || longestLasting.slug}</strong> - {longestLasting.time}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Starters */}
+                  {match.eliminationChamberData.starters && match.eliminationChamberData.starters.length === 2 && (
+                    <div style={{ marginBottom: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+                        Starters (In Ring)
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 14 }}>
+                        {match.eliminationChamberData.starters.map((slug, idx) => (
+                          <span key={slug} style={{ marginRight: 12 }}>
+                            {wrestlerMap[slug]?.name || slug}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Entry Order */}
+                  {match.eliminationChamberData.entryOrder && match.eliminationChamberData.entryOrder.length > 0 && (
+                    <div style={{ marginBottom: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+                        Pod Entry Order
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
+                        {match.eliminationChamberData.entryOrder.map((entry, idx) => (
+                          <div key={entry.slug} style={{ marginBottom: 4 }}>
+                            #{entry.entryNumber}: {wrestlerMap[entry.slug]?.name || entry.slug} ({entry.entryTime})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Eliminations */}
+                  {match.eliminationChamberData.eliminations && match.eliminationChamberData.eliminations.length > 0 && (
+                    <div style={{ padding: 12, background: '#333', borderRadius: 6 }}>
+                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+                        Eliminations
+                      </div>
+                      <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
+                        {match.eliminationChamberData.eliminations.map((elim, idx) => {
+                          const eliminatedName = wrestlerMap[elim.eliminated]?.name || elim.eliminated;
+                          const eliminatedByName = wrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
+                          const eliminatedByName2 = elim.eliminatedBy2 ? wrestlerMap[elim.eliminatedBy2]?.name || elim.eliminatedBy2 : null;
+                          let elimText = eliminatedByName2 
+                            ? `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}`
+                            : `${eliminatedByName} eliminated ${eliminatedName}`;
+                          if (elim.time) {
+                            elimText += ` (${elim.time})`;
+                          }
+                          return (
+                            <div key={idx} style={{ marginBottom: 4 }}>
+                              {elimText}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })() : (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            justifyContent: 'center',
+            marginBottom: 16,
+            maxWidth: 600,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}>
+            {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
+              <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
+                <img
+                  src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                  alt={wrestlerMap[slug]?.name || slug}
+                  title={wrestlerMap[slug]?.name || slug}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid #888',
+                    background: '#222',
+                    margin: 2,
+                    transition: 'all 0.2s',
+                  }}
+                />
+                {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
+              </div>
+            ))}
+          </div>
+        )
       ) : isMultiSide ? (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
@@ -1406,6 +2003,27 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
             Battle Royal Result
+          </div>
+          <div style={{ color: '#fff', fontSize: 13, lineHeight: 1.4 }}>
+            {match.result}
+          </div>
+        </div>
+      )}
+      
+      {match.result && match.matchType === 'Royal Rumble' && !(match.royalRumbleData && match.royalRumbleData.entryOrder && Array.isArray(match.royalRumbleData.entryOrder) && match.royalRumbleData.entryOrder.length > 0) && (
+        <div style={{
+          background: '#2a2a2a',
+          borderRadius: 8,
+          padding: 12,
+          marginTop: 8,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          border: '1px solid #444',
+          maxWidth: 500,
+          textAlign: 'center'
+        }}>
+          <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+            Royal Rumble Result
           </div>
           <div style={{ color: '#fff', fontSize: 13, lineHeight: 1.4 }}>
             {match.result}
