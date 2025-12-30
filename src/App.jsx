@@ -780,6 +780,7 @@ function AddEvent({ addEvent, wrestlers }) {
   const [numParticipants, setNumParticipants] = useState(10);
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
+  const [brEliminations, setBrEliminations] = useState([]);
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
   const [showVacancyForm, setShowVacancyForm] = useState(false);
@@ -798,20 +799,53 @@ function AddEvent({ addEvent, wrestlers }) {
   const handleAddMatch = (e) => {
     e.preventDefault();
     // --- Battle Royal branch ---
-    if (match.stipulation === 'Battle Royal') {
+    if (match.matchType === 'Battle Royal' || match.stipulation === 'Battle Royal') {
       const brPart = brParticipants.filter(Boolean);
       const brWin = brWinner;
       let brResult = '';
       if (eventStatus === 'completed' && brWin && brPart.length >= 2) {
         const winnerName = wrestlers.find(w => w.id === brWin)?.name || brWin;
-        brResult = `${winnerName} won the Battle Royal`;
+        
+        // Format eliminations if they exist
+        let eliminationsText = '';
+        if (brEliminations && Array.isArray(brEliminations) && brEliminations.length > 0) {
+          const validEliminations = brEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          if (validEliminations.length > 0) {
+            const elimStrings = validEliminations.map(elim => {
+              const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+              const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              if (eliminatedByName2) {
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+              }
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+            });
+            eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          }
+        }
+        
+        brResult = `${winnerName} won the Battle Royal${eliminationsText}`;
       } else if (eventStatus === 'completed') {
         brResult = 'No winner';
       }
-      setMatches([
-        ...matches,
-        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false }
-      ]);
+      
+      const newMatch = { 
+        ...match, 
+        participants: brPart, 
+        winner: brWin, 
+        result: brResult, 
+        isLive: match.isLive || false 
+      };
+      
+      // Always store Battle Royal elimination data to preserve eliminatedBy2
+      // Deep clone eliminations to ensure all properties including eliminatedBy2 are preserved
+      const clonedEliminations = (brEliminations || []).map(elim => ({ ...elim }));
+      newMatch.battleRoyalData = {
+        eliminations: clonedEliminations,
+        participants: brPart
+      };
+      
+      setMatches([...matches, newMatch]);
           setMatch({
       participants: '',
       result: '',
@@ -828,10 +862,11 @@ function AddEvent({ addEvent, wrestlers }) {
     });
     setResultType('');
     setWinner('');
-    setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
+      setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
       setNumParticipants(10);
       setBrParticipants(Array(10).fill(''));
       setBrWinner('');
+      setBrEliminations([]);
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -1380,16 +1415,202 @@ function AddEvent({ addEvent, wrestlers }) {
                   placeholder={`Participant ${i+1}`}
                 />
               ))}
-              <div>
-                <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
-                <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} 
-                  required={eventStatus === 'completed'}>
-                  <option value="">Select winner</option>
-                  {brParticipants.filter(Boolean).map((slug, i) => (
-                    <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+              {/* Eliminations Section */}
+              {brParticipants.filter(Boolean).length >= 2 && (
+                <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                  <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>
+                    Eliminations
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
+                    Track each elimination in order.
+                  </div>
+                  
+                  {brEliminations.map((elimination, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#333', borderRadius: 4, marginBottom: 8, border: '1px solid #555' }}>
+                      <span style={{ color: '#fff', minWidth: '80px', fontSize: 12 }}>Elimination #{index + 1}:</span>
+                      
+                      <div style={{ flex: 1 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Eliminated:
+                        </label>
+                        <select
+                          value={elimination.eliminated || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...brEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminated: e.target.value };
+                            setBrEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {brParticipants.filter(Boolean).filter(p => {
+                            // Don't show already eliminated wrestlers (except in this current elimination)
+                            const alreadyEliminated = brEliminations
+                              .filter((_, i) => i !== index)
+                              .map(e => e.eliminated)
+                              .includes(p);
+                            return !alreadyEliminated && p !== brWinner;
+                          }).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                            Eliminated by:
+                          </label>
+                          {!elimination.eliminatedBy2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newEliminations = [...brEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: '' };
+                                setBrEliminations(newEliminations);
+                              }}
+                              style={{
+                                background: gold,
+                                color: '#232323',
+                                border: 'none',
+                                borderRadius: 4,
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                height: 'fit-content'
+                              }}
+                              title="Add second eliminator"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                        <select
+                          value={elimination.eliminatedBy || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...brEliminations];
+                            newEliminations[index] = { ...newEliminations[index], eliminatedBy: e.target.value };
+                            setBrEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Select wrestler...</option>
+                          {brParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                        {elimination.eliminatedBy2 !== undefined && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                                Second eliminator:
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newEliminations = [...brEliminations];
+                                  const updatedElim = { ...newEliminations[index] };
+                                  delete updatedElim.eliminatedBy2;
+                                  newEliminations[index] = updatedElim;
+                                  setBrEliminations(newEliminations);
+                                }}
+                                style={{
+                                  background: '#d32f2f',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: 4,
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  height: 'fit-content'
+                                }}
+                                title="Remove second eliminator"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <select
+                              value={elimination.eliminatedBy2 || ''}
+                              onChange={(e) => {
+                                const newEliminations = [...brEliminations];
+                                newEliminations[index] = { ...newEliminations[index], eliminatedBy2: e.target.value };
+                                setBrEliminations(newEliminations);
+                              }}
+                              style={inputStyle}
+                            >
+                              <option value="">Select second wrestler...</option>
+                              {brParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
+                                <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ flex: 0.8 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          Time:
+                        </label>
+                        <input
+                          type="text"
+                          value={elimination.time || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...brEliminations];
+                            newEliminations[index] = { ...newEliminations[index], time: e.target.value };
+                            setBrEliminations(newEliminations);
+                          }}
+                          placeholder="e.g. 6:52"
+                          style={inputStyle}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newEliminations = brEliminations.filter((_, i) => i !== index);
+                          setBrEliminations(newEliminations);
+                        }}
+                        style={{
+                          background: '#d32f2f',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          height: 'fit-content',
+                          marginTop: 20
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   ))}
-                </select>
-              </div>
+
+                  {brEliminations.length < brParticipants.filter(Boolean).length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBrEliminations([...brEliminations, { eliminated: '', eliminatedBy: '', time: '' }]);
+                      }}
+                      style={{
+                        background: gold,
+                        color: '#232323',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginTop: 8
+                      }}
+                    >
+                      + Add Elimination
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           ) : (match.matchType === '5-on-5 War Games Match' || match.matchType?.includes('War Games')) ? (
             // War Games matches always use the WarGamesMatchBuilder (has entry order and result tracking)
@@ -1451,7 +1672,7 @@ function AddEvent({ addEvent, wrestlers }) {
                 return (
                   <>
                     {/* Participant Input Toggle - Hidden for War Games matches and title matches */}
-                    {match.matchType !== '5-on-5 War Games Match' && !isTitleMatch && (
+                    {match.matchType !== '5-on-5 War Games Match' && !match.matchType?.includes('War Games') && !isTitleMatch && (
                       <div style={{ marginBottom: 16 }}>
                         <label style={{ color: gold, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                           <input
@@ -1714,6 +1935,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [numParticipants, setNumParticipants] = useState(10);
   const [brParticipants, setBrParticipants] = useState(Array(10).fill(''));
   const [brWinner, setBrWinner] = useState('');
+  const [brEliminations, setBrEliminations] = useState([]);
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
   const [showVacancyForm, setShowVacancyForm] = useState(false);
@@ -1732,20 +1954,54 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const handleAddMatch = (e) => {
     e.preventDefault();
     // --- Battle Royal branch ---
-    if (match.stipulation === 'Battle Royal') {
+    if (match.matchType === 'Battle Royal' || match.stipulation === 'Battle Royal') {
       const brPart = brParticipants.filter(Boolean);
       const brWin = brWinner;
       let brResult = '';
       if (eventStatus === 'completed' && brWin && brPart.length >= 2) {
         const winnerName = wrestlers.find(w => w.id === brWin)?.name || brWin;
-        brResult = `${winnerName} won the Battle Royal`;
+        
+        // Format eliminations if they exist
+        let eliminationsText = '';
+        if (brEliminations && Array.isArray(brEliminations) && brEliminations.length > 0) {
+          const validEliminations = brEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          if (validEliminations.length > 0) {
+            const elimStrings = validEliminations.map(elim => {
+              const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+              const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              if (eliminatedByName2) {
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+              }
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+            });
+            eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          }
+        }
+        
+        brResult = `${winnerName} won the Battle Royal${eliminationsText}`;
       } else if (eventStatus === 'completed') {
         brResult = 'No winner';
       }
-      setMatches([
-        ...matches,
-        { ...match, participants: brPart, winner: brWin, result: brResult, isLive: match.isLive || false, order: matches.length + 1 }
-      ]);
+      
+      const newMatch = { 
+        ...match, 
+        participants: brPart, 
+        winner: brWin, 
+        result: brResult, 
+        isLive: match.isLive || false, 
+        order: matches.length + 1 
+      };
+      
+      // Always store Battle Royal elimination data to preserve eliminatedBy2
+      // Deep clone eliminations to ensure all properties including eliminatedBy2 are preserved
+      const clonedEliminations = (brEliminations || []).map(elim => ({ ...elim }));
+      newMatch.battleRoyalData = {
+        eliminations: clonedEliminations,
+        participants: brPart
+      };
+      
+      setMatches([...matches, newMatch]);
       setMatch({
         participants: '',
         result: '',
@@ -1765,6 +2021,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       setNumParticipants(10);
       setBrParticipants(Array(10).fill(''));
       setBrWinner('');
+      setBrEliminations([]);
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -1873,6 +2130,39 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     setShowVacancyForm(false);
   };
 
+  // Helper function to regenerate Battle Royal result format
+  const regenerateBattleRoyalResult = (match, wrestlersList) => {
+    if ((match.matchType === 'Battle Royal' || match.stipulation === 'Battle Royal') && 
+        match.winner && eventStatus === 'completed') {
+      
+      const winnerName = wrestlersList.find(w => w.id === match.winner)?.name || match.winner;
+      
+      // Check if there are eliminations to format
+      if (match.battleRoyalData && match.battleRoyalData.eliminations && 
+          Array.isArray(match.battleRoyalData.eliminations)) {
+        const validEliminations = match.battleRoyalData.eliminations.filter(e => e.eliminated && e.eliminatedBy);
+        
+        if (validEliminations.length > 0) {
+          const elimStrings = validEliminations.map(elim => {
+            const eliminatedName = wrestlersList.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+            const eliminatedByName = wrestlersList.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
+            const eliminatedByName2 = elim.eliminatedBy2 ? wrestlersList.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+            if (eliminatedByName2) {
+              return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+            }
+            return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+          });
+          const eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
+          return `${winnerName} won the Battle Royal${eliminationsText}`;
+        }
+      }
+      
+      // If no eliminations data but there's a winner, return the basic result
+      return `${winnerName} won the Battle Royal`;
+    }
+    return match.result; // Return existing result if not a Battle Royal or no winner
+  };
+
   // Save the edited event
   const handleSaveEvent = (e) => {
     e.preventDefault();
@@ -1880,12 +2170,40 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       alert('Please fill out all event fields and add at least one match.');
       return;
     }
+    
+    // Debug: Log the matches state at the start of handleSaveEvent
+    console.log('handleSaveEvent - matches state at start:', JSON.stringify(matches, null, 2));
+    
+    // Regenerate Battle Royal results with new format
+    const updatedMatches = matches.map(match => {
+      if ((match.matchType === 'Battle Royal' || match.stipulation === 'Battle Royal') && 
+          match.battleRoyalData && match.battleRoyalData.eliminations) {
+        const newResult = regenerateBattleRoyalResult(match, wrestlers);
+        // Preserve battleRoyalData structure including eliminatedBy2 - use spread operator to preserve ALL properties
+        const preservedEliminations = match.battleRoyalData.eliminations.map(elim => {
+          // Spread all existing properties to ensure nothing is lost
+          return { ...elim };
+        });
+        console.log('handleSaveEvent - match.battleRoyalData.eliminations:', JSON.stringify(match.battleRoyalData.eliminations, null, 2));
+        console.log('handleSaveEvent - preservedEliminations:', JSON.stringify(preservedEliminations, null, 2));
+        return { 
+          ...match, 
+          result: newResult,
+          battleRoyalData: {
+            ...match.battleRoyalData,
+            eliminations: preservedEliminations
+          }
+        };
+      }
+      return match;
+    });
+    
     updateEvent({
       id: event.id,
       name,
       date,
       location,
-      matches,
+      matches: updatedMatches,
       status: eventStatus,
       isLive: eventStatus === 'live'
     });
@@ -2085,8 +2403,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                         eventStatus={eventStatus}
                         eventDate={date}
                         onSave={updatedMatch => {
+                          console.log('🔵 EditEvent - onSave callback called');
+                          console.log('🔵 EditEvent - updatedMatch.battleRoyalData:', JSON.stringify(updatedMatch.battleRoyalData, null, 2));
+                          if (updatedMatch.battleRoyalData && updatedMatch.battleRoyalData.eliminations) {
+                            const elimsWithEliminatedBy2 = updatedMatch.battleRoyalData.eliminations.filter(e => e.eliminatedBy2);
+                            console.log('🔵 EditEvent - eliminations with eliminatedBy2:', elimsWithEliminatedBy2.length);
+                            if (elimsWithEliminatedBy2.length > 0) {
+                              console.log('🔵 EditEvent - eliminations with eliminatedBy2:', JSON.stringify(elimsWithEliminatedBy2, null, 2));
+                            }
+                          }
                           const updated = [...matches];
                           updated[idx] = updatedMatch;
+                          console.log('🔵 EditEvent - updated match at index', idx, 'battleRoyalData:', JSON.stringify(updated[idx].battleRoyalData, null, 2));
                           setMatches(updated);
                           setEditingMatchIdx(null);
                         }}
@@ -2320,7 +2648,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 </button>
               </div>
             )}
-            {match.stipulation === 'Battle Royal' ? (
+            {match.matchType === 'Battle Royal' ? (
               <>
                 <div>
                   <label style={{ color: gold, fontWeight: 600 }}>Number of Participants:</label>
@@ -2347,16 +2675,231 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                     placeholder={`Participant ${i+1}`}
                   />
                 ))}
-                <div>
-                  <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
-                  <select value={brWinner} onChange={e => setBrWinner(e.target.value)} style={inputStyle} 
-                    required={eventStatus === 'completed'}>
-                    <option value="">Select winner</option>
-                    {brParticipants.filter(Boolean).map((slug, i) => (
-                      <option key={i} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                {/* Eliminations Section */}
+                {brParticipants.filter(Boolean).length >= 2 && (
+                  <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                    <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>
+                      Eliminations
+                    </div>
+                    <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
+                      Track each elimination in order.
+                    </div>
+                    
+                    {brEliminations.map((elimination, index) => (
+                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#333', borderRadius: 4, marginBottom: 8, border: '1px solid #555' }}>
+                        <span style={{ color: '#fff', minWidth: '80px', fontSize: 12 }}>Elimination #{index + 1}:</span>
+                        
+                        <div style={{ flex: 1 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                            Eliminated:
+                          </label>
+                          <select
+                            value={elimination.eliminated || ''}
+                            onChange={(e) => {
+                              const newEliminations = [...brEliminations];
+                              newEliminations[index] = { ...newEliminations[index], eliminated: e.target.value };
+                              setBrEliminations(newEliminations);
+                            }}
+                            style={inputStyle}
+                          >
+                            <option value="">Select wrestler...</option>
+                            {brParticipants.filter(Boolean).filter(p => {
+                              // Don't show already eliminated wrestlers (except in this current elimination)
+                              const alreadyEliminated = brEliminations
+                                .filter((_, i) => i !== index)
+                                .map(e => e.eliminated)
+                                .includes(p);
+                              return !alreadyEliminated;
+                            }).map(slug => (
+                              <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                              Eliminated by:
+                            </label>
+                            {!elimination.eliminatedBy2 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newEliminations = [...brEliminations];
+                                  newEliminations[index] = { ...newEliminations[index], eliminatedBy2: '' };
+                                  setBrEliminations(newEliminations);
+                                }}
+                                style={{
+                                  background: gold,
+                                  color: '#232323',
+                                  border: 'none',
+                                  borderRadius: 4,
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  height: 'fit-content'
+                                }}
+                                title="Add second eliminator"
+                              >
+                                +
+                              </button>
+                            )}
+                          </div>
+                          <select
+                            value={elimination.eliminatedBy || ''}
+                            onChange={(e) => {
+                              const newEliminations = [...brEliminations];
+                              newEliminations[index] = { ...newEliminations[index], eliminatedBy: e.target.value };
+                              setBrEliminations(newEliminations);
+                            }}
+                            style={inputStyle}
+                          >
+                            <option value="">Select wrestler...</option>
+                            {brParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
+                              <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                            ))}
+                          </select>
+                          {elimination.eliminatedBy2 !== undefined && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
+                                  Second eliminator:
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newEliminations = [...brEliminations];
+                                    const updatedElim = { ...newEliminations[index] };
+                                    delete updatedElim.eliminatedBy2;
+                                    newEliminations[index] = updatedElim;
+                                    setBrEliminations(newEliminations);
+                                  }}
+                                  style={{
+                                    background: '#d32f2f',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 4,
+                                    padding: '4px 8px',
+                                    cursor: 'pointer',
+                                    fontSize: 14,
+                                    fontWeight: 'bold',
+                                    height: 'fit-content'
+                                  }}
+                                  title="Remove second eliminator"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                              <select
+                                value={elimination.eliminatedBy2 || ''}
+                                onChange={(e) => {
+                                  const newEliminations = [...brEliminations];
+                                  newEliminations[index] = { ...newEliminations[index], eliminatedBy2: e.target.value };
+                                  setBrEliminations(newEliminations);
+                                }}
+                                style={inputStyle}
+                              >
+                                <option value="">Select second wrestler...</option>
+                                {brParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
+                                  <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ flex: 0.8 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                            Time:
+                          </label>
+                          <input
+                            type="text"
+                            value={elimination.time || ''}
+                            onChange={(e) => {
+                              const newEliminations = [...brEliminations];
+                              newEliminations[index] = { ...newEliminations[index], time: e.target.value };
+                              setBrEliminations(newEliminations);
+                            }}
+                            placeholder="e.g. 6:52"
+                            style={inputStyle}
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newEliminations = brEliminations.filter((_, i) => i !== index);
+                            setBrEliminations(newEliminations);
+                          }}
+                          style={{
+                            background: '#d32f2f',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            height: 'fit-content',
+                            marginTop: 20
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     ))}
-                  </select>
-                </div>
+
+                    {brEliminations.length < brParticipants.filter(Boolean).length - 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBrEliminations([...brEliminations, { eliminated: '', eliminatedBy: '', time: '' }]);
+                        }}
+                        style={{
+                          background: gold,
+                          color: '#232323',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '8px 16px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          marginTop: 8
+                        }}
+                      >
+                        + Add Elimination
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Winner Selection - After Eliminations */}
+                {eventStatus === 'completed' && brParticipants.filter(Boolean).length >= 2 && (
+                  <div style={{ marginTop: 16 }}>
+                    <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
+                    <select 
+                      value={brWinner} 
+                      onChange={e => setBrWinner(e.target.value)} 
+                      style={inputStyle} 
+                      required={eventStatus === 'completed'}
+                    >
+                      <option value="">Select winner</option>
+                      {brParticipants.filter(Boolean).map((slug, i) => {
+                        // Auto-select if this is the last eliminator and no winner is set yet
+                        const isLastEliminator = brEliminations.length > 0 && 
+                          brEliminations[brEliminations.length - 1]?.eliminatedBy === slug;
+                        return (
+                          <option key={i} value={slug}>
+                            {wrestlers.find(w => w.id === slug)?.name || slug}
+                            {isLastEliminator && !brWinner ? ' (Last Eliminator)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+                      The winner is typically the wrestler who eliminated the last opponent.
+                    </div>
+                  </div>
+                )}
               </>
             ) : (match.matchType === '5-on-5 War Games Match' || match.matchType?.includes('War Games')) ? (
               // War Games matches always use the WarGamesMatchBuilder (has entry order and result tracking)
