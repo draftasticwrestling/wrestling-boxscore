@@ -1314,17 +1314,22 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               }
             });
             
-            // Find Most Eliminations
-            let mostEliminations = null;
+            // Find Most Eliminations (handle ties)
+            let mostEliminations = [];
             let maxElims = -1;
             Object.entries(participantStats).forEach(([slug, stats]) => {
               if (stats.eliminations > maxElims) {
                 maxElims = stats.eliminations;
-                mostEliminations = { slug, count: stats.eliminations };
+                mostEliminations = [{ slug, count: stats.eliminations }];
+              } else if (stats.eliminations === maxElims && maxElims > 0) {
+                mostEliminations.push({ slug, count: stats.eliminations });
               }
             });
             
-            return { ironman, mostEliminations, entryOrder };
+            // Convert to null if no eliminations, or keep as array
+            const mostEliminationsResult = mostEliminations.length > 0 ? mostEliminations : null;
+            
+            return { ironman, mostEliminations: mostEliminationsResult, entryOrder };
           };
           
           const stats = calculateRoyalRumbleStats();
@@ -1399,15 +1404,32 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     </div>
                   )}
                   
-                  {stats.mostEliminations && stats.mostEliminations.count > 0 && (
-                    <div style={{ padding: 12, background: '#333', borderRadius: 6 }}>
-                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
-                        Most Eliminations
-                      </div>
-                      <div style={{ color: '#fff', fontSize: 14 }}>
-                        <strong>{wrestlerMap[stats.mostEliminations.slug]?.name || stats.mostEliminations.slug}</strong> - {stats.mostEliminations.count} elimination{stats.mostEliminations.count !== 1 ? 's' : ''}
-                      </div>
-                    </div>
+                  {stats.mostEliminations && (
+                    (() => {
+                      // Handle both array (new format with ties) and single object (old format)
+                      const elims = Array.isArray(stats.mostEliminations) 
+                        ? stats.mostEliminations 
+                        : [stats.mostEliminations];
+                      
+                      if (elims.length > 0 && elims[0].count > 0) {
+                        return (
+                          <div style={{ padding: 12, background: '#333', borderRadius: 6 }}>
+                            <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+                              Most Eliminations
+                            </div>
+                            <div style={{ color: '#fff', fontSize: 14 }}>
+                              {elims.map((wrestler, idx) => (
+                                <span key={wrestler.slug}>
+                                  {idx > 0 && <span style={{ margin: '0 4px' }}>&</span>}
+                                  <strong>{wrestlerMap[wrestler.slug]?.name || wrestler.slug}</strong>
+                                </span>
+                              ))} - {elims[0].count} elimination{elims[0].count !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()
                   )}
                   
                   {/* Entry Order */}
