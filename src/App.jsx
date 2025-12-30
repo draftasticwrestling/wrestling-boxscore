@@ -4732,6 +4732,245 @@ function App() {
     return null;
   };
 
+  // Helper function to convert title name to championship ID
+  const titleToChampionshipId = (titleName) => {
+    const mapping = {
+      'Undisputed WWE Championship': 'wwe-championship',
+      'World Heavyweight Championship': 'world-heavyweight-championship',
+      "Men's IC Championship": 'mens-ic-championship',
+      "Men's U.S. Championship": 'mens-us-championship',
+      'Raw Tag Team Championship': 'raw-tag-team-championship',
+      'SmackDown Tag Team Championship': 'smackdown-tag-team-championship',
+      "Men's Speed Championship": 'mens-speed-championship',
+      "WWE Women's Championship": 'wwe-womens-championship',
+      "Women's World Championship": 'womens-world-championship',
+      "Women's IC Championship": 'womens-ic-championship',
+      "Women's U.S. Championship": 'womens-us-championship',
+      "Women's Tag Team Championship": 'womens-tag-team-championship',
+      "Women's Speed Championship": 'womens-speed-championship'
+    };
+    return mapping[titleName] || null;
+  };
+
+  // Improved function to extract winner info (handles both individuals and tag teams)
+  const extractWinnerInfo = async (match, wrestlerMap, tagTeamsMap) => {
+    if (!match || !match.status || match.status !== 'completed') {
+      return { slug: null, name: null };
+    }
+
+    // Helper to normalize strings for comparison
+    const normalize = (str) => (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+    // 1. Try to get winner from match.winner field
+    if (match.winner) {
+      // Check if it's a tag team ID
+      if (tagTeamsMap[match.winner]) {
+        return { slug: match.winner, name: tagTeamsMap[match.winner] };
+      }
+      
+      // Check if it's a tag team name
+      const winnerLower = match.winner.toLowerCase();
+      if (tagTeamsMap[winnerLower] && typeof tagTeamsMap[winnerLower] === 'object') {
+        return { slug: tagTeamsMap[winnerLower].id, name: tagTeamsMap[winnerLower].name };
+      }
+      
+      // Check if it's a slug in wrestlerMap
+      if (wrestlerMap[match.winner]) {
+        return { slug: match.winner, name: wrestlerMap[match.winner].name };
+      }
+      
+      // Try to find by name in wrestlerMap
+      const found = Object.entries(wrestlerMap).find(([slug, wrestler]) => {
+        const matchWinnerNorm = normalize(match.winner);
+        const wrestlerNameNorm = normalize(wrestler.name);
+        return wrestlerNameNorm === matchWinnerNorm || 
+               wrestler.name === match.winner || 
+               wrestler.name.toLowerCase() === match.winner.toLowerCase();
+      });
+      if (found) {
+        return { slug: found[0], name: found[1].name };
+      }
+      
+      // Might already be a name - check if it matches a tag team
+      for (const [key, value] of Object.entries(tagTeamsMap)) {
+        if (typeof value === 'object' && normalize(value.name) === normalize(match.winner)) {
+          return { slug: value.id, name: value.name };
+        }
+      }
+    }
+
+    // 2. Try to extract from result string (e.g., "Winner def. Loser")
+    if (match.result && match.result.includes(' def. ')) {
+      const winnerPart = match.result.split(' def. ')[0].trim();
+      
+      // Check if it's a team with parentheses (e.g., "The Usos (jey-uso & jimmy-uso)")
+      const teamMatch = winnerPart.match(/^([^(]+)\s*\(([^)]+)\)$/);
+      if (teamMatch) {
+        const teamName = teamMatch[1].trim();
+        const slugs = teamMatch[2].split('&').map(s => s.trim()).filter(Boolean);
+        
+        // Try to find tag team by name
+        const teamNameLower = teamName.toLowerCase();
+        if (tagTeamsMap[teamNameLower] && typeof tagTeamsMap[teamNameLower] === 'object') {
+          return { slug: tagTeamsMap[teamNameLower].id, name: tagTeamsMap[teamNameLower].name };
+        }
+        
+        // Try to find tag team by matching slugs with tag_team_members
+        if (slugs.length >= 2) {
+          const { data: teamMembers, error: membersError } = await supabase
+            .from('tag_team_members')
+            .select('tag_team_id')
+            .in('wrestler_slug', slugs)
+            .eq('active', true);
+          
+          if (!membersError && teamMembers && teamMembers.length > 0) {
+            // Find the tag team that has all the slugs
+            const teamIds = [...new Set(teamMembers.map(m => m.tag_team_id))];
+            for (const teamId of teamIds) {
+              const { data: fullTeam, error: teamError } = await supabase
+                .from('tag_team_members')
+                .select('wrestler_slug')
+                .eq('tag_team_id', teamId)
+                .eq('active', true);
+              
+              if (!teamError && fullTeam) {
+                const teamSlugs = fullTeam.map(m => m.wrestler_slug);
+                const allMatch = slugs.every(slug => teamSlugs.includes(slug));
+                if (allMatch && slugs.length === teamSlugs.length) {
+                  const { data: team, error: teamNameError } = await supabase
+                    .from('tag_teams')
+                    .select('id, name')
+                    .eq('id', teamId)
+                    .single();
+                  
+                  if (!teamNameError && team) {
+                    return { slug: team.id, name: team.name };
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        // Fallback: return team name and construct slug
+        return { slug: teamName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''), name: teamName };
+      }
+      
+      // Check if it's multiple slugs (e.g., "slug1 & slug2")
+      if (winnerPart.includes('&')) {
+        const slugs = winnerPart.split('&').map(s => s.trim()).filter(Boolean);
+        // Try to find tag team by slugs
+        if (slugs.length >= 2) {
+          const { data: teamMembers, error: membersError } = await supabase
+            .from('tag_team_members')
+            .select('tag_team_id')
+            .in('wrestler_slug', slugs)
+            .eq('active', true);
+          
+          if (!membersError && teamMembers && teamMembers.length > 0) {
+            const teamIds = [...new Set(teamMembers.map(m => m.tag_team_id))];
+            for (const teamId of teamIds) {
+              const { data: fullTeam, error: teamError } = await supabase
+                .from('tag_team_members')
+                .select('wrestler_slug')
+                .eq('tag_team_id', teamId)
+                .eq('active', true);
+              
+              if (!teamError && fullTeam) {
+                const teamSlugs = fullTeam.map(m => m.wrestler_slug);
+                const allMatch = slugs.every(slug => teamSlugs.includes(slug));
+                if (allMatch && slugs.length === teamSlugs.length) {
+                  const { data: team, error: teamNameError } = await supabase
+                    .from('tag_teams')
+                    .select('id, name')
+                    .eq('id', teamId)
+                    .single();
+                  
+                  if (!teamNameError && team) {
+                    return { slug: team.id, name: team.name };
+                  }
+                }
+              }
+            }
+          }
+        }
+        // Fallback: return first slug and construct name
+        return { slug: slugs[0], name: slugs.join(' & ') };
+      }
+      
+      // Check if it's a slug in wrestlerMap
+      if (wrestlerMap[winnerPart]) {
+        return { slug: winnerPart, name: wrestlerMap[winnerPart].name };
+      }
+      
+      // Try to find by name in wrestlerMap
+      const found = Object.entries(wrestlerMap).find(([slug, wrestler]) => {
+        const winnerPartNorm = normalize(winnerPart);
+        const wrestlerNameNorm = normalize(wrestler.name);
+        return wrestlerNameNorm === winnerPartNorm ||
+               wrestler.name === winnerPart || 
+               wrestler.name.toLowerCase() === winnerPart.toLowerCase();
+      });
+      if (found) {
+        return { slug: found[0], name: found[1].name };
+      }
+      
+      // Try to find as tag team name
+      const winnerPartLower = winnerPart.toLowerCase();
+      if (tagTeamsMap[winnerPartLower] && typeof tagTeamsMap[winnerPartLower] === 'object') {
+        return { slug: tagTeamsMap[winnerPartLower].id, name: tagTeamsMap[winnerPartLower].name };
+      }
+      
+      // Fallback: return as-is (might be a name)
+      return { slug: winnerPart.toLowerCase().replace(/\s+/g, '-'), name: winnerPart };
+    }
+
+    // 3. Also check participants if winner is listed there
+    if (match.participants && typeof match.participants === 'string') {
+      const parts = match.participants.split(' vs ');
+      if (parts.length >= 2 && match.result) {
+        // Determine which side won based on result
+        const resultWinner = match.result.includes(' def. ') 
+          ? match.result.split(' def. ')[0].trim()
+          : null;
+        
+        if (resultWinner) {
+          for (const side of parts) {
+            // Check if this side matches the winner
+            const sideNorm = normalize(side);
+            const resultWinnerNorm = normalize(resultWinner);
+            
+            if (sideNorm.includes(resultWinnerNorm) || resultWinnerNorm.includes(sideNorm)) {
+              // Extract team name if in parentheses format
+              const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
+              if (teamMatch) {
+                const teamName = teamMatch[1].trim();
+                const slugs = teamMatch[2].split('&').map(s => s.trim()).filter(Boolean);
+                
+                // Try to find tag team
+                const teamNameLower = teamName.toLowerCase();
+                if (tagTeamsMap[teamNameLower] && typeof tagTeamsMap[teamNameLower] === 'object') {
+                  return { slug: tagTeamsMap[teamNameLower].id, name: tagTeamsMap[teamNameLower].name };
+                }
+                
+                // Fallback
+                return { slug: teamName.toLowerCase().replace(/\s+/g, '-'), name: teamName };
+              }
+              
+              // Check if it's individual wrestlers
+              const sideSlugs = side.split('&').map(s => s.trim()).filter(Boolean);
+              if (sideSlugs.length === 1 && wrestlerMap[sideSlugs[0]]) {
+                return { slug: sideSlugs[0], name: wrestlerMap[sideSlugs[0]].name };
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return { slug: null, name: null };
+  };
+
   // Function to update championships when matches are completed
   const updateChampionships = async (matches, eventId, eventDate, wrestlerMap) => {
     try {
@@ -4745,6 +4984,20 @@ function App() {
 
       console.log('Updating championships - found title matches:', titleMatches.length);
       
+      // Fetch tag teams once for all matches
+      const { data: tagTeams, error: tagTeamsError } = await supabase
+        .from('tag_teams')
+        .select('id, name')
+        .eq('active', true);
+      
+      const tagTeamsMap = {};
+      if (!tagTeamsError && tagTeams) {
+        tagTeams.forEach(team => {
+          tagTeamsMap[team.id] = team.name;
+          tagTeamsMap[team.name.toLowerCase()] = { id: team.id, name: team.name };
+        });
+      }
+      
       for (const match of titleMatches) {
         console.log(`Processing title match: ${match.title}`, {
           matchResult: match.result,
@@ -4753,8 +5006,9 @@ function App() {
           titleOutcome: match.titleOutcome
         });
         
-        const winnerSlug = extractWinnerSlug(match, wrestlerMap);
-        const winnerName = extractWinnerName(match, wrestlerMap);
+        const winnerInfo = await extractWinnerInfo(match, wrestlerMap, tagTeamsMap);
+        const winnerSlug = winnerInfo.slug;
+        const winnerName = winnerInfo.name;
         
         console.log(`Extracted winner - slug: ${winnerSlug}, name: ${winnerName}`);
         
@@ -4785,20 +5039,29 @@ function App() {
         const formattedDate = convertDateToISO(eventDate);
         console.log(`Date conversion: "${eventDate}" -> "${formattedDate}"`);
 
+        // Get championship ID from title name
+        const championshipId = titleToChampionshipId(match.title);
+
         // Update the championship
+        const updateData = {
+          title_name: match.title,
+          current_champion: winnerName,
+          current_champion_slug: winnerSlug,
+          previous_champion: previousChampion,
+          previous_champion_slug: previousChampionSlug,
+          date_won: formattedDate,
+          event_id: eventId
+        };
+        
+        // Only include id if we have it (for upsert)
+        if (championshipId) {
+          updateData.id = championshipId;
+        }
+
         const { error: updateError } = await supabase
           .from('championships')
-          .upsert({
-            title_name: match.title,
-            current_champion: winnerName,
-            current_champion_slug: winnerSlug,
-            previous_champion: previousChampion,
-            previous_champion_slug: previousChampionSlug,
-            date_won: formattedDate,
-            event_id: eventId,
-            match_order: match.order || 1
-          }, {
-            onConflict: 'title_name'
+          .upsert(updateData, {
+            onConflict: championshipId ? 'id' : 'title_name'
           });
 
         if (updateError) {
@@ -4806,7 +5069,7 @@ function App() {
         } else {
           console.log(`✅ Updated ${match.title}: ${winnerName} (${winnerSlug})`);
           console.log(`   Previous: ${previousChampion} (${previousChampionSlug})`);
-          console.log(`   Event: ${eventId}, Date: ${eventDate}, Match Order: ${match.order || 1}`);
+          console.log(`   Event: ${eventId}, Date: ${eventDate}`);
         }
       }
     } catch (error) {
