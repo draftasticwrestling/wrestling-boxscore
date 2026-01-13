@@ -189,12 +189,6 @@ INSERT INTO tag_team_members (tag_team_id, wrestler_slug, member_order) VALUES
 -- Imperium
 ('imperium', 'gunther', 1),
 ('imperium', 'ludwig-kaiser', 2),
-('imperium', 'giovanni-vinci', 3),
-
--- Damage CTRL
-('damage-ctrl', 'bayley', 1),
-('damage-ctrl', 'io-sky', 2),
-('damage-ctrl', 'dakota-kai', 3),
 
 -- The Judgment Day
 ('judgment-day', 'finn-balor', 1),
@@ -205,19 +199,10 @@ INSERT INTO tag_team_members (tag_team_id, wrestler_slug, member_order) VALUES
 ('legado-del-fantasma', 'santos-escobar', 1),
 ('legado-del-fantasma', 'joaquin-wilde', 2),
 ('legado-del-fantasma', 'cruz-del-toro', 3),
-('legado-del-fantasma', 'zelina-vega', 4),
 
 -- Alpha Academy
-('alpha-academy', 'chad-gable', 1),
+('alpha-academy', 'akira-tozawa', 1),
 ('alpha-academy', 'otis', 2),
-
--- The Brawling Brats
-('brawling-brats', 'wes-lee', 1),
-('brawling-brats', 'nash-carter', 2),
-
--- Trick Williams & Carmelo Hayes
-('trick-williams-carmelo-hayes', 'trick-williams', 1),
-('trick-williams-carmelo-hayes', 'carmelo-hayes', 2);
 
 -- Add RLS policies for tag teams
 ALTER TABLE tag_teams ENABLE ROW LEVEL SECURITY;

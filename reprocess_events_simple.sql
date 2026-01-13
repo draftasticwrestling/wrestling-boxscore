@@ -70,3 +70,4 @@ SELECT
 FROM championships
 ORDER BY title_name;
 
+
