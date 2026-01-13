@@ -315,9 +315,19 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
     const normalizedBrand = brand === 'Raw' ? 'RAW' : 
                            brand === 'Smackdown' ? 'SmackDown' : 
                            brand && brand.toUpperCase() === 'AAA' ? 'AAA' : brand;
+    const classification = w.classification || '';
+    const isUncategorized =
+      (!normalizedBrand || !BRAND_ORDER.includes(normalizedBrand)) &&
+      (!classification || (classification !== 'Alumni' && classification !== 'Celebrity Guests'));
     
     // Always show RAW, SmackDown, and NXT wrestlers
     if (normalizedBrand === 'RAW' || normalizedBrand === 'SmackDown' || normalizedBrand === 'NXT') {
+      return true;
+    }
+
+    // When logged in, also show uncategorized wrestlers (no roster and not Alumni/Celebrity)
+    // so their profiles can be fixed even if they have no recent appearances.
+    if (isAuthorized && isUncategorized) {
       return true;
     }
     

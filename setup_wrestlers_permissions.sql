@@ -5,19 +5,16 @@
 DROP POLICY IF EXISTS "Allow read access to wrestlers" ON wrestlers;
 DROP POLICY IF EXISTS "Allow authenticated users to update wrestlers" ON wrestlers;
 DROP POLICY IF EXISTS "Allow authenticated users to insert wrestlers" ON wrestlers;
+DROP POLICY IF EXISTS "Allow all access to wrestlers" ON wrestlers;
 
 -- Enable RLS if not already enabled
 ALTER TABLE wrestlers ENABLE ROW LEVEL SECURITY;
 
--- Allow read access to all users (public)
-CREATE POLICY "Allow read access to wrestlers" ON wrestlers
-    FOR SELECT USING (true);
-
--- Allow authenticated users to update wrestlers
-CREATE POLICY "Allow authenticated users to update wrestlers" ON wrestlers
-    FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Allow authenticated users to insert wrestlers (if needed)
-CREATE POLICY "Allow authenticated users to insert wrestlers" ON wrestlers
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- DEV/ADMIN SETUP: Allow all operations on wrestlers for any role
+-- This relies on the UI to gate who can actually edit wrestlers.
+-- If you want to lock this down later, you can replace this with more specific policies.
+CREATE POLICY "Allow all access to wrestlers" ON wrestlers
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
 

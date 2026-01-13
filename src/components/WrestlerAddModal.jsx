@@ -17,6 +17,8 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
+    dob: '',
+    nationality: '',
     brand: '',
     classification: 'Active',
     status: '',
@@ -32,6 +34,31 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+
+  // Shared toggle button styling to visually match the edit profile modal
+  const baseToggleStyle = {
+    flex: 1,
+    padding: '8px 10px',
+    borderRadius: 999,
+    border: '1px solid #444',
+    background: '#232323',
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    textAlign: 'center',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.15s ease-out',
+  };
+
+  const getToggleStyle = (isActive, activeColor = '#C6A04F') => ({
+    ...baseToggleStyle,
+    background: isActive ? activeColor : '#232323',
+    color: isActive ? '#232323' : '#fff',
+    borderColor: isActive ? activeColor : '#444',
+    boxShadow: isActive ? '0 0 0 1px #000 inset' : 'none',
+    opacity: isActive ? 1 : 0.9,
+  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -69,8 +96,7 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
           updated.brand = '';
           updated.status = '';
         } else if (value === 'Part-timer') {
-          // Part-timers shouldn't have brand
-          updated.brand = '';
+          // Part-timers can still have a brand; leave brand as-is
         } else if (value === 'Active') {
           // Active wrestlers should have a brand, default to RAW
           if (!BRAND_OPTIONS.includes(updated.brand)) {
@@ -121,9 +147,9 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
       }
 
       // Validate based on classification
-      if (formData.classification === 'Active') {
+      if (formData.classification === 'Active' || formData.classification === 'Part-timer') {
         if (!formData.brand || !BRAND_OPTIONS.includes(formData.brand)) {
-          setError('Active wrestlers must have a brand selected');
+          setError('Active and Part-timer wrestlers must have a brand selected');
           setLoading(false);
           return;
         }
@@ -157,6 +183,8 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
       const insertData = {
         id: formData.slug.trim(),
         name: formData.name.trim(),
+        dob: formData.dob && formData.dob.trim() ? formData.dob.trim() : null,
+        nationality: formData.nationality && formData.nationality.trim() ? formData.nationality.trim() : null,
         brand: formData.brand && formData.brand.trim() && formData.brand !== 'Unassigned' ? formData.brand.trim() : null,
         classification: formData.classification || null,
         "Status": formData.status && formData.status.trim() ? formData.status.trim() : null,
@@ -167,9 +195,7 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
       };
 
       // Clean up data based on classification
-      if (formData.classification === 'Part-timer') {
-        insertData.brand = null;
-      } else if (formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests') {
+      if (formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests') {
         insertData.brand = null;
         insertData["Status"] = null;
       }
@@ -249,9 +275,29 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ color: '#C6A04F', marginBottom: 24, fontSize: 24 }}>
-          Add New Wrestler
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24, gap: 16 }}>
+          {imagePreview && (
+            <img
+              src={imagePreview}
+              alt="Preview"
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid #C6A04F',
+              }}
+            />
+          )}
+          <div>
+            <h2 style={{ color: '#C6A04F', marginBottom: 4, fontSize: 24 }}>
+              Add New Wrestler
+            </h2>
+            <div style={{ color: '#aaa', fontSize: 13 }}>
+              Set up this wrestler&apos;s slug, bio, roster, health, and status.
+            </div>
+          </div>
+        </div>
 
         {error && (
           <div style={{
@@ -315,6 +361,55 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
             </div>
           </div>
 
+          {/* Date of Birth */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Date of Birth:
+            </label>
+            <input
+              type="date"
+              value={formData.dob || ''}
+              onChange={(e) => handleChange('dob', e.target.value)}
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Optional. Stores a simple date (YYYY-MM-DD) for this wrestler.
+            </div>
+          </div>
+
+          {/* Nationality */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Nationality:
+            </label>
+            <input
+              type="text"
+              value={formData.nationality || ''}
+              onChange={(e) => handleChange('nationality', e.target.value)}
+              placeholder="e.g., American, Canadian, Japanese"
+              style={{
+                width: '100%',
+                padding: 10,
+                borderRadius: 8,
+                background: '#232323',
+                color: '#fff',
+                border: '1px solid #444',
+                fontSize: 15,
+              }}
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Optional. Free-form text for country or nationality.
+            </div>
+          </div>
+
           {/* Image Upload */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
@@ -374,86 +469,96 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
             </div>
           </div>
 
-          {/* Classification */}
+          {/* Classification quick toggles */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
               Classification: *
             </label>
-            <select
-              value={formData.classification}
-              onChange={(e) => handleChange('classification', e.target.value)}
-              style={{
-                width: '100%',
-                padding: 10,
-                borderRadius: 8,
-                background: '#232323',
-                color: '#fff',
-                border: '1px solid #444',
-                fontSize: 15,
-              }}
-              required
-            >
-              {CLASSIFICATION_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {CLASSIFICATION_OPTIONS.map(opt => {
+                const isActive = formData.classification === opt;
+                let color = '#C6A04F';
+                if (opt === 'Alumni') color = '#8e44ad';
+                if (opt === 'Celebrity Guests') color = '#e67e22';
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => handleChange('classification', opt)}
+                    style={getToggleStyle(isActive, color)}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
+              Active / Part-timer = on a roster (RAW, SmackDown, NXT, AAA), Alumni / Celebrity Guests = no brand or status.
+            </div>
           </div>
 
-          {/* Brand (only for Active) */}
-          {formData.classification === 'Active' && (
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
-                Brand: *
-              </label>
-              <select
-                value={formData.brand}
-                onChange={(e) => handleChange('brand', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: 10,
-                  borderRadius: 8,
-                  background: '#232323',
-                  color: '#fff',
-                  border: '1px solid #444',
-                  fontSize: 15,
-                }}
-                required
-              >
-                <option value="">Select brand</option>
-                {BRAND_OPTIONS.map(brand => (
-                  <option key={brand} value={brand}>{brand}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Status (only for Active and Part-timer) */}
+          {/* Brand / roster quick toggles */}
           {(formData.classification === 'Active' || formData.classification === 'Part-timer') && (
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
-                Status:
+                Brand / Roster: *
               </label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: 10,
-                  borderRadius: 8,
-                  background: '#232323',
-                  color: '#fff',
-                  border: '1px solid #444',
-                  fontSize: 15,
-                }}
-              >
-                {STATUS_OPTIONS.map(status => (
-                  <option key={status} value={status}>
-                    {status || 'Active (No Status)'}
-                  </option>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['RAW', 'SmackDown', 'NXT', 'AAA'].map(brand => (
+                  <button
+                    key={brand}
+                    type="button"
+                    onClick={() => handleChange('brand', brand)}
+                    style={getToggleStyle(formData.brand === brand)}
+                  >
+                    {brand}
+                  </button>
                 ))}
-              </select>
-              <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
-                Only Active and Part-timer wrestlers can have a status
+                <button
+                  type="button"
+                  onClick={() => handleChange('brand', 'Unassigned')}
+                  style={getToggleStyle(formData.brand === '' || formData.brand === 'Unassigned')}
+                >
+                  Unassigned
+                </button>
+              </div>
+              <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
+                Tap to quickly assign this wrestler to a roster.
+              </div>
+            </div>
+          )}
+
+          {/* Health / availability quick toggles */}
+          {(formData.classification === 'Active' || formData.classification === 'Part-timer') && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+                Health & Availability:
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => handleChange('status', '')}
+                  style={getToggleStyle(!formData.status)}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('status', 'Injured')}
+                  style={getToggleStyle(formData.status === 'Injured', '#ff4444')}
+                >
+                  Injured
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('status', 'On Hiatus')}
+                  style={getToggleStyle(formData.status === 'On Hiatus', '#ffa726')}
+                >
+                  On Hiatus
+                </button>
+              </div>
+              <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
+                Only Active and Part-timer wrestlers can have a status.
               </div>
             </div>
           )}
