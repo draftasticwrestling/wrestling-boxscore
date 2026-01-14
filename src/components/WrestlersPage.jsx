@@ -539,8 +539,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
           </div>
         )}
 
-        {/* Not Assigned (Part-timers on hiatus or without roster) */}
-        {grouped['Not Assigned'].length > 0 && (
+        {/* Not Assigned (Part-timers on hiatus or without roster) - visible only to authorized users */}
+        {isAuthorized && grouped['Not Assigned'].length > 0 && (
           <div style={{
             background: '#181818',
             borderRadius: 14,
@@ -585,8 +585,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
           </div>
         )}
 
-        {/* AAA */}
-        {grouped.Active['AAA'] && grouped.Active['AAA'].length > 0 && (
+        {/* AAA - visible only to authorized users */}
+        {isAuthorized && grouped.Active['AAA'] && grouped.Active['AAA'].length > 0 && (
           <div style={{
             background: '#181818',
             borderRadius: 14,
@@ -608,8 +608,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
           </div>
         )}
 
-        {/* Celebrity Guests */}
-        {grouped['Celebrity Guests'].length > 0 && (
+        {/* Celebrity Guests - visible only to authorized users */}
+        {isAuthorized && grouped['Celebrity Guests'].length > 0 && (
           <div style={{
             background: '#181818',
             borderRadius: 14,
@@ -631,8 +631,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
           </div>
         )}
 
-        {/* Alumni Wrestlers */}
-        {grouped.Alumni.length > 0 && (
+        {/* Alumni Wrestlers - visible only to authorized users */}
+        {isAuthorized && grouped.Alumni.length > 0 && (
           <div style={{
             background: '#181818',
             borderRadius: 14,

@@ -1959,20 +1959,7 @@ export default function MatchEdit({
           </div>
         </>
       )}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>
-          Special Match Winner:
-        </label>
-        <select
-          value={match.specialWinnerType || "None"}
-          onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-          style={inputStyle}
-        >
-          {SPECIAL_WINNER_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </div>
+      {/* Title outcome should appear above special match winner in the form */}
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>
           Title Outcome:
@@ -1992,6 +1979,20 @@ export default function MatchEdit({
             Use "New Champion" only when the title actually changes hands.
           </div>
         )}
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>
+          Special Match Winner:
+        </label>
+        <select
+          value={match.specialWinnerType || "None"}
+          onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+          style={inputStyle}
+        >
+          {SPECIAL_WINNER_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
       </div>
       {match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' && !useVisualBuilder && (
         <div style={{ marginBottom: 16 }}>

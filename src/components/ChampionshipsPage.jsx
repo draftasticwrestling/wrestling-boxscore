@@ -172,6 +172,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
 
   // Helper function to format champion name (handles both individuals and tag teams)
   const formatChampionName = (championName, championSlug, champType = null) => {
+    // For non–tag-team titles, always prefer the wrestler's proper name from the wrestlers table
+    if (champType !== 'Tag Team' && championSlug && championSlug !== 'vacant' && championSlug !== 'unknown') {
+      const wrestlerBySlug = wrestlers.find(w => w.id === championSlug);
+      if (wrestlerBySlug?.name) {
+        return wrestlerBySlug.name;
+      }
+    }
+
     // If it's a tag team championship, try to find the tag team
     if (champType === 'Tag Team') {
       // First try to get tag team name from slug directly

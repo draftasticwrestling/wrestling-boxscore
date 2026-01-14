@@ -208,6 +208,10 @@ function EventLogoOrText({ name, alt, style, textStyle }) {
 
 function EventList({ events }) {
   const user = useUser();
+  const [visibleCount, setVisibleCount] = useState(30);
+
+  const visibleEvents = Array.isArray(events) ? events.slice(0, visibleCount) : [];
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 24 }}>
@@ -237,7 +241,7 @@ function EventList({ events }) {
         marginTop: 0
       }}>WWE Event Results</h1>
       <div style={{ marginTop: 24 }}>
-        {events.map(event => {
+        {visibleEvents.map(event => {
           const isUpcoming = isUpcomingEST(event);
           return (
             <Link
@@ -307,6 +311,25 @@ function EventList({ events }) {
             </Link>
           );
         })}
+        {Array.isArray(events) && events.length > visibleCount && (
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
+            <button
+              onClick={() => setVisibleCount(c => Math.min(c + 30, events.length))}
+              style={{
+                padding: '10px 24px',
+                borderRadius: 8,
+                background: gold,
+                color: '#232323',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 15,
+                fontWeight: 600,
+              }}
+            >
+              Load more events
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2808,20 +2831,7 @@ function AddEvent({ addEvent, wrestlers }) {
               </div>
             </>
           )}
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>
-              Special Match Winner:
-            </label>
-            <select
-              value={match.specialWinnerType || "None"}
-              onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-              style={inputStyle}
-            >
-              {SPECIAL_WINNER_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
+          {/* Title outcome should appear above special match winner on add-event form */}
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>
               Title Outcome:
@@ -2832,6 +2842,20 @@ function AddEvent({ addEvent, wrestlers }) {
               style={inputStyle}
             >
               {TITLE_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>
+              Special Match Winner:
+            </label>
+            <select
+              value={match.specialWinnerType || "None"}
+              onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+              style={inputStyle}
+            >
+              {SPECIAL_WINNER_OPTIONS.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
@@ -4375,20 +4399,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 </div>
               </>
             )}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>
-                Special Match Winner:
-              </label>
-              <select
-                value={match.specialWinnerType || "None"}
-                onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
-                style={inputStyle}
-              >
-                {SPECIAL_WINNER_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
+            {/* Title outcome should appear above special match winner on edit-event match form */}
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>
                 Title Outcome:
@@ -4399,6 +4410,20 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 style={inputStyle}
               >
                 {TITLE_OUTCOME_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>
+                Special Match Winner:
+              </label>
+              <select
+                value={match.specialWinnerType || "None"}
+                onChange={e => setMatch({ ...match, specialWinnerType: e.target.value })}
+                style={inputStyle}
+              >
+                {SPECIAL_WINNER_OPTIONS.map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
