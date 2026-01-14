@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, uploadWrestlerImage } from '../supabaseClient';
+import CountrySelect from './CountrySelect';
 
 const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned'];
 const CLASSIFICATION_OPTIONS = ['Active', 'Part-timer', 'Celebrity Guests', 'Alumni'];
@@ -390,23 +391,13 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
               Nationality:
             </label>
-            <input
-              type="text"
+            <CountrySelect
               value={formData.nationality || ''}
-              onChange={(e) => handleChange('nationality', e.target.value)}
-              placeholder="e.g., American, Canadian, Japanese"
-              style={{
-                width: '100%',
-                padding: 10,
-                borderRadius: 8,
-                background: '#232323',
-                color: '#fff',
-                border: '1px solid #444',
-                fontSize: 15,
-              }}
+              onChange={(val) => handleChange('nationality', val)}
+              placeholder="Select country…"
             />
             <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
-              Optional. Free-form text for country or nationality.
+              Optional. Choose the wrestler&apos;s country; the flag will be shown automatically.
             </div>
           </div>
 
