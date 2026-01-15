@@ -155,20 +155,20 @@ const PROMO_OUTCOME_OPTIONS = [
   'Other',
 ];
 
-// Event List Component
+// Event List helpers
+// An event is considered "upcoming" if its date is in the future (strictly after today).
+// Events on today's date (or earlier) are treated as completed so they appear in the
+// Completed tab with a "(results pending)" tag until results are entered.
 function isUpcomingEST(event) {
-  if (event.status !== 'upcoming') return false;
-  // Parse event date and set to 8:00 PM EST (which is 1:00 AM UTC next day)
-  const [year, month, day] = event.date.split('-');
-  // 8:00 PM EST is 01:00 AM UTC the next day
-  const eventCutoffUTC = new Date(Date.UTC(
-    Number(year),
-    Number(month) - 1,
-    Number(day) + 1, // next day
-    1, 0, 0 // 1:00:00 AM UTC
-  ));
-  const nowUTC = new Date();
-  return nowUTC < eventCutoffUTC;
+  if (!event?.date) return false;
+
+  const [year, month, day] = event.date.split('-').map(Number);
+  const eventDate = new Date(year, month - 1, day);
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  return eventDate > today;
 }
 
 const EVENT_LOGO_MAP = {
@@ -209,8 +209,23 @@ function EventLogoOrText({ name, alt, style, textStyle }) {
 function EventList({ events }) {
   const user = useUser();
   const [visibleCount, setVisibleCount] = useState(30);
+  const [activeTab, setActiveTab] = useState('completed'); // 'completed' | 'upcoming'
 
-  const visibleEvents = Array.isArray(events) ? events.slice(0, visibleCount) : [];
+  // Reset pagination when switching tabs
+  React.useEffect(() => {
+    setVisibleCount(30);
+  }, [activeTab]);
+
+  const allEvents = Array.isArray(events) ? events : [];
+  // Completed events keep the overall sort order (newest first)
+  const completedEvents = allEvents.filter(e => !isUpcomingEST(e));
+  // Upcoming events are sorted soonest-to-latest so the nearest event appears first
+  const upcomingEvents = allEvents
+    .filter(isUpcomingEST)
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const sourceEvents = activeTab === 'completed' ? completedEvents : upcomingEvents;
+  const visibleEvents = sourceEvents.slice(0, visibleCount);
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -240,9 +255,46 @@ function EventList({ events }) {
         marginBottom: 8,
         marginTop: 0
       }}>WWE Event Results</h1>
+
+      {/* Completed / Upcoming toggle */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab('completed')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 999,
+            border: '1px solid #444',
+            background: activeTab === 'completed' ? gold : '#232323',
+            color: activeTab === 'completed' ? '#232323' : '#fff',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
+        >
+          Completed Events
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('upcoming')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 999,
+            border: '1px solid #444',
+            background: activeTab === 'upcoming' ? gold : '#232323',
+            color: activeTab === 'upcoming' ? '#232323' : '#fff',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
+        >
+          Upcoming Events
+        </button>
+      </div>
       <div style={{ marginTop: 24 }}>
         {visibleEvents.map(event => {
           const isUpcoming = isUpcomingEST(event);
+          const isResultsPending = !isUpcoming && event.status === 'upcoming';
           return (
             <Link
               to={`/event/${event.id}`}
@@ -301,8 +353,21 @@ function EventList({ events }) {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
-                  {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
-                  {isUpcoming ? <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span> : null}
+                  {event.isLive && (
+                    <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>
+                      LIVE
+                    </span>
+                  )}
+                  {isUpcoming && (
+                    <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>
+                      (upcoming)
+                    </span>
+                  )}
+                  {isResultsPending && (
+                    <span style={{ fontSize: 14, color: '#ffa726', marginLeft: 4 }}>
+                      (results pending)
+                    </span>
+                  )}
                 </div>
                 <div style={{ color: gold, fontSize: 16, marginTop: 2 }}>
                   {formatDate(event.date)} — {event.location}
@@ -311,10 +376,10 @@ function EventList({ events }) {
             </Link>
           );
         })}
-        {Array.isArray(events) && events.length > visibleCount && (
+        {sourceEvents.length > visibleCount && (
           <div style={{ textAlign: 'center', marginTop: 24 }}>
             <button
-              onClick={() => setVisibleCount(c => Math.min(c + 30, events.length))}
+              onClick={() => setVisibleCount(c => Math.min(c + 30, sourceEvents.length))}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,
@@ -1282,13 +1347,20 @@ function AddEvent({ addEvent, wrestlers }) {
   // Save the event
   const handleSaveEvent = (e) => {
     e.preventDefault();
-    if (!eventType || !date || !location || matches.length === 0) {
-      alert('Please fill out all event fields and add at least one match.');
+
+    // Basic event fields are always required
+    if (!eventType || !date || !location) {
+      alert('Please fill out all event fields.');
       return;
     }
-    // For completed events, require at least one match with all required fields
-    if (eventStatus === 'completed') {
-      const invalidMatch = Array.isArray(matches) && matches.some(m => !m.participants || !m.method || !m.result);
+
+    // For completed or live events, require at least one fully defined match
+    if (eventStatus === 'completed' || eventStatus === 'live') {
+      if (!Array.isArray(matches) || matches.length === 0) {
+        alert('Completed or live events must have at least one match.');
+        return;
+      }
+      const invalidMatch = matches.some(m => !m.participants || !m.method || !m.result);
       if (invalidMatch) {
         alert('Please fill out all required match fields for completed events.');
         return;
@@ -2871,8 +2943,10 @@ function AddEvent({ addEvent, wrestlers }) {
           type="button"
           style={{ marginTop: 24 }}
           disabled={
-            !eventType || !date || !location || matches.length === 0 ||
-            (eventStatus === 'completed' && Array.isArray(matches) && matches.some(m => !m.participants || !m.method || !m.result))
+            !eventType || !date || !location ||
+            ((eventStatus === 'completed' || eventStatus === 'live') &&
+              (!Array.isArray(matches) || matches.length === 0 ||
+               matches.some(m => !m.participants || !m.method || !m.result)))
           }
           onClick={handleSaveEvent}
         >
@@ -3403,9 +3477,17 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   // Save the edited event
   const handleSaveEvent = (e) => {
     e.preventDefault();
-    if (!name || !date || !location || matches.length === 0) {
-      alert('Please fill out all event fields and add at least one match.');
+    if (!name || !date || !location) {
+      alert('Please fill out all event fields.');
       return;
+    }
+
+    // For completed or live events, require at least one match
+    if (eventStatus === 'completed' || eventStatus === 'live') {
+      if (!Array.isArray(matches) || matches.length === 0) {
+        alert('Completed or live events must have at least one match.');
+        return;
+      }
     }
     
     // Debug: Log the matches state at the start of handleSaveEvent
@@ -4511,7 +4593,10 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         <button
           type="button"
           style={{ marginTop: 24 }}
-          disabled={matches.length === 0}
+          disabled={
+            (eventStatus === 'completed' || eventStatus === 'live') &&
+            (!Array.isArray(matches) || matches.length === 0)
+          }
           onClick={handleSaveEvent}
         >
           Save Changes

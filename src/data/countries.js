@@ -13,6 +13,7 @@ const COUNTRIES = [
   { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
   { code: 'AR', name: 'Argentina', flag: '🇦🇷' },
   { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+  { code: 'AT', name: 'Austria', flag: '🇦🇹' },
   { code: 'FR', name: 'France', flag: '🇫🇷' },
   { code: 'IT', name: 'Italy', flag: '🇮🇹' },
   { code: 'ES', name: 'Spain', flag: '🇪🇸' },
