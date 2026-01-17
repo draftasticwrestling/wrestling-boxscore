@@ -15,7 +15,7 @@ export default function Footer() {
     }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <div style={{ marginBottom: 8 }}>
-          © 2025 Wrestling Boxscore. All rights reserved.
+          © 2025 Pro Wrestling Boxscore. All rights reserved.
         </div>
         <div style={{ marginBottom: 8 }}>
           WWE, Raw, SmackDown, and all related logos and trademarks are the property of World Wrestling Entertainment, Inc. This site is not affiliated with or endorsed by WWE.

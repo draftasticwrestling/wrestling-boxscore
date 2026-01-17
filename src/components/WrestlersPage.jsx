@@ -376,10 +376,10 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   return (
     <>
       <Helmet>
-        <title>Wrestlers - WWE Roster & Brands | Wrestling Boxscore</title>
+        <title>Wrestlers - WWE Roster & Brands | Pro Wrestling Boxscore</title>
         <meta name="description" content="Browse the full WWE roster by brand: RAW, SmackDown, NXT, and more. See wrestler images, names, and brand assignments." />
         <meta name="keywords" content="WWE wrestlers, WWE roster, RAW, SmackDown, NXT, wrestling brands, WWE superstars" />
-        <link rel="canonical" href="https://wrestlingboxscore.com/wrestlers" />
+        <link rel="canonical" href="https://prowrestlingboxscore.com/wrestlers" />
       </Helmet>
       <div style={{ color: '#fff', padding: 40, maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>

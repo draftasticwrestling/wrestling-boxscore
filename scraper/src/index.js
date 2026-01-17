@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Wrestling Boxscore Fantasy League Scraper
+ * Pro Wrestling Boxscore Fantasy League Scraper
  * Main entry point for the scraper
  */
 
@@ -13,7 +13,7 @@ import { processAllMatches } from './calculators/processMatches.js';
 import { exportToCSV } from './exporters/csvExporter.js';
 
 async function main() {
-  logger.info('Starting Wrestling Boxscore Scraper...');
+  logger.info('Starting Pro Wrestling Boxscore Scraper...');
   logger.info('');
   
   // Test Supabase connection

@@ -1,6 +1,6 @@
-# Wrestling Boxscore Fantasy League Scraper
+# Pro Wrestling Boxscore Fantasy League Scraper
 
-This scraper extracts match data from your Wrestling Boxscore website and calculates fantasy league points based on your scoring system.
+This scraper extracts match data from your Pro Wrestling Boxscore website and calculates fantasy league points based on your scoring system.
 
 ## Setup
 

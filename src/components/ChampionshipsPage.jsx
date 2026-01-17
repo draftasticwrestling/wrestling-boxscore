@@ -373,10 +373,10 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   return (
     <>
       <Helmet>
-        <title>Current Champions - WWE Championships | Wrestling Boxscore</title>
+        <title>Current Champions - WWE Championships | Pro Wrestling Boxscore</title>
         <meta name="description" content="View all current WWE champions across RAW, SmackDown, NXT, and undisputed titles. Stay updated with the latest championship holders." />
         <meta name="keywords" content="WWE champions, current champions, WWE titles, RAW champions, SmackDown champions, NXT champions" />
-        <link rel="canonical" href="https://wrestlingboxscore.com/championships" />
+        <link rel="canonical" href="https://prowrestlingboxscore.com/championships" />
       </Helmet>
       
       <div style={{ color: '#fff', padding: 40, maxWidth: 1200, margin: '0 auto' }}>

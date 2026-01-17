@@ -115,7 +115,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           {(match?.eventName || match?.title || 'Event') +
             ' Match Results - ' +
             (match?.date || '') +
-            ' | Wrestling Boxscore'}
+            ' | Pro Wrestling Boxscore'}
         </title>
         <meta
           name="description"
