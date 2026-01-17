@@ -3,11 +3,28 @@
   publish = "dist"
 
 [[redirects]]
-  from = "/*"
+  from = "https://wrestlingboxscore.com/*"
   to = "https://prowrestlingboxscore.com/:splat"
   status = 301
   force = true
-  conditions = {Host = ["wrestlingboxscore.com", "www.wrestlingboxscore.com"]}
+
+[[redirects]]
+  from = "http://wrestlingboxscore.com/*"
+  to = "https://prowrestlingboxscore.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.wrestlingboxscore.com/*"
+  to = "https://prowrestlingboxscore.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://www.wrestlingboxscore.com/*"
+  to = "https://prowrestlingboxscore.com/:splat"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/*"
