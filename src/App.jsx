@@ -657,7 +657,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
       </Helmet>
       <div style={appBackground}>
         <div style={sectionStyle}>
-        <Link to="/" style={{ color: gold }}>← Back to Events</Link>
+          <Link to="/" style={{ color: gold }}>
+            ← Back to Events
+          </Link>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
           <EventLogoOrText 
             name={event.name} 
@@ -863,7 +865,8 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
