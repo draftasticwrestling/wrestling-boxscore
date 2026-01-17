@@ -111,9 +111,22 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
   return (
     <>
       <Helmet>
-        <title>{match?.eventName || match?.title || 'Event'} Results - {match?.date || ''} | Wrestling Boxscore</title>
-        <meta name="description" content={`Full results and match card for ${match?.eventName || match?.title || 'this event'}${match?.date ? ' on ' + match.date : ''}${match?.location ? ' in ' + match.location : ''}.`} />
-        <link rel="canonical" href={`https://wrestlingboxscore.com/event/${match?.eventId || ''}/match/${match?.order || ''}`} />
+        <title>
+          {(match?.eventName || match?.title || 'Event') +
+            ' Match Results - ' +
+            (match?.date || '') +
+            ' | Wrestling Boxscore'}
+        </title>
+        <meta
+          name="description"
+          content={`Detailed match results for ${match?.eventName || match?.title || 'this event'}${
+            match?.date ? ' on ' + match.date : ''
+          }${match?.location ? ' from ' + match.location : ''}, including participants, winner, method, and time.`}
+        />
+        <link
+          rel="canonical"
+          href={`https://prowrestlingboxscore.com/event/${match?.eventId || ''}/match/${match?.order || ''}`}
+        />
       </Helmet>
       <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 900, margin: '32px auto', padding: 32 }}>
         <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>

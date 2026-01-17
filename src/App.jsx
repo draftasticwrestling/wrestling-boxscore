@@ -255,6 +255,17 @@ function EventList({ events }) {
         marginTop: 0
       }}>WWE Event Results</h1>
 
+      <p style={{
+        textAlign: 'center',
+        color: '#ddd',
+        maxWidth: 700,
+        margin: '0 auto 16px',
+        fontSize: 16,
+      }}>
+        Looking for RAW results tonight, SmackDown results tonight, or full WWE results tonight? Wrestling Boxscore
+        tracks every show with box score-style match details and championship updates.
+      </p>
+
       {/* Completed / Upcoming toggle */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 8 }}>
         <button
@@ -612,9 +623,40 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     );
   }
 
+  const formattedDate = formatDate(event.date);
+
   return (
-    <div style={appBackground}>
-      <div style={sectionStyle}>
+    <>
+      <Helmet>
+        <title>
+          {event.name} Results - {formattedDate}
+          {event.location ? ` - ${event.location}` : ''} | Wrestling Boxscore
+        </title>
+        <meta
+          name="description"
+          content={`Full match results, card, and championship updates for ${event.name} on ${formattedDate}${
+            event.location ? ' from ' + event.location : ''
+          }.`}
+        />
+        <link rel="canonical" href={`https://prowrestlingboxscore.com/event/${event.id}`} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SportsEvent',
+            name: event.name,
+            startDate: event.date,
+            location: event.location
+              ? {
+                  '@type': 'Place',
+                  name: event.location,
+                }
+              : undefined,
+            url: `https://prowrestlingboxscore.com/event/${event.id}`,
+          })}
+        </script>
+      </Helmet>
+      <div style={appBackground}>
+        <div style={sectionStyle}>
         <Link to="/" style={{ color: gold }}>← Back to Events</Link>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
           <EventLogoOrText 
@@ -720,7 +762,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                     <div><strong>Title Outcome:</strong> {match.titleOutcome || 'None'}</div>
                     {match.notes && <div style={{ flexBasis: '100%' }}><strong>Notes:</strong> {match.notes}</div>}
                   </div>
-                  {/* Scrollable commentary section if available */}
+        {/* Scrollable commentary section if available */}
                   {Array.isArray(match.commentary) && match.commentary.length > 0 && (
                     <div style={{ maxHeight: 160, overflowY: 'auto', background: '#232323', borderRadius: 6, padding: 8, marginTop: 8 }}>
                       <div style={{ color: gold, fontWeight: 700, marginBottom: 6 }}>Match Commentary</div>
@@ -5576,10 +5618,16 @@ function App() {
   return (
     <>
       <Helmet>
-        <title>Wrestling Boxscore - WWE Event Results, Match Cards, and More</title>
-        <meta name="description" content="Get up-to-date WWE event results, match cards, wrestler stats, and more. Fast, mobile-friendly, and always current." />
-        <meta name="keywords" content="WWE, wrestling, event results, match cards, wrestlers, SmackDown, RAW, NXT, pay-per-view, championship, live results, wrestling stats, WWE news" />
-        <link rel="canonical" href="https://wrestlingboxscore.com/" />
+        <title>Wrestling Boxscore - WWE Results Tonight, RAW & SmackDown Event Results</title>
+        <meta
+          name="description"
+          content="See WWE results tonight with full match cards, including RAW results tonight and SmackDown results tonight, plus championship updates and box score-style coverage."
+        />
+        <meta
+          name="keywords"
+          content="WWE results tonight, RAW results tonight, SmackDown results tonight, WWE, wrestling, event results, match cards, wrestlers, SmackDown, RAW, NXT, pay-per-view, championship, live results, wrestling stats, WWE news"
+        />
+        <link rel="canonical" href="https://prowrestlingboxscore.com/" />
         {/* Open Graph and Twitter tags as above */}
       </Helmet>
       <Router>
