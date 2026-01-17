@@ -4,5 +4,12 @@
 
 [[redirects]]
   from = "/*"
+  to = "https://prowrestlingboxscore.com/:splat"
+  status = 301
+  force = true
+  conditions = {Host = ["wrestlingboxscore.com", "www.wrestlingboxscore.com"]}
+
+[[redirects]]
+  from = "/*"
   to = "/index.html"
   status = 200 

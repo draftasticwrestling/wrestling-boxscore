@@ -63,6 +63,7 @@ export default function MatchEdit({
     defendingChampion: '',
     notes: '',
     status: initialMatch.status || eventStatus || 'completed',
+    cardType: initialMatch.cardType || 'Undercard',
     ...initialMatch,
   });
   const [status, setStatus] = useState(initialMatch.status || eventStatus || 'completed');
@@ -452,7 +453,9 @@ export default function MatchEdit({
       result = match.result || result;
     }
 
-    // If the match has a result, it should not be live
+    // If the match has a result, it should not be live.
+    // Live state is controlled solely by the explicit isLive flag so that
+    // switching status back to Upcoming can fully turn off "Match in progress".
     const shouldBeLive = isLive && !result;
     
     // Automatically set "Champion Retains" when champion loses by DQ or Count Out
@@ -594,12 +597,28 @@ export default function MatchEdit({
       
       if (fetchError) throw fetchError;
       
-      // Update the specific match in the array
-      const updatedMatches = [...eventData.matches];
-      updatedMatches[matchOrder] = { 
+      const existingMatches = Array.isArray(eventData.matches) ? eventData.matches : [];
+
+      // Find the correct index based on match order; fall back to numeric index if needed
+      let matchIndex = existingMatches.findIndex(m => String(m.order) === String(matchOrder));
+      if (matchIndex === -1) {
+        const numericOrder = parseInt(matchOrder, 10);
+        if (!isNaN(numericOrder) && numericOrder - 1 >= 0 && numericOrder - 1 < existingMatches.length) {
+          matchIndex = numericOrder - 1;
+        } else {
+          matchIndex = 0;
+        }
+      }
+
+      const existingMatch = existingMatches[matchIndex] || {};
+
+      // Update the specific match in the array, preserving other fields and ensuring liveStart/commentary are updated
+      const updatedMatches = [...existingMatches];
+      updatedMatches[matchIndex] = { 
+        ...existingMatch,
         ...match, 
         commentary: newCommentary,
-        liveStart: newLiveStart || liveStart // Use newLiveStart if provided, otherwise use current liveStart
+        liveStart: newLiveStart || liveStart || existingMatch.liveStart
       };
       
       // Update the event with the new matches array
@@ -875,12 +894,47 @@ export default function MatchEdit({
         <select
           style={inputStyle}
           value={status}
-          onChange={e => setStatus(e.target.value)}
+          onChange={e => {
+            const newStatus = e.target.value;
+            setStatus(newStatus);
+
+            // Changing status to "Live (in progress)" should mark the match as live
+            // for display purposes, but NOT automatically start commentary.
+            if (newStatus === 'live') {
+              setIsLive(true);
+            }
+
+            // If the user marks the match as Upcoming or Completed via dropdown,
+            // clear the live flag so the "Match in progress" indicator turns off.
+            if (newStatus === 'upcoming' || newStatus === 'completed') {
+              setIsLive(false);
+            }
+          }}
         >
           <option value="upcoming">Upcoming</option>
+          <option value="live">Live (in progress)</option>
           <option value="completed">Completed</option>
         </select>
       </div>
+      {/* Main Event toggle (only relevant once event is not upcoming) */}
+      {eventStatus !== 'upcoming' && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>
+            <input
+              type="checkbox"
+              checked={match.cardType === 'Main Event'}
+              onChange={e =>
+                setMatch({
+                  ...match,
+                  cardType: e.target.checked ? 'Main Event' : 'Undercard',
+                })
+              }
+              style={{ marginRight: 8 }}
+            />
+            Mark as Main Event
+          </label>
+        </div>
+      )}
       <h2 style={{ color: '#C6A04F', marginBottom: 12 }}>Edit Match</h2>
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Match Type:</label>
@@ -2048,8 +2102,8 @@ export default function MatchEdit({
           💡 <strong>Tip:</strong> Click the "C" button next to a participant in the visual builder to mark them as the defending champion.
         </div>
       )}
-      {/* Begin Match Button - show when match is not live */}
-      {status !== 'live' && (
+      {/* Begin Match Button - explicitly starts live commentary mode */}
+      {status !== 'completed' && (!Array.isArray(commentary) || commentary.length === 0) && (
         <div style={{ marginTop: 24, textAlign: 'center' }}>
           <button 
             type="button" 
@@ -2070,8 +2124,8 @@ export default function MatchEdit({
         </div>
       )}
 
-      {/* Commentary UI: always show if there is commentary or if match is live */}
-      {(status === 'live' || (Array.isArray(commentary) && commentary.length > 0)) && (
+      {/* Commentary UI: only show once commentary has actually started */}
+      {Array.isArray(commentary) && commentary.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <h3 style={{ color: '#C6A04F', marginBottom: 12 }}>Live Commentary</h3>
           {status === 'live' && !liveEnd && (
@@ -2142,10 +2196,43 @@ export default function MatchEdit({
                 ) : (
                   <>
                     <span style={{ color: '#fff', flex: 1 }}>{c.text}</span>
-                    <button type="button" onClick={() => {
-                      setEditingCommentIdx(idx);
-                      setEditingCommentText(c.text);
-                    }}>Edit</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCommentIdx(idx);
+                        setEditingCommentText(c.text);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Delete this commentary entry
+                        const updated = commentary.filter((_, i) => i !== idx);
+                        setCommentary(updated);
+
+                        // If no commentary remains, also clear liveStart/liveEnd
+                        // so the match can fully exit commentary mode.
+                        if (updated.length === 0) {
+                          setLiveStart(null);
+                          setLiveEnd(null);
+                        }
+
+                        // Update in real-time if hook is provided
+                        if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+                          const updatedMatch = {
+                            ...match,
+                            commentary: updated,
+                            liveStart: updated.length > 0 ? (liveStart || updated[updated.length - 1].timestamp) : null,
+                            liveEnd: updated.length === 0 ? null : liveEnd,
+                          };
+                          onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
                   </>
                 )}
               </div>
@@ -2153,6 +2240,39 @@ export default function MatchEdit({
             {liveEnd && (
               <div style={{ color: '#bbb', marginTop: 8 }}>
                 Match duration: {getElapsedMinutes(liveEnd)} minute{getElapsedMinutes(liveEnd) !== 1 ? 's' : ''}
+              </div>
+            )}
+            {Array.isArray(commentary) && commentary.length > 0 && (
+              <div style={{ marginTop: 8, textAlign: 'right' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCommentary([]);
+                    setLiveStart(null);
+                    setLiveEnd(null);
+
+                    if (onRealTimeCommentaryUpdate && eventId && matchOrder) {
+                      const updatedMatch = {
+                        ...match,
+                        commentary: [],
+                        liveStart: null,
+                        liveEnd: null,
+                      };
+                      onRealTimeCommentaryUpdate(eventId, matchOrder, updatedMatch);
+                    }
+                  }}
+                  style={{
+                    fontSize: 12,
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    border: '1px solid #666',
+                    background: '#333',
+                    color: '#fff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear all commentary
+                </button>
               </div>
             )}
           </div>

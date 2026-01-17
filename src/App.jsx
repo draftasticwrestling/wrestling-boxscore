@@ -19,7 +19,6 @@ import Menu from './components/Menu';
 import WrestlersPage from './components/WrestlersPage';
 import Layout from './components/Layout';
 import { Helmet } from 'react-helmet';
-import WrestlerMultiSelect from './components/WrestlerMultiSelect';
 import WrestlerAutocomplete from './components/WrestlerAutocomplete';
 import ParticipantSelectionDemo from './components/ParticipantSelectionDemo';
 import VisualMatchBuilder from './components/VisualMatchBuilder';
@@ -141,7 +140,7 @@ const PROMO_TYPE_OPTIONS = [
 
 const PROMO_OUTCOME_OPTIONS = [
   'None',
-  'Vacated Title',
+  'Title Vacated',
   'Match Announced',
   'Wrestler Going Inactive',
   'Championship Challenge',
@@ -566,22 +565,30 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     setEditedMatch(null);
   };
 
-  // Don't designate main event for upcoming events with fewer than 4 matches
-  const shouldDesignateMainEvent = event.status !== 'upcoming' || event.matches.length >= 4;
-  
-  // Sort matches by order property
-  const sortedMatches = [...event.matches].sort((a, b) => {
-    const orderA = a.order || 0;
-    const orderB = b.order || 0;
-    return orderA - orderB;
-  });
-  
-  const matchesWithCardType = sortedMatches.map((match, idx, arr) => ({
-    ...match,
-    // Ensure order is set - use existing order or index + 1
-    order: match.order || (idx + 1),
-    cardType: shouldDesignateMainEvent && idx === arr.length - 1 ? "Main Event" : "Undercard"
+  // Prepare matches with stable order and card type.
+  const baseMatches = Array.isArray(event.matches) ? event.matches : [];
+  const orderedMatches = baseMatches.map((m, idx) => ({
+    ...m,
+    order: m.order || idx + 1,
   }));
+
+  // Apply display-time cardType defaults:
+  // - Use existing cardType if present.
+  // - Otherwise default to "Undercard".
+  // Main Event is now **only** set explicitly by the user.
+  const withCardTypes = orderedMatches.map((m) => {
+    const cardType = m.cardType || 'Undercard';
+    return { ...m, cardType };
+  });
+
+  // For display, always show any explicit main event as the final match in the list.
+  const matchesWithCardType = [...withCardTypes].sort((a, b) => {
+    const aMain = a.cardType === 'Main Event';
+    const bMain = b.cardType === 'Main Event';
+    if (aMain && !bMain) return 1;
+    if (!aMain && bMain) return -1;
+    return (a.order || 0) - (b.order || 0);
+  });
 
   if (isEditingMatch) {
     return (
@@ -887,6 +894,15 @@ function AddEvent({ addEvent, wrestlers }) {
     previousChampion: '',
     reason: ''
   });
+  // Toggle between adding a wrestling match vs a promo/segment
+  const [entryType, setEntryType] = useState('match'); // 'match' | 'promo'
+  const [promo, setPromo] = useState({
+    title: '',
+    participants: [''],
+    notes: '',
+    outcome: 'None',
+    outcomeOther: '',
+  });
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -896,6 +912,61 @@ function AddEvent({ addEvent, wrestlers }) {
   // Add a match to the matches list
   const handleAddMatch = (e) => {
     e.preventDefault();
+
+    // --- Promo branch (non-wrestling segment) ---
+    if (entryType === 'promo') {
+      const trimmedTitle = promo.title.trim();
+      if (!trimmedTitle) {
+        alert('Please enter a promo title.');
+        return;
+      }
+
+      // If this promo outcome is "Title Vacated", also create a vacancy match
+      let vacancyMatch = null;
+      if (promo.outcome === 'Title Vacated') {
+        vacancyMatch = buildVacancyMatch();
+        // If validation failed inside buildVacancyMatch, abort adding promo
+        if (!vacancyMatch) {
+          return;
+        }
+      }
+
+      const resolvedOutcome =
+        promo.outcome === 'Other' && promo.outcomeOther.trim()
+          ? promo.outcomeOther.trim()
+          : (promo.outcome || 'None');
+
+      const newPromoMatch = {
+        participants: Array.isArray(promo.participants)
+          ? promo.participants.filter(Boolean)
+          : [],
+        result: '',
+        method: '',
+        time: '',
+        matchType: 'Promo',
+        stipulation: 'None',
+        customStipulation: '',
+        title: trimmedTitle,
+        titleOutcome: '',
+        defendingChampion: '',
+        notes: promo.notes.trim(),
+        isLive: false,
+        promoOutcome: resolvedOutcome,
+      };
+
+      const currentMatches = Array.isArray(matches) ? matches : [];
+      const updatedMatches = vacancyMatch
+        ? [...currentMatches, vacancyMatch, newPromoMatch]
+        : [...currentMatches, newPromoMatch];
+
+      setMatches(updatedMatches);
+      setPromo({ title: '', participants: [''], notes: '', outcome: 'None', outcomeOther: '' });
+      if (vacancyMatch) {
+        setShowVacancyForm(false);
+        setVacancyForm({ title: '', previousChampion: '', reason: '' });
+      }
+      return;
+    }
     // --- Battle Royal branch ---
     if (match.matchType === 'Battle Royal' || match.stipulation === 'Battle Royal') {
       const brPart = brParticipants.filter(Boolean);
@@ -1293,16 +1364,15 @@ function AddEvent({ addEvent, wrestlers }) {
     setFormResetKey(prev => prev + 1); // Force VisualMatchBuilder re-render
   };
 
-  // Handle recording a title vacancy
-  const handleRecordVacancy = (e) => {
-    if (e) e.preventDefault();
+  // Build a vacancy match object from the current vacancy form; returns null if invalid
+  const buildVacancyMatch = () => {
     if (!vacancyForm.title || vacancyForm.title === 'None') {
       alert('Please select a championship title.');
-      return;
+      return null;
     }
     if (!vacancyForm.previousChampion) {
       alert('Please enter the name of the wrestler who vacated the title.');
-      return;
+      return null;
     }
 
     // Convert slug to name for display
@@ -1329,6 +1399,16 @@ function AddEvent({ addEvent, wrestlers }) {
       order: matches.length + 1
     };
 
+    return vacancyMatch;
+  };
+
+  // Handle recording a title vacancy (manual button)
+  const handleRecordVacancy = (e) => {
+    if (e) e.preventDefault();
+
+    const vacancyMatch = buildVacancyMatch();
+    if (!vacancyMatch) return;
+
     console.log('Adding vacancy match:', vacancyMatch);
     console.log('Current matches before:', matches);
     const updatedMatches = [...matches, vacancyMatch];
@@ -1345,8 +1425,10 @@ function AddEvent({ addEvent, wrestlers }) {
   };
 
   // Save the event
-  const handleSaveEvent = (e) => {
-    e.preventDefault();
+  const handleSaveEvent = (e, navigateBack = false) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
 
     // Basic event fields are always required
     if (!eventType || !date || !location) {
@@ -1360,7 +1442,10 @@ function AddEvent({ addEvent, wrestlers }) {
         alert('Completed or live events must have at least one match.');
         return;
       }
-      const invalidMatch = matches.some(m => !m.participants || !m.method || !m.result);
+      // Promos are allowed to omit method/result; validation applies only to real matches
+      const invalidMatch = matches.some(m =>
+        m.matchType !== 'Promo' && (!m.participants || !m.method || !m.result)
+      );
       if (invalidMatch) {
         alert('Please fill out all required match fields for completed events.');
         return;
@@ -1478,104 +1563,7 @@ function AddEvent({ addEvent, wrestlers }) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 16 }}>
             <h3 style={{ margin: 0 }}>Add Matches</h3>
-            <button
-              type="button"
-              onClick={() => setShowVacancyForm(!showVacancyForm)}
-              style={{
-                background: showVacancyForm ? '#C6A04F' : '#444',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 4,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 14
-              }}
-            >
-              {showVacancyForm ? 'Cancel' : 'Record Title Vacancy'}
-            </button>
           </div>
-          {showVacancyForm && (
-            <div style={{ border: '1px solid #C6A04F', padding: 16, marginBottom: 16, borderRadius: 8, background: '#222' }}>
-              <h4 style={{ color: '#C6A04F', marginTop: 0, marginBottom: 16 }}>Record Title Vacancy</h4>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
-                  Championship Title: *
-                </label>
-                <select
-                  value={vacancyForm.title}
-                  onChange={e => setVacancyForm({ ...vacancyForm, title: e.target.value })}
-                  style={inputStyle}
-                  required
-                >
-                  <option value="">Select championship...</option>
-                  {TITLE_OPTIONS.filter(opt => opt !== 'None').map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
-                  Previous Champion (who vacated): *
-                </label>
-                <WrestlerAutocomplete
-                  wrestlers={wrestlers}
-                  value={vacancyForm.previousChampion}
-                  onChange={val => setVacancyForm({ ...vacancyForm, previousChampion: val })}
-                  placeholder="Enter wrestler name..."
-                />
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
-                  Reason (optional):
-                </label>
-                <input
-                  type="text"
-                  value={vacancyForm.reason}
-                  onChange={e => setVacancyForm({ ...vacancyForm, reason: e.target.value })}
-                  placeholder="e.g., injury, medical reasons, etc."
-                  style={inputStyle}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={handleRecordVacancy}
-                  style={{
-                    background: '#C6A04F',
-                    color: '#232323',
-                    border: 'none',
-                    borderRadius: 4,
-                    padding: '10px 20px',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: 14
-                  }}
-                >
-                  Record Vacancy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowVacancyForm(false);
-                    setVacancyForm({ title: '', previousChampion: '', reason: '' });
-                  }}
-                  style={{
-                    background: '#666',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 4,
-                    padding: '10px 20px',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: 14
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
           <div style={{ marginBottom: 12 }}>
             <label style={{ color: gold, fontWeight: 600 }}>
               <input
@@ -1598,73 +1586,336 @@ function AddEvent({ addEvent, wrestlers }) {
           )}
         </form>
         <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
-          {/* Live Match Checkbox always visible */}
+          {/* Match vs Promo toggle + Live Match (matches only) */}
           <div style={{ marginBottom: 12 }}>
-            <label style={{ color: gold, fontWeight: 600 }}>
-              <input
-                type="checkbox"
-                checked={match.isLive || false}
-                onChange={e => setMatch({ ...match, isLive: e.target.checked })}
-                style={{ marginRight: 8 }}
-              />
-              Live Match
-            </label>
-          </div>
-          <div>
-            <label>
-              Match Type:<br />
-              <select
-                value={match.matchType}
-                onChange={e => setMatch({ ...match, matchType: e.target.value })}
-                style={inputStyle}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={() => setEntryType('match')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 16,
+                  border: '1px solid #C6A04F',
+                  background: entryType === 'match' ? '#C6A04F' : '#232323',
+                  color: entryType === 'match' ? '#000' : '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
               >
-                {MATCH_TYPE_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </label>
+                Match
+              </button>
+              <button
+                type="button"
+                onClick={() => setEntryType('promo')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 16,
+                  border: '1px solid #C6A04F',
+                  background: entryType === 'promo' ? '#C6A04F' : '#232323',
+                  color: entryType === 'promo' ? '#000' : '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Promo
+              </button>
+            </div>
+
+            {entryType === 'match' && (
+              <label style={{ color: gold, fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={match.isLive || false}
+                  onChange={e => setMatch({ ...match, isLive: e.target.checked })}
+                  style={{ marginRight: 8 }}
+                />
+                Live Match
+              </label>
+            )}
           </div>
 
-          <div>
-            <label>
-              Stipulation:<br />
-              <select
-                value={match.stipulation}
-                onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
-                style={inputStyle}
-              >
-                {STIPULATION_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {match.stipulation === "Custom/Other" && (
+          {/* Promo fields */}
+          {entryType === 'promo' && (
             <div style={{ marginBottom: 16 }}>
-              <label>
-                Custom Stipulation:<br />
-              </label>
-              <input
-                value={match.customStipulation || ''}
-                onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
-                style={{ width: '100%' }}
-              />
+              <div>
+                <label>
+                  Promo Type:<br />
+                  <select
+                    value={promo.title}
+                    onChange={e => setPromo({ ...promo, title: e.target.value })}
+                    style={inputStyle}
+                  >
+                    <option value="">Select promo type...</option>
+                    <option value="In-Ring Promo">In-Ring Promo</option>
+                    <option value="Backstage Promo">Backstage Promo</option>
+                    <option value="Vingette">Vingette</option>
+                  </select>
+                </label>
+              </div>
+              <div>
+                <div style={{ marginBottom: 4, color: '#fff', fontWeight: 500 }}>
+                  Participant(s):
+                </div>
+                {Array.isArray(promo.participants) && promo.participants.map((id, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <WrestlerAutocomplete
+                        wrestlers={wrestlers}
+                        value={id}
+                        onChange={val =>
+                          setPromo(prev => ({
+                            ...prev,
+                            participants: prev.participants.map((p, i) => (i === idx ? val : p)),
+                          }))
+                        }
+                        placeholder={`Participant ${idx + 1}`}
+                      />
+                    </div>
+                    {promo.participants.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPromo(prev => ({
+                            ...prev,
+                            participants: prev.participants.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        style={{
+                          background: '#d32f2f',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                        }}
+                        aria-label="Remove participant"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPromo(prev => ({
+                      ...prev,
+                      participants: [...(Array.isArray(prev.participants) ? prev.participants : []), ''],
+                    }))
+                  }
+                  style={{
+                    marginTop: 4,
+                    background: '#C6A04F',
+                    color: '#232323',
+                    border: 'none',
+                    borderRadius: 4,
+                    padding: '6px 12px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}
+                >
+                  + Add Participant
+                </button>
+              </div>
+              <div>
+                <label>
+                  Notes / Description:<br />
+                  <textarea
+                    value={promo.notes}
+                    onChange={e => setPromo({ ...promo, notes: e.target.value })}
+                    style={{ ...inputStyle, minHeight: 80 }}
+                    placeholder="Brief Summary of Promo"
+                  />
+                </label>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label>
+                  Promo Outcome:<br />
+                  <select
+                    value={promo.outcome || 'None'}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setPromo(prev => ({ ...prev, outcome: val }));
+                      if (val === 'Title Vacated') {
+                        setShowVacancyForm(true);
+                      } else {
+                        setShowVacancyForm(false);
+                      }
+                    }}
+                    style={inputStyle}
+                  >
+                    {PROMO_OUTCOME_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {promo.outcome === 'Other' && (
+                <div style={{ marginTop: 8 }}>
+                  <label>
+                    Describe Outcome:<br />
+                    <input
+                      type="text"
+                      value={promo.outcomeOther || ''}
+                      onChange={e => setPromo(prev => ({ ...prev, outcomeOther: e.target.value }))}
+                      style={inputStyle}
+                      placeholder="Describe what happened in this promo..."
+                    />
+                  </label>
+                </div>
+              )}
+              {showVacancyForm && (
+                <div style={{ border: '1px solid #C6A04F', padding: 16, marginBottom: 16, borderRadius: 8, background: '#222' }}>
+                  <h4 style={{ color: '#C6A04F', marginTop: 0, marginBottom: 16 }}>Record Title Vacancy</h4>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
+                      Championship Title: *
+                    </label>
+                    <select
+                      value={vacancyForm.title}
+                      onChange={e => setVacancyForm({ ...vacancyForm, title: e.target.value })}
+                      style={inputStyle}
+                      required
+                    >
+                      <option value="">Select championship...</option>
+                      {TITLE_OPTIONS.filter(opt => opt !== 'None').map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
+                      Previous Champion (who vacated): *
+                    </label>
+                    <WrestlerAutocomplete
+                      wrestlers={wrestlers}
+                      value={vacancyForm.previousChampion}
+                      onChange={val => setVacancyForm({ ...vacancyForm, previousChampion: val })}
+                      placeholder="Enter wrestler name..."
+                    />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ color: '#fff', display: 'block', marginBottom: 4, fontWeight: 500 }}>
+                      Reason (optional):
+                    </label>
+                    <input
+                      type="text"
+                      value={vacancyForm.reason}
+                      onChange={e => setVacancyForm({ ...vacancyForm, reason: e.target.value })}
+                      placeholder="e.g., injury, medical reasons, etc."
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={handleRecordVacancy}
+                      style={{
+                        background: '#C6A04F',
+                        color: '#232323',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '10px 20px',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                        fontSize: 14,
+                      }}
+                    >
+                      Record Vacancy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowVacancyForm(false);
+                        setVacancyForm({ title: '', previousChampion: '', reason: '' });
+                      }}
+                      style={{
+                        background: '#666',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '10px 20px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: 14,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button type="submit" style={{ marginTop: 12 }}>
+                Add Promo
+              </button>
             </div>
           )}
-          <div>
-            <label>
-              Title:<br />
-              <select
-                value={match.title}
-                onChange={e => setMatch({ ...match, title: e.target.value })}
-                style={inputStyle}
-              >
-                {TITLE_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+
+          {/* Match fields */}
+          {entryType === 'match' && (
+            <>
+              <div>
+                <label>
+                  Match Type:<br />
+                  <select
+                    value={match.matchType}
+                    onChange={e => setMatch({ ...match, matchType: e.target.value })}
+                    style={inputStyle}
+                  >
+                    {MATCH_TYPE_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div>
+                <label>
+                  Stipulation:<br />
+                  <select
+                    value={match.stipulation}
+                    onChange={e => setMatch({ ...match, stipulation: e.target.value, customStipulation: '' })}
+                    style={inputStyle}
+                  >
+                    {STIPULATION_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {match.stipulation === "Custom/Other" && (
+                <div style={{ marginBottom: 16 }}>
+                  <label>
+                    Custom Stipulation:<br />
+                  </label>
+                  <input
+                    value={match.customStipulation || ''}
+                    onChange={e => setMatch({ ...match, customStipulation: e.target.value })}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              )}
+              <div>
+                <label>
+                  Title:<br />
+                  <select
+                    value={match.title}
+                    onChange={e => setMatch({ ...match, title: e.target.value })}
+                    style={inputStyle}
+                  >
+                    {TITLE_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </>
+          )}
+          {entryType === 'match' && (
+            <>
           {match.matchType === 'Battle Royal' ? (
             <>
               <div>
@@ -2938,6 +3189,8 @@ function AddEvent({ addEvent, wrestlers }) {
             </div>
           )}
           <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
+            </>
+          )}
         </form>
         <button
           type="button"
@@ -3018,6 +3271,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     previousChampion: '',
     reason: ''
   });
+  const [saveMessage, setSaveMessage] = useState('');
 
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
@@ -3475,8 +3729,10 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   };
 
   // Save the edited event
-  const handleSaveEvent = (e) => {
-    e.preventDefault();
+  const handleSaveEvent = (e, navigateBack = false) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     if (!name || !date || !location) {
       alert('Please fill out all event fields.');
       return;
@@ -3558,7 +3814,15 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       status: eventStatus,
       isLive: eventStatus === 'live'
     });
-    navigate('/');
+    // Show a confirmation when staying on the page (top button).
+    if (!navigateBack) {
+      setSaveMessage('Event details saved.');
+      // Optionally clear after a short delay so it doesn't linger forever.
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+    if (navigateBack) {
+      navigate('/');
+    }
   };
 
   return (
@@ -3616,11 +3880,16 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         {eventStatus === 'live' && (
           <button
             type="button"
-            style={{ marginBottom: 24, background: '#27ae60', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}
-            onClick={handleSaveEvent}
+            style={{ marginBottom: 8, background: '#27ae60', color: 'white', padding: '10px 24px', border: 'none', borderRadius: 4, fontWeight: 700 }}
+            onClick={e => handleSaveEvent(e, false)}
           >
             Save Event Details
           </button>
+        )}
+        {saveMessage && (
+          <div style={{ marginBottom: 16, color: '#27ae60', fontWeight: 600 }}>
+            {saveMessage}
+          </div>
         )}
         <form>
           <div>
@@ -4597,7 +4866,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             (eventStatus === 'completed' || eventStatus === 'live') &&
             (!Array.isArray(matches) || matches.length === 0)
           }
-          onClick={handleSaveEvent}
+          onClick={e => handleSaveEvent(e, true)}
         >
           Save Changes
         </button>

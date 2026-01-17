@@ -130,6 +130,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     navigate(`/event/${eventId}/match/${navigationIndex}`);
   }, [isClickable, eventId, navigationIndex, navigate]);
 
+  const isMatchInProgress = event?.status === 'live' && match?.isLive;
+
   // Early return for 2 out of 3 Falls
   if (match.matchType === '2 out of 3 Falls' && typeof match.participants === 'string') {
     const participantStrings = match.participants.split(' vs ').map(s => s.trim());
@@ -228,8 +230,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
           </div>
           <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
-            {match.isLive ? (
-              <span style={{ color: '#27ae60' }}>LIVE</span>
+            {isMatchInProgress ? (
+              <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
             ) : (
               match.result && match.result !== 'No winner' ? 'Final' : match.result
             )}
@@ -562,8 +564,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
           </div>
           <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
-            {match.isLive ? (
-              <span style={{ color: '#27ae60' }}>LIVE</span>
+            {isMatchInProgress ? (
+              <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
             ) : (
               match.result && match.result !== 'No winner' ? 'Final' : match.result
             )}
@@ -866,12 +868,22 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           marginBottom: 16,
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+            {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
+          </div>
+          <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+            {isMatchInProgress ? (
+              <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
+            ) : (
+              match.result && match.result !== 'No winner' ? 'Final' : match.result
+            )}
+          </div>
             <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
               {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
             </div>
             <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
-              {match.isLive ? (
-                <span style={{ color: '#27ae60' }}>LIVE</span>
+              {isMatchInProgress ? (
+                <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
               ) : (
                 match.result && match.result !== 'No winner' ? 'Final' : match.result
               )}
@@ -1942,8 +1954,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
             </div>
             <div style={{ fontWeight: 700, color: '#fff', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>
-              {match.isLive ? (
-                <span style={{ color: '#27ae60' }}>LIVE</span>
+              {isMatchInProgress ? (
+                <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
               ) : (
                 match.result && match.result !== 'No winner' ? 'Final' : match.result
               )}

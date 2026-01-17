@@ -104,6 +104,23 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
     <div style={sectionStyle}>
       <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
       <h2 style={{ color: gold, marginTop: 24 }}>Match Details</h2>
+      {event.status === 'live' && match.isLive && (
+        <div style={{
+          marginTop: 8,
+          marginBottom: 16,
+          padding: '6px 12px',
+          display: 'inline-block',
+          borderRadius: 999,
+          background: '#27ae60',
+          color: '#fff',
+          fontWeight: 700,
+          fontSize: 13,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        }}>
+          Match in progress
+        </div>
+      )}
       {user && user.email && (
         <button
           style={{
