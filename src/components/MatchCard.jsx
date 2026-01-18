@@ -7,6 +7,7 @@ import TrophyIcon from './TrophyIcon';
 import ChamberIcon from './ChamberIcon';
 import WarGamesIcon from './WarGamesIcon';
 import SurvivorIcon from './SurvivorIcon';
+import countries from '../data/countries';
 
 // Helper functions
 function getSpecialWinnerIcon(specialWinnerType) {
@@ -32,6 +33,47 @@ function getSpecialWinnerIcon(specialWinnerType) {
     default:
       return null;
   }
+}
+
+function getFlagForNationality(nationality) {
+  if (!nationality) return '';
+  const country = countries.find((c) => c.name === nationality);
+  return country?.flag || '';
+}
+
+function calculateAgeFromDob(dob) {
+  if (!dob) return null;
+  const date = new Date(dob);
+  if (Number.isNaN(date.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const monthDiff = today.getMonth() - date.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function renderWrestlerMeta(wrestler) {
+  if (!wrestler) return null;
+  const flag = getFlagForNationality(wrestler.nationality);
+  const age = calculateAgeFromDob(wrestler.dob);
+  const parts = [];
+
+  if (flag || wrestler.nationality) {
+    parts.push(`${flag ? flag + ' ' : ''}${wrestler.nationality || ''}`.trim());
+  }
+  if (age !== null) {
+    parts.push(`Age ${age}`);
+  }
+
+  if (parts.length === 0) return null;
+
+  return (
+    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2, textAlign: 'center' }}>
+      {parts.join(' • ')}
+    </div>
+  );
 }
 
 const getTeams = (participants) => {
@@ -131,6 +173,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   }, [isClickable, eventId, navigationIndex, navigate]);
 
   const isMatchInProgress = event?.status === 'live' && match?.isLive;
+  const [expandedSlug, setExpandedSlug] = React.useState(null);
 
   // Early return for 2 out of 3 Falls
   if (match.matchType === '2 out of 3 Falls' && typeof match.participants === 'string') {
@@ -1895,6 +1938,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           {(() => {
             const { teamName, slugs } = parseTeamString(teamStrings[0] || '', wrestlerMap);
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+            const sideExpandedSlug = slugs.includes(expandedSlug) ? expandedSlug : null;
+            const expandedWrestler = sideExpandedSlug ? wrestlerMap[sideExpandedSlug] : null;
             return (
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
                 <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
@@ -1902,7 +1947,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                         {wrestlerMap[slug]?.image_url
-                          ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
+                          ? (
+                            <img
+                              src={wrestlerMap[slug].image_url}
+                              alt={wrestlerMap[slug].name}
+                              style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedSlug(prev => (prev === slug ? null : slug));
+                              }}
+                            />
+                          )
                           : <span role="img" aria-label="wrestler">&#128100;</span>
                         }
                       </div>
@@ -1918,6 +1973,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     </>
                   ) : individualNames}
                 </span>
+                {expandedWrestler && renderWrestlerMeta(expandedWrestler)}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                   {shouldShowBeltIcon && championIndex === 0 ? (
                     <>
@@ -1969,6 +2025,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           {(() => {
             const { teamName, slugs } = parseTeamString(teamStrings[1] || '', wrestlerMap);
             const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+            const sideExpandedSlug = slugs.includes(expandedSlug) ? expandedSlug : null;
+            const expandedWrestler = sideExpandedSlug ? wrestlerMap[sideExpandedSlug] : null;
             return (
               <div style={{ flex: 0.7, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
                 <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
@@ -1976,7 +2034,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                         {wrestlerMap[slug]?.image_url
-                          ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover' }} />
+                          ? (
+                            <img
+                              src={wrestlerMap[slug].image_url}
+                              alt={wrestlerMap[slug].name}
+                              style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedSlug(prev => (prev === slug ? null : slug));
+                              }}
+                            />
+                          )
                           : <span role="img" aria-label="wrestler">&#128100;</span>
                         }
                       </div>
@@ -1992,6 +2060,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     </>
                   ) : individualNames}
                 </span>
+                {expandedWrestler && renderWrestlerMeta(expandedWrestler)}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                   {shouldShowBeltIcon && championIndex === 1 ? (
                     <>

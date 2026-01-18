@@ -4,7 +4,11 @@
 const COUNTRIES = [
   { code: 'US', name: 'United States', flag: '🇺🇸' },
   { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+  // United Kingdom is now represented by its constituent countries
+  { code: 'ENG', name: 'England', flag: '🏴' },
+  { code: 'SCT', name: 'Scotland', flag: '🏴' },
+  { code: 'WLS', name: 'Wales', flag: '🏴' },
+  { code: 'NIR', name: 'Northern Ireland', flag: '🇬🇧' },
   { code: 'IE', name: 'Ireland', flag: '🇮🇪' },
   { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
   { code: 'JP', name: 'Japan', flag: '🇯🇵' },
