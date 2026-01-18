@@ -5,6 +5,7 @@ const COUNTRIES = [
   { code: 'US', name: 'United States', flag: '🇺🇸' },
   { code: 'CA', name: 'Canada', flag: '🇨🇦' },
   // United Kingdom is now represented by its constituent countries
+  // Note: these use the official regional flag emoji sequences for better rendering
   { code: 'ENG', name: 'England', flag: '🏴' },
   { code: 'SCT', name: 'Scotland', flag: '🏴' },
   { code: 'WLS', name: 'Wales', flag: '🏴' },
