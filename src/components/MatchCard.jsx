@@ -35,10 +35,9 @@ function getSpecialWinnerIcon(specialWinnerType) {
   }
 }
 
-function getFlagForNationality(nationality) {
-  if (!nationality) return '';
-  const country = countries.find((c) => c.name === nationality);
-  return country?.flag || '';
+function getCountryForNationality(nationality) {
+  if (!nationality) return null;
+  return countries.find((c) => c.name === nationality) || null;
 }
 
 function calculateAgeFromDob(dob) {
@@ -56,22 +55,30 @@ function calculateAgeFromDob(dob) {
 
 function renderWrestlerMeta(wrestler) {
   if (!wrestler) return null;
-  const flag = getFlagForNationality(wrestler.nationality);
+  const country = getCountryForNationality(wrestler.nationality);
   const age = calculateAgeFromDob(wrestler.dob);
-  const parts = [];
-
-  if (flag || wrestler.nationality) {
-    parts.push(`${flag ? flag + ' ' : ''}${wrestler.nationality || ''}`.trim());
-  }
-  if (age !== null) {
-    parts.push(`Age ${age}`);
-  }
-
-  if (parts.length === 0) return null;
-
   return (
     <div style={{ fontSize: 11, color: '#bbb', marginTop: 2, textAlign: 'center' }}>
-      {parts.join(' • ')}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+        {(country || wrestler.nationality) && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {country && country.flagImage && (
+              <img
+                src={country.flagImage}
+                alt={wrestler.nationality || country.name}
+                style={{ width: 18, height: 13, objectFit: 'cover', borderRadius: 2, boxShadow: '0 0 2px #000' }}
+              />
+            )}
+            {!country?.flagImage && country?.flag && <span>{country.flag}</span>}
+            {wrestler.nationality && <span>{wrestler.nationality}</span>}
+          </span>
+        )}
+        {age !== null && (
+          <span>
+            Age {age}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

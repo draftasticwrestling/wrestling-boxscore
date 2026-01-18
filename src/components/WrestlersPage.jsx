@@ -179,10 +179,9 @@ function groupWrestlersByClassification(wrestlers) {
   return grouped;
 }
 
-function getFlagForNationality(nationality) {
-  if (!nationality) return '';
-  const country = countries.find((c) => c.name === nationality);
-  return country?.flag || '';
+function getCountryForNationality(nationality) {
+  if (!nationality) return null;
+  return countries.find((c) => c.name === nationality) || null;
 }
 
 function calculateAge(dob) {
@@ -208,7 +207,7 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
     console.log(`Wrestler ${w.name} has status:`, status, 'w.status:', w.status, 'w.Status:', w.Status);
   }
 
-  const flag = getFlagForNationality(w.nationality);
+  const country = getCountryForNationality(w.nationality);
   const age = calculateAge(w.dob);
 
   return (
@@ -322,9 +321,18 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
             lineHeight: 1.4,
           }}
         >
-          {(flag || w.nationality) && (
-            <div>
-              {flag && <span style={{ fontSize: 18, marginRight: 6 }}>{flag}</span>}
+          {(country || w.nationality) && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {country && country.flagImage && (
+                <img
+                  src={country.flagImage}
+                  alt={w.nationality || country.name}
+                  style={{ width: 24, height: 18, objectFit: 'cover', borderRadius: 2, marginBottom: 4, boxShadow: '0 0 2px #000' }}
+                />
+              )}
+              {!country?.flagImage && country?.flag && (
+                <span style={{ fontSize: 18, marginBottom: 2 }}>{country.flag}</span>
+              )}
               {w.nationality && <span>{w.nationality}</span>}
             </div>
           )}

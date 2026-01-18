@@ -4,12 +4,13 @@
 const COUNTRIES = [
   { code: 'US', name: 'United States', flag: '🇺🇸' },
   { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-  // United Kingdom is now represented by its constituent countries
-  // Note: these use the official regional flag emoji sequences for better rendering
-  { code: 'ENG', name: 'England', flag: '🏴' },
-  { code: 'SCT', name: 'Scotland', flag: '🏴' },
-  { code: 'WLS', name: 'Wales', flag: '🏴' },
-  { code: 'NIR', name: 'Northern Ireland', flag: '🇬🇧' },
+  // United Kingdom is now represented by its constituent countries.
+  // To ensure correct visual flags across platforms (since subdivision flag emojis
+  // often render as plain black flags), we use dedicated image URLs.
+  { code: 'ENG', name: 'England', flag: '', flagImage: 'https://flagcdn.com/w40/gb-eng.png' },
+  { code: 'SCT', name: 'Scotland', flag: '', flagImage: 'https://flagcdn.com/w40/gb-sct.png' },
+  { code: 'WLS', name: 'Wales', flag: '', flagImage: 'https://flagcdn.com/w40/gb-wls.png' },
+  { code: 'NIR', name: 'Northern Ireland', flag: '', flagImage: 'https://flagcdn.com/w40/gb-nir.png' },
   { code: 'IE', name: 'Ireland', flag: '🇮🇪' },
   { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
   { code: 'JP', name: 'Japan', flag: '🇯🇵' },

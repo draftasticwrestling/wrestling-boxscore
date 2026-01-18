@@ -16,7 +16,22 @@ export default function CountrySelect({ value, onChange, placeholder = 'Select c
       isClearable
       getOptionLabel={(option) => (
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: 6 }}>{option.flag}</span>
+          {option.flagImage ? (
+            <img
+              src={option.flagImage}
+              alt={option.name}
+              style={{
+                width: 20,
+                height: 14,
+                objectFit: 'cover',
+                borderRadius: 2,
+                marginRight: 6,
+                boxShadow: '0 0 2px #000',
+              }}
+            />
+          ) : (
+            <span style={{ marginRight: 6 }}>{option.flag}</span>
+          )}
           <span>{option.name}</span>
         </div>
       )}
