@@ -8,6 +8,7 @@ import WrestlerEditModal from './WrestlerEditModal';
 import WrestlerAddModal from './WrestlerAddModal';
 import FactionsView from './FactionsView';
 import TagTeamsView from './TagTeamsView';
+import countries from '../data/countries';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'AAA'];
 const BRAND_LABELS = {
@@ -178,7 +179,27 @@ function groupWrestlersByClassification(wrestlers) {
   return grouped;
 }
 
-function WrestlerCard({ w, onEdit, isAuthorized }) {
+function getFlagForNationality(nationality) {
+  if (!nationality) return '';
+  const country = countries.find((c) => c.name === nationality);
+  return country?.flag || '';
+}
+
+function calculateAge(dob) {
+  if (!dob) return null;
+  const birthDate = parseEventDate(dob);
+  if (!birthDate) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
   const [showEditButton, setShowEditButton] = useState(false);
   
   // Debug: Log status for troubleshooting
@@ -186,6 +207,9 @@ function WrestlerCard({ w, onEdit, isAuthorized }) {
   if (status) {
     console.log(`Wrestler ${w.name} has status:`, status, 'w.status:', w.status, 'w.Status:', w.Status);
   }
+
+  const flag = getFlagForNationality(w.nationality);
+  const age = calculateAge(w.dob);
 
   return (
     <div
@@ -200,15 +224,15 @@ function WrestlerCard({ w, onEdit, isAuthorized }) {
         padding: '12px 8px',
         boxShadow: '0 0 8px #C6A04F11',
         position: 'relative',
-        cursor: isAuthorized ? 'pointer' : 'default',
+        cursor: 'pointer',
         transition: 'transform 0.2s, box-shadow 0.2s',
       }}
       onMouseEnter={() => isAuthorized && setShowEditButton(true)}
       onMouseLeave={() => setShowEditButton(false)}
-      onClick={() => isAuthorized && onEdit(w)}
+      onClick={onToggleExpand}
     >
-      {isAuthorized && showEditButton && (
-        <div
+      {isAuthorized && (
+        <button
           style={{
             position: 'absolute',
             top: 4,
@@ -220,11 +244,16 @@ function WrestlerCard({ w, onEdit, isAuthorized }) {
             fontSize: 11,
             fontWeight: 700,
             zIndex: 10,
-            pointerEvents: 'none',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(w);
           }}
         >
           Edit
-        </div>
+        </button>
       )}
       <div style={{ position: 'relative', width: 72, height: 72 }}>
         <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
@@ -283,6 +312,29 @@ function WrestlerCard({ w, onEdit, isAuthorized }) {
           </>
         );
       })()}
+      {isExpanded && (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 12,
+            color: '#ddd',
+            textAlign: 'center',
+            lineHeight: 1.4,
+          }}
+        >
+          {(flag || w.nationality) && (
+            <div>
+              {flag && <span style={{ fontSize: 18, marginRight: 6 }}>{flag}</span>}
+              {w.nationality && <span>{w.nationality}</span>}
+            </div>
+          )}
+          {age !== null && (
+            <div style={{ marginTop: 4 }}>
+              Age: {age}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -295,6 +347,7 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   const [editingWrestler, setEditingWrestler] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [activeTab, setActiveTab] = useState('roster'); // 'roster', 'factions', 'tag-teams'
+  const [expandedWrestlerId, setExpandedWrestlerId] = useState(null);
   const user = useUser();
   const isAuthorized = !!user;
   
@@ -487,6 +540,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
@@ -510,6 +565,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
@@ -533,6 +590,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
@@ -556,6 +615,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
@@ -579,6 +640,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
@@ -602,6 +665,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
@@ -625,6 +690,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
@@ -648,6 +715,8 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                   w={w} 
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
                 />
               ))}
             </div>
