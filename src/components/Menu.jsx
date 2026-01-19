@@ -19,6 +19,11 @@ const menuItems = [
   { label: 'Contact', path: '/contact' },
 ];
 
+// Feature flag: hide admin login in production so AdSense reviewers
+// don't see a login-only experience. Enable via VITE_ENABLE_ADMIN_LOGIN=true
+// for staging/local as needed.
+const ENABLE_ADMIN_LOGIN = import.meta.env.VITE_ENABLE_ADMIN_LOGIN === 'true';
+
 export default function Menu() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef();
@@ -114,27 +119,29 @@ export default function Menu() {
             </Link>
           ))}
           <div style={{ borderTop: '1px solid #444', margin: '8px 0 0 0' }} />
-          {user ? (
-            <div style={{ padding: '12px 24px', color: '#C6A04F', fontWeight: 600, fontSize: 15 }}>
-              {user.email}
-              <button onClick={handleLogout} style={{ marginLeft: 12, background: '#333', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 12px', cursor: 'pointer' }}>Logout</button>
-            </div>
-          ) : showLogin ? (
-            <form onSubmit={handleLogin} style={{ padding: '12px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="Your email"
-                required
-                style={{ padding: 6, borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff' }}
-              />
-              <button type="submit" style={{ background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4, padding: '6px 0', fontWeight: 700, cursor: 'pointer' }}>Send Magic Link</button>
-              <button type="button" onClick={() => setShowLogin(false)} style={{ background: 'none', color: '#bbb', border: 'none', marginTop: 2, cursor: 'pointer', textDecoration: 'underline' }}>Cancel</button>
-              {loginMsg && <div style={{ color: '#C6A04F', fontSize: 13 }}>{loginMsg}</div>}
-            </form>
-          ) : (
-            <button onClick={() => setShowLogin(true)} style={{ padding: '12px 24px', background: 'none', color: '#C6A04F', border: 'none', fontWeight: 700, fontSize: 15, cursor: 'pointer', textAlign: 'left' }}>Admin Login</button>
+          {ENABLE_ADMIN_LOGIN && (
+            user ? (
+              <div style={{ padding: '12px 24px', color: '#C6A04F', fontWeight: 600, fontSize: 15 }}>
+                {user.email}
+                <button onClick={handleLogout} style={{ marginLeft: 12, background: '#333', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 12px', cursor: 'pointer' }}>Logout</button>
+              </div>
+            ) : showLogin ? (
+              <form onSubmit={handleLogin} style={{ padding: '12px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="Your email"
+                  required
+                  style={{ padding: 6, borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff' }}
+                />
+                <button type="submit" style={{ background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4, padding: '6px 0', fontWeight: 700, cursor: 'pointer' }}>Send Magic Link</button>
+                <button type="button" onClick={() => setShowLogin(false)} style={{ background: 'none', color: '#bbb', border: 'none', marginTop: 2, cursor: 'pointer', textDecoration: 'underline' }}>Cancel</button>
+                {loginMsg && <div style={{ color: '#C6A04F', fontSize: 13 }}>{loginMsg}</div>}
+              </form>
+            ) : (
+              <button onClick={() => setShowLogin(true)} style={{ padding: '12px 24px', background: 'none', color: '#C6A04F', border: 'none', fontWeight: 700, fontSize: 15, cursor: 'pointer', textAlign: 'left' }}>Admin Login</button>
+            )
           )}
         </div>
       )}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { supabase } from '../supabaseClient';
+import { useUser } from '../hooks/useUser';
+import ChampionshipEditModal from './ChampionshipEditModal';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'Unassigned'];
 
@@ -32,6 +34,10 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   const [error, setError] = useState(null);
   const [tagTeams, setTagTeams] = useState([]);
   const [tagTeamMembers, setTagTeamMembers] = useState({});
+  const [editingChampionship, setEditingChampionship] = useState(null);
+
+  const user = useUser();
+  const isAuthorized = !!user;
 
   useEffect(() => {
     fetchChampions();
@@ -119,6 +125,11 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChampionUpdated = async () => {
+    setEditingChampionship(null);
+    await fetchChampions();
   };
 
   const filteredChampions = champions.filter(champ => {
@@ -462,7 +473,26 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               overflow: 'hidden'
             }}>
 
-              
+              {isAuthorized && (
+                <button
+                  onClick={() => setEditingChampionship(champ)}
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    padding: '4px 10px',
+                    fontSize: 11,
+                    borderRadius: 999,
+                    border: '1px solid #C6A04F',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: '#C6A04F',
+                    cursor: 'pointer',
+                    zIndex: 5,
+                  }}
+                >
+                  Edit
+                </button>
+              )}
               {/* Brand Badge */}
               <div style={{
                 position: 'absolute',
@@ -623,6 +653,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
           </>
         )}
       </div>
+      {isAuthorized && editingChampionship && (
+        <ChampionshipEditModal
+          championship={editingChampionship}
+          wrestlers={wrestlers}
+          onClose={() => setEditingChampionship(null)}
+          onSave={handleChampionUpdated}
+        />
+      )}
     </>
   );
 }
