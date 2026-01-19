@@ -347,10 +347,26 @@ BEGIN
       -- Extract loser from match result (this is who they defeated)
       loser_name := extract_loser_from_result(match_result, match_participants, winner_name);
       
-      -- Check if title is currently vacant BEFORE processing
-      SELECT current_champion, current_champion_slug, previous_champion, previous_champion_slug INTO current_champ_record
+      -- Check current championship record BEFORE processing
+      SELECT 
+        current_champion, 
+        current_champion_slug, 
+        previous_champion, 
+        previous_champion_slug,
+        date_won,
+        event_id
+      INTO current_champ_record
       FROM championships
       WHERE id = championship_id;
+      
+      -- If this event is strictly earlier than the existing reign start
+      -- and is not the same event, do NOT overwrite the current champion.
+      -- This prevents backfilled historical events from reverting titles.
+      IF current_champ_record.date_won IS NOT NULL
+         AND event_date < current_champ_record.date_won
+         AND (current_champ_record.event_id IS NULL OR current_champ_record.event_id <> NEW.id) THEN
+        CONTINUE;
+      END IF;
       
       -- If title is currently vacant, the new champion is winning it from vacant status
       -- Set previous_champion_slug to 'vacant' to indicate this
@@ -406,9 +422,22 @@ BEGIN
     ELSIF title_outcome = 'Vacant' THEN
       -- Set title to vacant
       -- Get current champion before vacating
-      SELECT current_champion, current_champion_slug INTO current_champ_record
+      SELECT 
+        current_champion, 
+        current_champion_slug,
+        date_won,
+        event_id
+      INTO current_champ_record
       FROM championships
       WHERE id = championship_id;
+      
+      -- If this event is strictly earlier than the existing reign start
+      -- and is not the same event, do NOT overwrite the current champion.
+      IF current_champ_record.date_won IS NOT NULL
+         AND event_date < current_champ_record.date_won
+         AND (current_champ_record.event_id IS NULL OR current_champ_record.event_id <> NEW.id) THEN
+        CONTINUE;
+      END IF;
       
       -- Extract vacation reason from match notes if present
       match_notes := match_record->>'notes';
