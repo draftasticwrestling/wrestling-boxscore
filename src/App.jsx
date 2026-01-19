@@ -4920,6 +4920,173 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   );
 }
 
+function PrivacyPolicyPage() {
+  return (
+    <div style={{ color: '#fff', padding: 40, maxWidth: 900, margin: '0 auto' }}>
+      <h2 style={{ marginBottom: 16 }}>Privacy Policy</h2>
+      <p style={{ marginBottom: 16 }}>
+        This Privacy Policy explains how Pro Wrestling Boxscore (“we”, “us”, or “our”) collects,
+        uses, and protects information when you visit our website.
+      </p>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>1. Information We Collect</h3>
+      <p style={{ marginBottom: 8 }}>
+        We do not require you to create an account or log in to use this site. However, we may
+        collect the following types of information:
+      </p>
+      <ul style={{ marginLeft: 20, marginBottom: 16 }}>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Information you provide directly</strong>, such as your name, email address, and
+          message content when you contact us via the contact form or email.
+        </li>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Log and usage data</strong>, such as your IP address, browser type, operating
+          system, referring URLs, pages viewed, and the dates/times of your visits. This is
+          standard web server log information.
+        </li>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Cookies and similar technologies</strong>, which may be set by us or by
+          third-party services (including Google) to remember your preferences and to measure
+          traffic and advertising performance.
+        </li>
+      </ul>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>2. Use of Cookies and Advertising</h3>
+      <p style={{ marginBottom: 8 }}>
+        We use Google AdSense and other Google services to display ads on this site. Third-party
+        vendors, including Google, use cookies and similar technologies to serve ads based on your
+        prior visits to this and other websites.
+      </p>
+      <p style={{ marginBottom: 8 }}>
+        Google&apos;s use of advertising cookies enables it and its partners to serve ads to you
+        based on your visit to this site and/or other sites on the Internet. These cookies may be
+        used to measure ad performance and prevent the same ads from being shown too often.
+      </p>
+      <p style={{ marginBottom: 8 }}>
+        You can learn more about how Google uses data from partner sites and apps, and how to
+        control your ad settings, by visiting Google&apos;s Ads Settings or the Google privacy
+        resources available at{' '}
+        <a
+          href="https://policies.google.com/technologies/ads"
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: '#C6A04F' }}
+        >
+          Google Ads &amp; Cookies
+        </a>
+        .
+      </p>
+      <p style={{ marginBottom: 16 }}>
+        You may also be able to opt out of personalized advertising from many companies by visiting
+        industry opt-out pages such as the Digital Advertising Alliance (for example,{' '}
+        <a
+          href="https://optout.aboutads.info"
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: '#C6A04F' }}
+        >
+          optout.aboutads.info
+        </a>
+        ).
+      </p>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>3. How We Use Your Information</h3>
+      <p style={{ marginBottom: 8 }}>We use the information we collect to:</p>
+      <ul style={{ marginLeft: 20, marginBottom: 16 }}>
+        <li style={{ marginBottom: 4 }}>Provide, operate, and improve the website and its features.</li>
+        <li style={{ marginBottom: 4 }}>Respond to inquiries you send via the contact form or email.</li>
+        <li style={{ marginBottom: 4 }}>
+          Monitor site usage and performance, including aggregate statistics on page views and traffic.
+        </li>
+        <li style={{ marginBottom: 4 }}>
+          Display and measure advertising, including personalized ads where supported and permitted.
+        </li>
+      </ul>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>4. Sharing of Information</h3>
+      <p style={{ marginBottom: 8 }}>
+        We do not sell or rent your personal information. We may share limited information in the
+        following situations:
+      </p>
+      <ul style={{ marginLeft: 20, marginBottom: 16 }}>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Service providers and partners</strong>, such as analytics and advertising
+          partners (including Google) that process data on our behalf under their own privacy
+          policies.
+        </li>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Legal requirements</strong>, when we believe disclosure is necessary to comply
+          with a law, regulation, legal process, or governmental request, or to protect the rights,
+          property, or safety of us, our users, or others.
+        </li>
+      </ul>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>5. Data Retention</h3>
+      <p style={{ marginBottom: 16 }}>
+        We retain contact form submissions and related correspondence for as long as necessary to
+        respond to your inquiry and maintain appropriate records. Log and analytics data may be
+        stored for a limited period consistent with our operational needs and the policies of our
+        analytics and advertising providers.
+      </p>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>6. Your Choices</h3>
+      <ul style={{ marginLeft: 20, marginBottom: 16 }}>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Browser controls</strong>: Most browsers allow you to block or delete cookies.
+          Doing so may affect how some features of the site work.
+        </li>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Advertising preferences</strong>: You can manage Google ad personalization in
+          your Google account&apos;s Ads Settings and use industry opt-out tools such as{' '}
+          <a
+            href="https://optout.aboutads.info"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: '#C6A04F' }}
+          >
+            optout.aboutads.info
+          </a>
+          .
+        </li>
+        <li style={{ marginBottom: 4 }}>
+          <strong>Contacting us</strong>: You can contact us if you have questions or would like to
+          request updates or deletion of personal information you previously provided (subject to
+          any legal obligations we may have to retain certain records).
+        </li>
+      </ul>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>7. Children&apos;s Privacy</h3>
+      <p style={{ marginBottom: 16 }}>
+        This site is not directed to children under 13, and we do not knowingly collect personal
+        information from children under 13. If you believe that a child has provided us with
+        personal information, please contact us so we can take appropriate action.
+      </p>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>8. Changes to This Policy</h3>
+      <p style={{ marginBottom: 16 }}>
+        We may update this Privacy Policy from time to time. When we do, we will revise the “Last
+        updated” date at the bottom of this page. Your continued use of the site after any changes
+        means you accept the updated policy.
+      </p>
+
+      <h3 style={{ marginTop: 24, marginBottom: 8 }}>9. Contact Us</h3>
+      <p style={{ marginBottom: 4 }}>
+        If you have any questions about this Privacy Policy, you can contact us at:
+      </p>
+      <p style={{ marginBottom: 4 }}>
+        Email:{' '}
+        <a
+          href="mailto:wrestlingboxscore@gmail.com"
+          style={{ color: '#C6A04F', textDecoration: 'underline' }}
+        >
+          wrestlingboxscore@gmail.com
+        </a>
+      </p>
+      <p style={{ marginTop: 24, fontSize: 13, color: '#aaa' }}>Last updated: January 2026</p>
+    </div>
+  );
+}
+
 // Main App with Routing and Supabase persistence
 function App() {
   const [events, setEvents] = useState([]);
@@ -5637,16 +5804,91 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<EventList events={events} />} />
-            <Route path="/event/:eventId" element={<EventBoxScore events={events} onDelete={deleteEvent} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
-            <Route path="/event/:eventId/match/:matchOrder" element={<MatchPageNewWrapper events={events} onEditMatch={handleEditMatch} onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate} wrestlerMap={wrestlerMap} wrestlers={wrestlers} />} />
+            <Route
+              path="/event/:eventId"
+              element={
+                <EventBoxScore
+                  events={events}
+                  onDelete={deleteEvent}
+                  onEditMatch={handleEditMatch}
+                  onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate}
+                  wrestlerMap={wrestlerMap}
+                  wrestlers={wrestlers}
+                />
+              }
+            />
+            <Route
+              path="/event/:eventId/match/:matchOrder"
+              element={
+                <MatchPageNewWrapper
+                  events={events}
+                  onEditMatch={handleEditMatch}
+                  onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate}
+                  wrestlerMap={wrestlerMap}
+                  wrestlers={wrestlers}
+                />
+              }
+            />
             <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
-            <Route path="/edit-event/:eventId" element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />} />
+            <Route
+              path="/edit-event/:eventId"
+              element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />}
+            />
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
-                <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
+            <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
             <Route path="/participant-demo" element={<ParticipantSelectionDemo wrestlers={wrestlers} />} />
-            <Route path="/about" element={<><Helmet><title>About Pro Wrestling Boxscore</title><meta name="description" content="Learn about Pro Wrestling Boxscore, our mission, and how we deliver fast, accurate WWE results for fans." /><link rel="canonical" href="https://prowrestlingboxscore.com/about" /></Helmet><div style={{color:'#fff',padding:40,maxWidth:900,margin:'0 auto'}}><h2>About Us</h2><p>Pro Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can't watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and key moment—so you're always in the know, no matter where you are.</p></div></>} />
-            <Route path="/contact" element={<><Helmet><title>Contact Pro Wrestling Boxscore</title><meta name="description" content="Contact Pro Wrestling Boxscore with questions, suggestions, or collaboration requests. Email: wrestlingboxscore@gmail.com" /><link rel="canonical" href="https://prowrestlingboxscore.com/contact" /></Helmet><div style={{color:'#fff',padding:40,maxWidth:900,margin:'0 auto'}}><h2>Contact</h2><p>Please contact us with questions, suggestions, corrections, or if you would like to collaborate or contribute to the site. Our e-mail is <a href="mailto:wrestlingboxscore@gmail.com" style={{color:'#C6A04F',textDecoration:'underline'}}>wrestlingboxscore@gmail.com</a></p></div></>} />
-            <Route path="/privacy" element={<div style={{color:'#fff',padding:40,maxWidth:900,margin:'0 auto'}}><h2>Privacy Policy</h2><p>This site does not collect personal information except what you provide via the contact form. Your information will never be sold or shared. For questions, contact wrestlingboxscore@gmail.com.</p></div>} />
+            <Route
+              path="/about"
+              element={
+                <>
+                  <Helmet>
+                    <title>About Pro Wrestling Boxscore</title>
+                    <meta
+                      name="description"
+                      content="Learn about Pro Wrestling Boxscore, our mission, and how we deliver fast, accurate WWE results for fans."
+                    />
+                    <link rel="canonical" href="https://prowrestlingboxscore.com/about" />
+                  </Helmet>
+                  <div style={{ color: '#fff', padding: 40, maxWidth: 900, margin: '0 auto' }}>
+                    <h2>About Us</h2>
+                    <p>
+                      Pro Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can&apos;t
+                      watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and
+                      key moment—so you&apos;re always in the know, no matter where you are.
+                    </p>
+                  </div>
+                </>
+              }
+            />
+            <Route
+              path="/contact"
+              element={
+                <>
+                  <Helmet>
+                    <title>Contact Pro Wrestling Boxscore</title>
+                    <meta
+                      name="description"
+                      content="Contact Pro Wrestling Boxscore with questions, suggestions, or collaboration requests. Email: wrestlingboxscore@gmail.com"
+                    />
+                    <link rel="canonical" href="https://prowrestlingboxscore.com/contact" />
+                  </Helmet>
+                  <div style={{ color: '#fff', padding: 40, maxWidth: 900, margin: '0 auto' }}>
+                    <h2>Contact</h2>
+                    <p>
+                      Please contact us with questions, suggestions, corrections, or if you would like to collaborate or
+                      contribute to the site. Our e-mail is{' '}
+                      <a
+                        href="mailto:wrestlingboxscore@gmail.com"
+                        style={{ color: '#C6A04F', textDecoration: 'underline' }}
+                      >
+                        wrestlingboxscore@gmail.com
+                      </a>
+                    </p>
+                  </div>
+                </>
+              }
+            />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
           </Route>
         </Routes>
       </Router>
