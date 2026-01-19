@@ -58,6 +58,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
   // Find the original index in event.matches for editing
   const originalMatchIndex = event && match ? event.matches.findIndex(m => m === match || (m.order === match.order && m.participants === match.participants)) : -1;
   const [isEditing, setIsEditing] = React.useState(false);
+  const canEdit = (!!user && !!user.email) || isPublicEditableEvent(event);
 
   if (!event || !match) {
     return <div style={{ padding: 24 }}>Match not found.</div>;
@@ -75,7 +76,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
     return `${elapsed}'`;
   }
 
-  if (isEditing && user) {
+  if (isEditing && canEdit) {
     return (
       <div style={sectionStyle}>
         <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
@@ -121,7 +122,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
           Match in progress
         </div>
       )}
-      {user && user.email && (
+      {canEdit && (
         <button
           style={{
             marginBottom: 24,

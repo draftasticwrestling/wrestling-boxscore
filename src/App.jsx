@@ -170,6 +170,23 @@ function isUpcomingEST(event) {
   return eventDate > today;
 }
 
+function isTodayEvent(event) {
+  if (!event?.date) return false;
+  const [year, month, day] = event.date.split('-').map(Number);
+  const eventDate = new Date(year, month - 1, day);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return eventDate.getTime() === today.getTime();
+}
+
+// Public editing is temporarily allowed for today's RAW event only
+function isPublicEditableEvent(event) {
+  if (!event) return false;
+  if (!isTodayEvent(event)) return false;
+  const name = (event.name || '').toLowerCase();
+  return name.startsWith('raw');
+}
+
 const EVENT_LOGO_MAP = {
   raw: 'raw_logo.png',
   smackdown: 'smackdown_logo.png',
@@ -545,6 +562,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
 
+  const canEditMatches = !!user || isPublicEditableEvent(event);
+  const canDeleteEvent = !!user;
+
   const handleMoveMatch = (index, direction) => {
     const updatedMatches = [...event.matches];
     const newIndex = index + direction;
@@ -778,7 +798,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                   )}
                   
                   {/* Edit Match Button */}
-                  {user && (
+                  {canEditMatches && (
                     <div style={{ marginTop: 12, textAlign: 'center' }}>
                       <button
                         onClick={(e) => {
@@ -814,54 +834,58 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
             );
           })}
         </div>
-        {user && (
+        {(canEditMatches || canDeleteEvent) && (
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-            <Link
-              to={`/edit-event/${event.id}`}
-              style={{
-                fontSize: 14,
-                padding: '4px 12px',
-                border: '1px solid #bbb',
-                borderRadius: 4,
-                background: '#f8f8f8',
-                color: '#333',
-                textDecoration: 'none',
-                transition: 'background 0.2s',
-              }}
-              onMouseOver={e => e.currentTarget.style.background = '#eee'}
-              onMouseOut={e => e.currentTarget.style.background = '#f8f8f8'}
-            >
-              Edit
-            </Link>
-            <button
-              onClick={() => {
-                if (window.confirm('Are you sure you want to delete this item?')) {
-                  onDelete(event.id);
-                  navigate('/');
-                }
-              }}
-              style={{
-                fontSize: 14,
-                padding: '4px 12px',
-                border: '1px solid #f5c2c7',
-                borderRadius: 4,
-                background: '#fff',
-                color: '#b02a37',
-                cursor: 'pointer',
-                transition: 'background 0.2s',
-                opacity: 0.7
-              }}
-              onMouseOver={e => {
-                e.currentTarget.style.background = '#f8d7da';
-                e.currentTarget.style.opacity = '1';
-              }}
-              onMouseOut={e => {
-                e.currentTarget.style.background = '#fff';
-                e.currentTarget.style.opacity = '0.7';
-              }}
-            >
-              Delete
-            </button>
+            {canEditMatches && (
+              <Link
+                to={`/edit-event/${event.id}`}
+                style={{
+                  fontSize: 14,
+                  padding: '4px 12px',
+                  border: '1px solid #bbb',
+                  borderRadius: 4,
+                  background: '#f8f8f8',
+                  color: '#333',
+                  textDecoration: 'none',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={e => e.currentTarget.style.background = '#eee'}
+                onMouseOut={e => e.currentTarget.style.background = '#f8f8f8'}
+              >
+                Edit
+              </Link>
+            )}
+            {canDeleteEvent && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this item?')) {
+                    onDelete(event.id);
+                    navigate('/');
+                  }
+                }}
+                style={{
+                  fontSize: 14,
+                  padding: '4px 12px',
+                  border: '1px solid #f5c2c7',
+                  borderRadius: 4,
+                  background: '#fff',
+                  color: '#b02a37',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  opacity: 0.7
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.background = '#f8d7da';
+                  e.currentTarget.style.opacity = '1';
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.opacity = '0.7';
+                }}
+              >
+                Delete
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -5936,6 +5960,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   const match = matchIndex >= 0 && matchIndex < sortedMatches.length ? sortedMatches[matchIndex] : null;
   
   const [isEditing, setIsEditing] = React.useState(false);
+  const canEdit = !!user || isPublicEditableEvent(event);
 
   if (!match) {
     return <div style={{ padding: 24, color: '#fff' }}>Match not found.</div>;
@@ -5961,7 +5986,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
       <div style={{ background: '#181511', minHeight: '100vh', padding: 24 }}>
         <Link to={`/event/${event.id}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
         <h2 style={{ color: '#C6A04F', marginTop: 24 }}>Edit Match</h2>
-        {user && (
+        {canEdit && (
           <MatchEdit
             initialMatch={match}
             eventStatus={event.status}
@@ -5984,6 +6009,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
       wrestlers={wrestlers} 
       onEdit={handleEdit}
       wrestlerMap={wrestlerMap}
+      canEdit={canEdit}
     />
   );
 }

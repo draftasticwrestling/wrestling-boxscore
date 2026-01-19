@@ -97,16 +97,13 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
   return `${elapsed}'`;
 }
 
-export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {} }) {
+export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {}, canEdit = false }) {
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   // Ensure wrestlerMap is always an object
   const safeWrestlerMap = wrestlerMap || {};
   const user = useUser();
-  
-  // Debug logging
-  console.log('MatchPageNew user:', user);
-  console.log('MatchPageNew user.email:', user?.email);
+  const isEditor = canEdit || !!(user && user.email);
 
   return (
     <>
@@ -239,7 +236,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           ) : <div style={{ color: '#bbb' }}>No commentary yet.</div>}
         </div>
         <div style={{ textAlign: 'center' }}>
-          {user && user.email && (
+          {isEditor && (
             <button onClick={onEdit} style={{
               background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4,
               fontWeight: 700, fontSize: 16, padding: '10px 32px', cursor: 'pointer'
