@@ -644,19 +644,18 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   }
 
   const formattedDate = formatDate(event.date);
+  const brandPrefix = (event.name || '').split(' ')[0] || 'WWE';
 
   return (
     <>
       <Helmet>
         <title>
-          {event.name} Results - {formattedDate}
+          WWE {event.name} Results - {formattedDate}
           {event.location ? ` - ${event.location}` : ''} | Pro Wrestling Boxscore
         </title>
         <meta
           name="description"
-          content={`Full match results, card, and championship updates for ${event.name} on ${formattedDate}${
-            event.location ? ' from ' + event.location : ''
-          }.`}
+          content={`Full WWE ${brandPrefix} results for ${formattedDate}, including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`}
         />
         <link rel="canonical" href={`https://prowrestlingboxscore.com/event/${event.id}`} />
         <script type="application/ld+json">
@@ -680,29 +679,36 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
           <Link to="/" style={{ color: gold }}>
             ← Back to Events
           </Link>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
-          <EventLogoOrText 
-            name={event.name} 
-            style={{ 
-              display: 'inline-block',
-              verticalAlign: 'middle',
-              marginRight: 8,
-              maxHeight: 48,
-              maxWidth: 96,
-              height: 'auto',
-              width: 'auto',
-              objectFit: 'contain',
-            }} 
-            textStyle={{ color: gold }} 
-          />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-            <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
-            {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
+            <EventLogoOrText 
+              name={event.name} 
+              style={{ 
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginRight: 8,
+                maxHeight: 48,
+                maxWidth: 96,
+                height: 'auto',
+                width: 'auto',
+                objectFit: 'contain',
+              }} 
+              textStyle={{ color: gold }} 
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+              {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
+            </div>
+            <h1 style={{ color: '#fff', fontSize: 26, fontWeight: 800, marginTop: 8, marginBottom: 4, textAlign: 'center' }}>
+              WWE {brandPrefix} Results – {formattedDate}
+            </h1>
+            <p style={{ color: '#ccc', fontSize: 14, maxWidth: 700, textAlign: 'center', marginTop: 4 }}>
+              Live WWE {brandPrefix} results for {formattedDate}, with full match-by-match coverage, times, methods of victory,
+              and championship updates from {event.name}{event.location ? ' in ' + event.location : ''}.
+            </p>
+            <div style={{ color: gold, marginTop: 8, fontSize: 18 }}>
+              <strong>{formatDate(event.date)}</strong> — {event.location}
+            </div>
           </div>
-          <div style={{ color: gold, marginTop: 8, fontSize: 18 }}>
-            <strong>{formatDate(event.date)}</strong> — {event.location}
-          </div>
-        </div>
         {event.specialWinner && (
           <div style={{ marginBottom: 16, padding: 8, backgroundColor: '#f0f0f0', borderRadius: 4 }}>
             <p style={{ margin: 0 }}>
