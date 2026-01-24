@@ -179,12 +179,39 @@ function isTodayEvent(event) {
   return eventDate.getTime() === today.getTime();
 }
 
-// Public editing is temporarily allowed for today's RAW event only
+function isYesterdayEvent(event) {
+  if (!event?.date) return false;
+  const [year, month, day] = event.date.split('-').map(Number);
+  const eventDate = new Date(year, month - 1, day);
+  const now = new Date();
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  return eventDate.getTime() === yesterday.getTime();
+}
+
+// Public editing is temporarily allowed for:
+// - Last night's SmackDown
+// - Today's RAW
+// - Today's Saturday Night's Main Event
 function isPublicEditableEvent(event) {
   if (!event) return false;
-  if (!isTodayEvent(event)) return false;
   const name = (event.name || '').toLowerCase();
-  return name.startsWith('raw');
+
+  // Yesterday's SmackDown
+  if (isYesterdayEvent(event) && name.startsWith('smackdown')) {
+    return true;
+  }
+
+  // Today's RAW
+  if (isTodayEvent(event) && name.startsWith('raw')) {
+    return true;
+  }
+
+  // Today's Saturday Night's Main Event
+  if (isTodayEvent(event) && name.includes("saturday night's main event")) {
+    return true;
+  }
+
+  return false;
 }
 
 const EVENT_LOGO_MAP = {
@@ -3291,6 +3318,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
+  const canEdit = !!user || isPublicEditableEvent(event);
 
   if (!event) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
@@ -4246,7 +4274,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             <p style={{ color: '#bbb', marginTop: 16 }}>No matches yet. Add matches or record a title vacancy.</p>
           )}
         </form>
-        {user && (
+        {canEdit && (
           <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
             {/* Live Match Checkbox always visible */}
             <div style={{ marginBottom: 12 }}>
