@@ -189,29 +189,13 @@ function isYesterdayEvent(event) {
 }
 
 // Public editing is temporarily allowed for:
-// - Last night's SmackDown
-// - Today's RAW
-// - Today's Saturday Night's Main Event
+// - Yesterday's events
+// - Today's events
 function isPublicEditableEvent(event) {
   if (!event) return false;
-  const name = (event.name || '').toLowerCase();
-
-  // Yesterday's SmackDown
-  if (isYesterdayEvent(event) && name.startsWith('smackdown')) {
-    return true;
-  }
-
-  // Today's RAW
-  if (isTodayEvent(event) && name.startsWith('raw')) {
-    return true;
-  }
-
-  // Today's Saturday Night's Main Event
-  if (isTodayEvent(event) && name.includes("saturday night's main event")) {
-    return true;
-  }
-
-  return false;
+  // Allow editing for events on today or yesterday, regardless of brand.
+  // This keeps recent shows editable while login is hidden for AdSense review.
+  return isTodayEvent(event) || isYesterdayEvent(event);
 }
 
 const EVENT_LOGO_MAP = {
