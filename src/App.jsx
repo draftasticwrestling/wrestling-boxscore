@@ -198,6 +198,18 @@ function isPublicEditableEvent(event) {
   return isTodayEvent(event) || isYesterdayEvent(event);
 }
 
+function useUnsavedChangesWarning(hasUnsavedChanges) {
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+}
+
 const EVENT_LOGO_MAP = {
   raw: 'raw_logo.png',
   smackdown: 'smackdown_logo.png',
@@ -636,7 +648,17 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     return (
       <div style={appBackground}>
         <div style={sectionStyle}>
-          <Link to="/" style={{ color: gold }}>← Back to Events</Link>
+          <Link
+            to="/"
+            style={{ color: gold }}
+            onClick={e => {
+              if (!window.confirm('You have unsaved match edits. Are you sure you want to go back and lose these changes?')) {
+                e.preventDefault();
+              }
+            }}
+          >
+            ← Back to Events
+          </Link>
           <h2 style={{ color: gold, marginTop: 24 }}>Edit Match</h2>
           <MatchEdit
             initialMatch={editedMatch}
@@ -990,6 +1012,23 @@ function AddEvent({ addEvent, wrestlers }) {
     outcomeOther: '',
   });
 
+  const hasUnsavedChangesAddEvent =
+    !!(
+      name ||
+      eventType ||
+      date ||
+      location ||
+      (Array.isArray(matches) && matches.length > 0) ||
+      match.participants ||
+      match.result ||
+      match.method ||
+      match.time ||
+      promo.title ||
+      promo.notes ||
+      (Array.isArray(promo.participants) && promo.participants.some(Boolean))
+    );
+  useUnsavedChangesWarning(hasUnsavedChangesAddEvent);
+
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
     ? match.participants.split(' vs ').map(side => side.trim()).filter(Boolean)
@@ -1159,7 +1198,7 @@ function AddEvent({ addEvent, wrestlers }) {
       // Calculate entry order (1-30 based on array index)
       // Helper function to format entry time (entry #1 = 0:00, #2 = 1:30, etc.)
       const formatEntryTime = (entryIndex) => {
-        const totalSeconds = entryIndex * 120; // 2 minutes per entry
+        const totalSeconds = entryIndex * 90; // 90 seconds per entry
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -1560,7 +1599,18 @@ function AddEvent({ addEvent, wrestlers }) {
   return (
     <div style={appBackground}>
       <div style={sectionStyle}>
-        <Link to="/">← Back to Events</Link>
+        <Link
+          to="/"
+          onClick={e => {
+            if (hasUnsavedChangesAddEvent &&
+              !window.confirm('You have unsaved event details or matches. Are you sure you want to go back and lose these changes?')
+            ) {
+              e.preventDefault();
+            }
+          }}
+        >
+          ← Back to Events
+        </Link>
         <h2>Add New Event</h2>
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           <button
@@ -2232,11 +2282,11 @@ function AddEvent({ addEvent, wrestlers }) {
                 Royal Rumble (30 Participants)
               </div>
               <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
-                Participants enter every 2 minutes. Entry #1 enters at 0:00, Entry #2 at 2:00, etc.
+                Participants enter every 90 seconds. Entry #1 enters at 0:00, Entry #2 at 1:30, etc.
               </div>
               {rrParticipants.map((slug, i) => {
                 const entryNumber = i + 1;
-                const entryTimeSeconds = i * 120;
+                const entryTimeSeconds = i * 90;
                 const entryMinutes = Math.floor(entryTimeSeconds / 60);
                 const entrySeconds = entryTimeSeconds % 60;
                 const entryTime = `${entryMinutes}:${entrySeconds.toString().padStart(2, '0')}`;
@@ -2246,12 +2296,22 @@ function AddEvent({ addEvent, wrestlers }) {
                     <div style={{ minWidth: 80, color: gold, fontWeight: 600, fontSize: 12 }}>
                       #{entryNumber} ({entryTime})
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <WrestlerAutocomplete
                         wrestlers={wrestlers}
                         value={slug}
                         onChange={val => setRrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
                         placeholder={`Entry #${entryNumber}`}
+                      />
+                      <input
+                        type="text"
+                        value={slug || ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setRrParticipants(prev => prev.map((s, idx) => idx === i ? val : s));
+                        }}
+                        placeholder="Or enter custom slug (e.g. surprise-entrant)"
+                        style={{ ...inputStyle, fontSize: 11, marginBottom: 0 }}
                       />
                     </div>
                   </div>
@@ -2479,11 +2539,11 @@ function AddEvent({ addEvent, wrestlers }) {
                 Royal Rumble (30 Participants)
               </div>
               <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
-                Participants enter every 2 minutes. Entry #1 enters at 0:00, Entry #2 at 2:00, etc.
+                Participants enter every 90 seconds. Entry #1 enters at 0:00, Entry #2 at 1:30, etc.
               </div>
               {rrParticipants.map((slug, i) => {
                 const entryNumber = i + 1;
-                const entryTimeSeconds = i * 120;
+                const entryTimeSeconds = i * 90;
                 const entryMinutes = Math.floor(entryTimeSeconds / 60);
                 const entrySeconds = entryTimeSeconds % 60;
                 const entryTime = `${entryMinutes}:${entrySeconds.toString().padStart(2, '0')}`;
@@ -2493,12 +2553,22 @@ function AddEvent({ addEvent, wrestlers }) {
                     <div style={{ minWidth: 80, color: gold, fontWeight: 600, fontSize: 12 }}>
                       #{entryNumber} ({entryTime})
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <WrestlerAutocomplete
                         wrestlers={wrestlers}
                         value={slug}
                         onChange={val => setRrParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
                         placeholder={`Entry #${entryNumber}`}
+                      />
+                      <input
+                        type="text"
+                        value={slug || ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setRrParticipants(prev => prev.map((s, idx) => idx === i ? val : s));
+                        }}
+                        placeholder="Or enter custom slug (e.g. surprise-entrant)"
+                        style={{ ...inputStyle, fontSize: 11, marginBottom: 0 }}
                       />
                     </div>
                   </div>
@@ -3360,6 +3430,16 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   });
   const [saveMessage, setSaveMessage] = useState('');
 
+  const hasUnsavedChangesEditEvent =
+    !!event &&
+    (
+      name !== event.name ||
+      date !== event.date ||
+      location !== event.location ||
+      JSON.stringify(matches || []) !== JSON.stringify(event.matches || [])
+    );
+  useUnsavedChangesWarning(hasUnsavedChangesEditEvent);
+
   // Winner options based on participants
   const winnerOptions = match.participants.includes(' vs ')
     ? match.participants.split(' vs ').map(side => side.trim()).filter(Boolean)
@@ -3915,7 +3995,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   return (
     <div style={appBackground}>
       <div style={sectionStyle}>
-        <Link to="/">← Back to Events</Link>
+        <Link
+          to="/"
+          onClick={e => {
+            if (hasUnsavedChangesEditEvent &&
+              !window.confirm('You have unsaved changes for this event. Are you sure you want to go back and lose these changes?')
+            ) {
+              e.preventDefault();
+            }
+          }}
+        >
+          ← Back to Events
+        </Link>
         <h2>Edit Event</h2>
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           <button

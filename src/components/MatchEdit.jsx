@@ -528,7 +528,7 @@ export default function MatchEdit({
       
       // Calculate entry order (1-30 based on array index)
       const formatEntryTime = (entryIndex) => {
-        const totalSeconds = entryIndex * 120; // 2 minutes per entry
+        const totalSeconds = entryIndex * 90; // 90 seconds per entry
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -1245,11 +1245,11 @@ export default function MatchEdit({
             Royal Rumble (30 Participants)
           </div>
           <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
-            Participants enter every 2 minutes. Entry #1 enters at 0:00, Entry #2 at 2:00, etc.
+            Participants enter every 90 seconds. Entry #1 enters at 0:00, Entry #2 at 1:30, etc.
           </div>
           {Array.isArray(rrParticipants) && rrParticipants.map((slug, i) => {
             const entryNumber = i + 1;
-            const entryTimeSeconds = i * 120;
+            const entryTimeSeconds = i * 90;
             const entryMinutes = Math.floor(entryTimeSeconds / 60);
             const entrySeconds = entryTimeSeconds % 60;
             const entryTime = `${entryMinutes}:${entrySeconds.toString().padStart(2, '0')}`;
@@ -1259,12 +1259,22 @@ export default function MatchEdit({
                 <div style={{ minWidth: 80, color: gold, fontWeight: 600, fontSize: 12 }}>
                   #{entryNumber} ({entryTime})
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <WrestlerAutocomplete
                     wrestlers={safeWrestlers}
                     value={slug}
                     onChange={val => setRrParticipants(prev => Array.isArray(prev) ? prev.map((s, idx) => idx === i ? val : s) : [])}
                     placeholder={`Entry #${entryNumber}`}
+                  />
+                  <input
+                    type="text"
+                    value={slug || ''}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setRrParticipants(prev => Array.isArray(prev) ? prev.map((s, idx) => idx === i ? val : s) : []);
+                    }}
+                    placeholder="Or enter custom slug (e.g. surprise-entrant)"
+                    style={{ ...inputStyle, fontSize: 11, marginBottom: 0 }}
                   />
                 </div>
               </div>
