@@ -124,6 +124,15 @@ export default function MatchEdit({
     }
     return [];
   });
+  const [rrOfficialTimes, setRrOfficialTimes] = useState(() => {
+    if (initialMatch.royalRumbleData && Array.isArray(initialMatch.royalRumbleData.entryOrder)) {
+      return initialMatch.royalRumbleData.entryOrder.map(entry => entry.timeInRing || '');
+    }
+    return Array(30).fill('');
+  });
+  const [rrManualIronman, setRrManualIronman] = useState(
+    (initialMatch.royalRumbleData && initialMatch.royalRumbleData.manualIronman) || ''
+  );
 
   // Elimination Chamber specific state
   const [ecStarter1, setEcStarter1] = useState(() => {
@@ -537,16 +546,18 @@ export default function MatchEdit({
       const entryOrder = rrPart.map((slug, index) => ({
         slug,
         entryNumber: index + 1,
-        entryTime: formatEntryTime(index)
+        entryTime: formatEntryTime(index),
+        timeInRing: (Array.isArray(rrOfficialTimes) ? rrOfficialTimes[index] : '') || null,
       }));
       
       const clonedEliminations = (rrEliminations || []).map(elim => ({ ...elim }));
       
-      updatedMatch.royalRumbleData = {
-        eliminations: clonedEliminations,
-        participants: rrPart,
-        entryOrder: entryOrder
-      };
+    updatedMatch.royalRumbleData = {
+      eliminations: clonedEliminations,
+      participants: rrPart,
+      entryOrder: entryOrder,
+      manualIronman: rrManualIronman || null,
+    };
     }
     
     // Store Elimination Chamber data (starters, pod entrants, entry order, eliminations)
@@ -1253,6 +1264,7 @@ export default function MatchEdit({
             const entryMinutes = Math.floor(entryTimeSeconds / 60);
             const entrySeconds = entryTimeSeconds % 60;
             const entryTime = `${entryMinutes}:${entrySeconds.toString().padStart(2, '0')}`;
+            const officialTime = Array.isArray(rrOfficialTimes) ? rrOfficialTimes[i] : '';
             
             return (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -1274,6 +1286,18 @@ export default function MatchEdit({
                       setRrParticipants(prev => Array.isArray(prev) ? prev.map((s, idx) => idx === i ? val : s) : []);
                     }}
                     placeholder="Or enter custom slug (e.g. surprise-entrant)"
+                    style={{ ...inputStyle, fontSize: 11, marginBottom: 0 }}
+                  />
+                  <input
+                    type="text"
+                    value={officialTime}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setRrOfficialTimes(prev =>
+                        Array.isArray(prev) ? prev.map((t, idx) => (idx === i ? val : t)) : []
+                      );
+                    }}
+                    placeholder="Official time in match (MM:SS)"
                     style={{ ...inputStyle, fontSize: 11, marginBottom: 0 }}
                   />
                 </div>
@@ -1479,21 +1503,44 @@ export default function MatchEdit({
 
           {/* Winner Selection */}
           {status === 'completed' && rrParticipants.filter(Boolean).length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
-              <select 
-                value={rrWinner} 
-                onChange={e => setRrWinner(e.target.value)} 
-                style={inputStyle}
-              >
-                <option value="">Select winner</option>
-                {Array.isArray(rrParticipants) && rrParticipants.filter(Boolean).map((slug, i) => (
-                  <option key={i} value={slug}>
-                    {safeWrestlers.find(w => w.id === slug)?.name || slug}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div style={{ marginTop: 16 }}>
+                <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
+                <select 
+                  value={rrWinner} 
+                  onChange={e => setRrWinner(e.target.value)} 
+                  style={inputStyle}
+                >
+                  <option value="">Select winner</option>
+                  {Array.isArray(rrParticipants) && rrParticipants.filter(Boolean).map((slug, i) => (
+                    <option key={i} value={slug}>
+                      {safeWrestlers.find(w => w.id === slug)?.name || slug}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <label style={{ color: gold, fontWeight: 600 }}>
+                  Manual Ironman / Ironwoman (optional):
+                </label>
+                <select
+                  value={rrManualIronman || ''}
+                  onChange={e => setRrManualIronman(e.target.value || '')}
+                  style={inputStyle}
+                >
+                  <option value="">Let stats decide</option>
+                  {Array.isArray(rrParticipants) && rrParticipants.filter(Boolean).map((slug, i) => (
+                    <option key={i} value={slug}>
+                      {safeWrestlers.find(w => w.id === slug)?.name || slug}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
+                  Use this when first posting results. Later, official time-in-match data will override this choice automatically.
+                </div>
+              </div>
+            </>
           )}
         </>
       ) : match.matchType === 'Elimination Chamber' ? (

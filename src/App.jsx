@@ -988,6 +988,7 @@ function AddEvent({ addEvent, wrestlers }) {
   const [rrParticipants, setRrParticipants] = useState(Array(30).fill(''));
   const [rrWinner, setRrWinner] = useState('');
   const [rrEliminations, setRrEliminations] = useState([]);
+  const [rrManualIronman, setRrManualIronman] = useState('');
   // Elimination Chamber state (2 starters, 4 pod entrants)
   const [ecStarter1, setEcStarter1] = useState('');
   const [ecStarter2, setEcStarter2] = useState('');
@@ -1165,8 +1166,9 @@ function AddEvent({ addEvent, wrestlers }) {
     }
     // --- Royal Rumble branch ---
     if (match.matchType === 'Royal Rumble' || match.stipulation === 'Royal Rumble') {
-      const rrPart = rrParticipants.filter(Boolean);
-      const rrWin = rrWinner;
+    const rrPart = rrParticipants.filter(Boolean);
+    const rrWin = rrWinner;
+    const rrManual = rrManualIronman || null;
       let rrResult = '';
       
       if (eventStatus === 'completed' && rrWin && rrPart.length === 30) {
@@ -1204,11 +1206,12 @@ function AddEvent({ addEvent, wrestlers }) {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
       };
       
-      const entryOrder = rrPart.map((slug, index) => ({
-        slug,
-        entryNumber: index + 1,
-        entryTime: formatEntryTime(index)
-      }));
+    const entryOrder = rrPart.map((slug, index) => ({
+      slug,
+      entryNumber: index + 1,
+      entryTime: formatEntryTime(index),
+      timeInRing: null,
+    }));
       
       const newMatch = { 
         ...match, 
@@ -1223,7 +1226,8 @@ function AddEvent({ addEvent, wrestlers }) {
       newMatch.royalRumbleData = {
         eliminations: clonedEliminations,
         participants: rrPart,
-        entryOrder: entryOrder
+        entryOrder: entryOrder,
+        manualIronman: rrManual,
       };
       
       setMatches([...matches, newMatch]);
@@ -1247,6 +1251,7 @@ function AddEvent({ addEvent, wrestlers }) {
       setRrParticipants(Array(30).fill(''));
       setRrWinner('');
       setRrEliminations([]);
+      setRrManualIronman('');
       return;
     }
     // --- Elimination Chamber branch ---
@@ -2320,21 +2325,42 @@ function AddEvent({ addEvent, wrestlers }) {
               
               {/* Winner Selection */}
               {rrParticipants.filter(Boolean).length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
-                    Winner:
-                  </label>
-                  <select
-                    value={rrWinner}
-                    onChange={e => setRrWinner(e.target.value)}
-                    style={inputStyle}
-                  >
-                    <option value="">Select winner...</option>
-                    {rrParticipants.filter(Boolean).map(slug => (
-                      <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
-                    ))}
-                  </select>
-                </div>
+                <>
+                  <div style={{ marginTop: 16 }}>
+                    <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                      Winner:
+                    </label>
+                    <select
+                      value={rrWinner}
+                      onChange={e => setRrWinner(e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">Select winner...</option>
+                      {rrParticipants.filter(Boolean).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                      Manual Ironman / Ironwoman (optional):
+                    </label>
+                    <select
+                      value={rrManualIronman || ''}
+                      onChange={e => setRrManualIronman(e.target.value || '')}
+                      style={inputStyle}
+                    >
+                      <option value="">Let stats decide</option>
+                      {rrParticipants.filter(Boolean).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
+                      Use this when first posting results. Later, official time-in-match data will override this choice automatically.
+                    </div>
+                  </div>
+                </>
               )}
               
               {/* Eliminations Section */}
@@ -2577,21 +2603,42 @@ function AddEvent({ addEvent, wrestlers }) {
               
               {/* Winner Selection */}
               {rrParticipants.filter(Boolean).length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
-                    Winner:
-                  </label>
-                  <select
-                    value={rrWinner}
-                    onChange={e => setRrWinner(e.target.value)}
-                    style={inputStyle}
-                  >
-                    <option value="">Select winner...</option>
-                    {rrParticipants.filter(Boolean).map(slug => (
-                      <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
-                    ))}
-                  </select>
-                </div>
+                <>
+                  <div style={{ marginTop: 16 }}>
+                    <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                      Winner:
+                    </label>
+                    <select
+                      value={rrWinner}
+                      onChange={e => setRrWinner(e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">Select winner...</option>
+                      {rrParticipants.filter(Boolean).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                      Manual Ironman / Ironwoman (optional):
+                    </label>
+                    <select
+                      value={rrManualIronman || ''}
+                      onChange={e => setRrManualIronman(e.target.value || '')}
+                      style={inputStyle}
+                    >
+                      <option value="">Let stats decide</option>
+                      {rrParticipants.filter(Boolean).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
+                      Use this when first posting results. Later, official time-in-match data will override this choice automatically.
+                    </div>
+                  </div>
+                </>
               )}
               
               {/* Eliminations Section */}
@@ -3553,7 +3600,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       
       // Calculate entry order (1-30 based on array index)
       const formatEntryTime = (entryIndex) => {
-        const totalSeconds = entryIndex * 120; // 2 minutes per entry
+        const totalSeconds = entryIndex * 90; // 90 seconds per entry
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -3562,7 +3609,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       const entryOrder = rrPart.map((slug, index) => ({
         slug,
         entryNumber: index + 1,
-        entryTime: formatEntryTime(index)
+        entryTime: formatEntryTime(index),
+        timeInRing: null,
       }));
       
       const newMatch = { 
@@ -3576,11 +3624,12 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       
       // Store Royal Rumble data with entry order and times
       const clonedEliminations = (rrEliminations || []).map(elim => ({ ...elim }));
-      newMatch.royalRumbleData = {
-        eliminations: clonedEliminations,
-        participants: rrPart,
-        entryOrder: entryOrder
-      };
+    newMatch.royalRumbleData = {
+      eliminations: clonedEliminations,
+      participants: rrPart,
+      entryOrder: entryOrder,
+      manualIronman: rrManual,
+    };
       
       setMatches([...matches, newMatch]);
       setMatch({
@@ -3599,9 +3648,10 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       });
       setResultType('');
       setWinner('');
-      setRrParticipants(Array(30).fill(''));
-      setRrWinner('');
-      setRrEliminations([]);
+    setRrParticipants(Array(30).fill(''));
+    setRrWinner('');
+    setRrEliminations([]);
+    setRrManualIronman('');
       return;
     }
     // --- Elimination Chamber branch ---

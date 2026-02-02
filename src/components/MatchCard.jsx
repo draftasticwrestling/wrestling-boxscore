@@ -158,6 +158,8 @@ const getCurrentChampionForTitle = (titleName) => {
 
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true, matchIndex }) {
   const navigate = useNavigate();
+  const [expandedSlug, setExpandedSlug] = React.useState(null);
+  const [showRumbleDetails, setShowRumbleDetails] = React.useState(false);
 
   // Create handler inline to ensure correct closure capture
   // Use matchIndex (array index) for navigation - it's more reliable than order
@@ -180,7 +182,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   }, [isClickable, eventId, navigationIndex, navigate]);
 
   const isMatchInProgress = event?.status === 'live' && match?.isLive;
-  const [expandedSlug, setExpandedSlug] = React.useState(null);
 
   // Early return for 2 out of 3 Falls
   if (match.matchType === '2 out of 3 Falls' && typeof match.participants === 'string') {
@@ -1301,7 +1302,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           const calculateRoyalRumbleStats = () => {
             if (!match.royalRumbleData) return null;
             
-            const { entryOrder = [], eliminations = [] } = match.royalRumbleData;
+            const { entryOrder = [], eliminations = [], manualIronman } = match.royalRumbleData;
             
             // Helper to parse time string (MM:SS) to seconds
             const parseTime = (timeStr) => {
@@ -1326,25 +1327,33 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             // Initialize with entry times
             entryOrder.forEach(entry => {
               const entrySeconds = parseTime(entry.entryTime);
+              const officialSeconds = entry.timeInRing ? parseTime(entry.timeInRing) : null;
               participantStats[entry.slug] = {
                 entryNumber: entry.entryNumber,
                 entryTime: entry.entryTime,
                 entrySeconds: entrySeconds,
                 eliminationTime: null,
                 eliminationSeconds: null,
-                timeInRumble: null,
+                // Prefer official "time in match" if provided; otherwise compute later
+                timeInRumble: officialSeconds,
                 eliminations: 0
               };
             });
+
+            const hasOfficialTimes = entryOrder.some(entry => !!entry.timeInRing);
             
             // Find elimination times and count eliminations
             eliminations.forEach(elim => {
               if (elim.eliminated && elim.time) {
                 const elimSeconds = parseTime(elim.time);
                 if (participantStats[elim.eliminated]) {
-                  participantStats[elim.eliminated].eliminationTime = elim.time;
-                  participantStats[elim.eliminated].eliminationSeconds = elimSeconds;
-                  participantStats[elim.eliminated].timeInRumble = elimSeconds - participantStats[elim.eliminated].entrySeconds;
+                  const stats = participantStats[elim.eliminated];
+                  stats.eliminationTime = elim.time;
+                  stats.eliminationSeconds = elimSeconds;
+                  // Only compute from entry/elimination if we don't already have an official time
+                  if (stats.timeInRumble == null) {
+                    stats.timeInRumble = elimSeconds - stats.entrySeconds;
+                  }
                 }
               }
               
@@ -1360,7 +1369,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             // For the winner, use match time if available, or calculate from last elimination
             if (match.winner && participantStats[match.winner]) {
               const winnerStats = participantStats[match.winner];
-              if (!winnerStats.eliminationTime && match.time) {
+              if (winnerStats.timeInRumble == null && !winnerStats.eliminationTime && match.time) {
                 const matchSeconds = parseTime(match.time);
                 winnerStats.timeInRumble = matchSeconds - winnerStats.entrySeconds;
               }
@@ -1375,6 +1384,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 ironman = { slug, time: formatTime(stats.timeInRumble), timeSeconds: stats.timeInRumble };
               }
             });
+
+            // If no official times have been entered yet, allow manual override
+            if (!hasOfficialTimes && manualIronman && participantStats[manualIronman]) {
+              const stats = participantStats[manualIronman];
+              const timeSeconds = stats.timeInRumble != null ? stats.timeInRumble : null;
+              const timeStr = timeSeconds != null ? formatTime(timeSeconds) : null;
+              ironman = {
+                slug: manualIronman,
+                time: timeStr,
+                timeSeconds: timeSeconds,
+              };
+            }
             
             // Find Most Eliminations (handle ties)
             let mostEliminations = [];
@@ -1441,38 +1462,48 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               
               {/* Royal Rumble Stats */}
               {stats && (stats.ironman || stats.mostEliminations) && (
-                <div style={{
-                  background: '#2a2a2a',
-                  borderRadius: 8,
-                  padding: 16,
-                  marginTop: 8,
-                  marginLeft: 'auto',
-                  marginRight: 'auto',
-                  border: '1px solid #444',
-                  maxWidth: 600
-                }}>
-                  <div style={{ color: '#C6A04F', fontWeight: 700, fontSize: 16, marginBottom: 12, textAlign: 'center' }}>
+                <div
+                  style={{
+                    background: '#2a2a2a',
+                    borderRadius: 8,
+                    padding: 16,
+                    marginTop: 8,
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    border: '1px solid #444',
+                    maxWidth: 600,
+                  }}
+                >
+                  <div
+                    style={{
+                      color: '#C6A04F',
+                      fontWeight: 700,
+                      fontSize: 16,
+                      marginBottom: 12,
+                      textAlign: 'center',
+                    }}
+                  >
                     Royal Rumble Statistics
                   </div>
-                  
+
                   {stats.ironman && (
                     <div style={{ marginBottom: 12, padding: 12, background: '#333', borderRadius: 6 }}>
                       <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
                         Ironman/Ironwoman
                       </div>
                       <div style={{ color: '#fff', fontSize: 14 }}>
-                        <strong>{wrestlerMap[stats.ironman.slug]?.name || stats.ironman.slug}</strong> - {stats.ironman.time}
+                        <strong>{wrestlerMap[stats.ironman.slug]?.name || stats.ironman.slug}</strong> -{' '}
+                        {stats.ironman.time}
                       </div>
                     </div>
                   )}
-                  
-                  {stats.mostEliminations && (
+
+                  {stats.mostEliminations &&
                     (() => {
-                      // Handle both array (new format with ties) and single object (old format)
-                      const elims = Array.isArray(stats.mostEliminations) 
-                        ? stats.mostEliminations 
+                      const elims = Array.isArray(stats.mostEliminations)
+                        ? stats.mostEliminations
                         : [stats.mostEliminations];
-                      
+
                       if (elims.length > 0 && elims[0].count > 0) {
                         return (
                           <div style={{ padding: 12, background: '#333', borderRadius: 6 }}>
@@ -1485,57 +1516,107 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                                   {idx > 0 && <span style={{ margin: '0 4px' }}>&</span>}
                                   <strong>{wrestlerMap[wrestler.slug]?.name || wrestler.slug}</strong>
                                 </span>
-                              ))} - {elims[0].count} elimination{elims[0].count !== 1 ? 's' : ''}
+                              ))}{' '}
+                              - {elims[0].count} elimination{elims[0].count !== 1 ? 's' : ''}
                             </div>
                           </div>
                         );
                       }
                       return null;
-                    })()
-                  )}
-                  
-                  {/* Entry Order */}
-                  {stats.entryOrder && stats.entryOrder.length > 0 && (
-                    <div style={{ marginTop: 12, padding: 12, background: '#333', borderRadius: 6 }}>
-                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
-                        Entry Order
-                      </div>
-                      <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
-                        {stats.entryOrder.map((entry, idx) => (
-                          <span key={entry.slug} style={{ marginRight: 8 }}>
-                            #{entry.entryNumber}: {wrestlerMap[entry.slug]?.name || entry.slug} ({entry.entryTime})
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Eliminations */}
-                  {match.royalRumbleData && match.royalRumbleData.eliminations && match.royalRumbleData.eliminations.length > 0 && (
-                    <div style={{ marginTop: 12, padding: 12, background: '#333', borderRadius: 6 }}>
-                      <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
-                        Eliminations
-                      </div>
-                      <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
-                        {match.royalRumbleData.eliminations.map((elim, idx) => {
-                          const eliminatedName = wrestlerMap[elim.eliminated]?.name || elim.eliminated;
-                          const eliminatedByName = wrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
-                          const eliminatedByName2 = elim.eliminatedBy2 ? wrestlerMap[elim.eliminatedBy2]?.name || elim.eliminatedBy2 : null;
-                          let elimText = eliminatedByName2 
-                            ? `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}`
-                            : `${eliminatedByName} eliminated ${eliminatedName}`;
-                          if (elim.time) {
-                            elimText += ` (${elim.time})`;
-                          }
-                          return (
-                            <div key={idx} style={{ marginBottom: 4 }}>
-                              {elimText}
+                    })()}
+
+                  {/* Collapsible section for Entry Order + Eliminations */}
+                  {(stats.entryOrder?.length || 0) > 0 ||
+                  (match.royalRumbleData?.eliminations?.length || 0) > 0 ? (
+                    <div style={{ marginTop: 12 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setShowRumbleDetails((v) => !v);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: 6,
+                          border: '1px solid #C6A04F',
+                          background: '#232323',
+                          color: '#C6A04F',
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {showRumbleDetails ? 'Hide Entry Order & Eliminations' : 'Show Entry Order & Eliminations'}
+                      </button>
+
+                      {showRumbleDetails && (
+                        <>
+                          {stats.entryOrder && stats.entryOrder.length > 0 && (
+                            <div style={{ marginTop: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                              <div
+                                style={{
+                                  color: '#C6A04F',
+                                  fontWeight: 600,
+                                  fontSize: 13,
+                                  marginBottom: 8,
+                                }}
+                              >
+                                Entry Order
+                              </div>
+                              <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
+                                {stats.entryOrder.map((entry) => (
+                                  <span key={entry.slug} style={{ marginRight: 8 }}>
+                                    #{entry.entryNumber}: {wrestlerMap[entry.slug]?.name || entry.slug} (
+                                    {entry.entryTime})
+                                  </span>
+                                ))}
+                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          )}
+
+                          {match.royalRumbleData &&
+                            match.royalRumbleData.eliminations &&
+                            match.royalRumbleData.eliminations.length > 0 && (
+                              <div style={{ marginTop: 12, padding: 12, background: '#333', borderRadius: 6 }}>
+                                <div
+                                  style={{
+                                    color: '#C6A04F',
+                                    fontWeight: 600,
+                                    fontSize: 13,
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Eliminations
+                                </div>
+                                <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
+                                  {match.royalRumbleData.eliminations.map((elim, idx) => {
+                                    const eliminatedName = wrestlerMap[elim.eliminated]?.name || elim.eliminated;
+                                    const eliminatedByName =
+                                      wrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
+                                    const eliminatedByName2 = elim.eliminatedBy2
+                                      ? wrestlerMap[elim.eliminatedBy2]?.name || elim.eliminatedBy2
+                                      : null;
+                                    let elimText = eliminatedByName2
+                                      ? `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}`
+                                      : `${eliminatedByName} eliminated ${eliminatedName}`;
+                                    if (elim.time) {
+                                      elimText += ` (${elim.time})`;
+                                    }
+                                    return (
+                                      <div key={idx} style={{ marginBottom: 4 }}>
+                                        {elimText}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                        </>
+                      )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               )}
             </>
