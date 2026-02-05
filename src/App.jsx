@@ -188,14 +188,10 @@ function isYesterdayEvent(event) {
   return eventDate.getTime() === yesterday.getTime();
 }
 
-// Public editing is temporarily allowed for:
-// - Yesterday's events
-// - Today's events
-function isPublicEditableEvent(event) {
-  if (!event) return false;
-  // Allow editing for events on today or yesterday, regardless of brand.
-  // This keeps recent shows editable while login is hidden for AdSense review.
-  return isTodayEvent(event) || isYesterdayEvent(event);
+// Public editing helper. Currently always false so that
+// only authenticated users can edit events and matches.
+function isPublicEditableEvent(_event) {
+  return false;
 }
 
 function useUnsavedChangesWarning(hasUnsavedChanges) {
@@ -585,7 +581,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
 
-  const canEditMatches = !!user || isPublicEditableEvent(event);
+  const canEditMatches = !!user;
   const canDeleteEvent = !!user;
 
   const handleMoveMatch = (index, direction) => {
@@ -3419,7 +3415,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const navigate = useNavigate();
-  const canEdit = !!user || isPublicEditableEvent(event);
+  const canEdit = !!user;
 
   if (!event) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
@@ -6119,7 +6115,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   const match = matchIndex >= 0 && matchIndex < sortedMatches.length ? sortedMatches[matchIndex] : null;
   
   const [isEditing, setIsEditing] = React.useState(false);
-  const canEdit = !!user || isPublicEditableEvent(event);
+  const canEdit = !!user;
 
   if (!match) {
     return <div style={{ padding: 24, color: '#fff' }}>Match not found.</div>;

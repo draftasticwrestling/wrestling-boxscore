@@ -58,7 +58,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
   // Find the original index in event.matches for editing
   const originalMatchIndex = event && match ? event.matches.findIndex(m => m === match || (m.order === match.order && m.participants === match.participants)) : -1;
   const [isEditing, setIsEditing] = React.useState(false);
-  const canEdit = (!!user && !!user.email) || isPublicEditableEvent(event);
+  const canEdit = !!user && !!user.email;
 
   if (!event || !match) {
     return <div style={{ padding: 24 }}>Match not found.</div>;

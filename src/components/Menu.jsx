@@ -13,16 +13,16 @@ const menuIcon = (
 
 const menuItems = [
   { label: 'Events', path: '/' },
+  { label: 'Add Event', path: '/add-event' },
   { label: 'Wrestlers', path: '/wrestlers' },
   { label: 'Championships', path: '/championships' },
   { label: 'About', path: '/about' },
   { label: 'Contact', path: '/contact' },
 ];
 
-// Feature flag: hide admin login in production so AdSense reviewers
-// don't see a login-only experience. Enable via VITE_ENABLE_ADMIN_LOGIN=true
-// for staging/local as needed.
-const ENABLE_ADMIN_LOGIN = import.meta.env.VITE_ENABLE_ADMIN_LOGIN === 'true';
+// Feature flag for admin login. By default the login is enabled unless
+// VITE_ENABLE_ADMIN_LOGIN is explicitly set to 'false'.
+const ENABLE_ADMIN_LOGIN = import.meta.env.VITE_ENABLE_ADMIN_LOGIN !== 'false';
 
 export default function Menu() {
   const [open, setOpen] = useState(false);
