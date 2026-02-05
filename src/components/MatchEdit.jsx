@@ -29,6 +29,17 @@ const inputStyle = {
 
 const gold = '#C6A04F';
 
+// Local copy of promo outcome options (kept in sync with App.jsx)
+const PROMO_OUTCOME_OPTIONS = [
+  'None',
+  'Title Vacated',
+  'Match Announced',
+  'Wrestler Going Inactive',
+  'Championship Challenge',
+  'Return Announced',
+  'Other',
+];
+
 export default function MatchEdit({
   initialMatch = {},
   onSave,
@@ -217,6 +228,195 @@ export default function MatchEdit({
       }
     }
   }, [brEliminations, isBattleRoyal, brWinner]);
+
+  // ------- Promo-specific editing (early return) -------
+  if (match.matchType === 'Promo') {
+    const [promoTitle, setPromoTitle] = useState(match.title || '');
+    const [promoParticipants, setPromoParticipants] = useState(
+      Array.isArray(match.participants) && match.participants.length > 0
+        ? match.participants
+        : ['']
+    );
+    const [promoNotes, setPromoNotes] = useState(match.notes || '');
+    const [promoOutcome, setPromoOutcome] = useState(match.promoOutcome || 'None');
+    const [promoOutcomeOther, setPromoOutcomeOther] = useState(match.promoOutcomeOther || '');
+
+    const handleSavePromo = (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      const trimmedTitle = promoTitle.trim();
+      if (!trimmedTitle) {
+        alert('Please enter a promo type/title.');
+        return;
+      }
+
+      const resolvedOutcome =
+        promoOutcome === 'Other' && promoOutcomeOther.trim()
+          ? promoOutcomeOther.trim()
+          : (promoOutcome || 'None');
+
+      const updatedMatch = {
+        ...match,
+        matchType: 'Promo',
+        participants: Array.isArray(promoParticipants) ? promoParticipants.filter(Boolean) : [],
+        title: trimmedTitle,
+        notes: promoNotes.trim(),
+        promoOutcome: resolvedOutcome,
+        promoOutcomeOther: promoOutcome === 'Other' ? promoOutcomeOther.trim() : '',
+        // Ensure these don't accidentally show match-like data
+        result: '',
+        method: '',
+        time: '',
+        stipulation: 'None',
+        specialWinnerType: '',
+        titleOutcome: '',
+        defendingChampion: '',
+      };
+
+      onSave(updatedMatch);
+    };
+
+    return (
+      <div>
+        <h3 style={{ color: gold, marginBottom: 16 }}>Edit Promo / Segment</h3>
+        <form onSubmit={handleSavePromo}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>
+              Promo Type:
+            </label>
+            <select
+              value={promoTitle}
+              onChange={e => setPromoTitle(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="">Select promo type...</option>
+              <option value="In-Ring Promo">In-Ring Promo</option>
+              <option value="Backstage Promo">Backstage Promo</option>
+              <option value="Vingette">Vingette</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 4, color: '#fff', fontWeight: 500 }}>
+              Participant(s):
+            </div>
+            {Array.isArray(promoParticipants) && promoParticipants.map((id, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <WrestlerAutocomplete
+                    wrestlers={safeWrestlers}
+                    value={id}
+                    onChange={val =>
+                      setPromoParticipants(prev =>
+                        prev.map((p, i) => (i === idx ? val : p))
+                      )
+                    }
+                    placeholder={`Participant ${idx + 1}`}
+                  />
+                </div>
+                {promoParticipants.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPromoParticipants(prev => prev.filter((_, i) => i !== idx))
+                    }
+                    style={{
+                      background: '#d32f2f',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 4,
+                      padding: '4px 8px',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                    }}
+                    aria-label="Remove participant"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() =>
+                setPromoParticipants(prev => [...prev, ''])
+              }
+              style={{
+                marginTop: 4,
+                background: '#C6A04F',
+                color: '#232323',
+                border: 'none',
+                borderRadius: 4,
+                padding: '6px 12px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              + Add Participant
+            </button>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>
+              Promo Summary:
+            </label>
+            <textarea
+              value={promoNotes}
+              onChange={e => setPromoNotes(e.target.value)}
+              style={{ ...inputStyle, minHeight: 80 }}
+              placeholder="Brief summary of what happened in this promo or segment."
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>
+              Promo Outcome:
+            </label>
+            <select
+              value={promoOutcome || 'None'}
+              onChange={e => setPromoOutcome(e.target.value)}
+              style={inputStyle}
+            >
+              {PROMO_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+
+          {promoOutcome === 'Other' && (
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>
+                Describe Outcome:
+              </label>
+              <input
+                type="text"
+                value={promoOutcomeOther}
+                onChange={e => setPromoOutcomeOther(e.target.value)}
+                style={inputStyle}
+                placeholder="Describe what this promo accomplished..."
+              />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <button
+              type="submit"
+              style={{ flex: 1, background: '#C6A04F', color: '#232323', border: 'none', borderRadius: 4, padding: 10, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Save Promo
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{ flex: 1, background: '#555', color: '#fff', border: 'none', borderRadius: 4, padding: 10, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   useEffect(() => {
     // Don't set resultType for Battle Royal matches - they use their own winner selection
@@ -2055,6 +2255,17 @@ export default function MatchEdit({
             <label>
               Time:<br />
               <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
+            </label>
+          </div>
+          <div>
+            <label>
+              Match Summary (optional):<br />
+              <textarea
+                value={match.summary || ''}
+                onChange={e => setMatch({ ...match, summary: e.target.value })}
+                style={{ width: '100%', minHeight: '72px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
+                placeholder="Brief recap of the match for the Summary view on the match card..."
+              />
             </label>
           </div>
           <div>

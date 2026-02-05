@@ -105,6 +105,22 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
     <div style={sectionStyle}>
       <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
       <h2 style={{ color: gold, marginTop: 24 }}>Match Details</h2>
+      {event.status !== 'upcoming' && event.recap && (
+        <div style={{ marginTop: 12, marginBottom: 16, padding: 12, background: '#232323', borderRadius: 8, border: '1px solid #C6A04F44' }}>
+          <div style={{ color: gold, fontWeight: 700, marginBottom: 4 }}>Event Recap</div>
+          <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            {event.recap}
+          </div>
+        </div>
+      )}
+      {event.status === 'upcoming' && event.preview && (
+        <div style={{ marginTop: 12, marginBottom: 16, padding: 12, background: '#232323', borderRadius: 8, border: '1px solid #C6A04F44' }}>
+          <div style={{ color: gold, fontWeight: 700, marginBottom: 4 }}>Event Preview</div>
+          <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            {event.preview}
+          </div>
+        </div>
+      )}
       {event.status === 'live' && match.isLive && (
         <div style={{
           marginTop: 8,
@@ -164,7 +180,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
           })()}</td></tr>
           <tr><td style={tdStyle}>Method</td><td style={tdStyle}>{match.method || 'None'}</td></tr>
           <tr><td style={tdStyle}>Time</td><td style={tdStyle}>{match.time || 'None'}</td></tr>
-          <tr><td style={tdStyle}>Stipulation</td><td style={tdStyle}>{match.stipulation || 'None'}</td></tr>
+          <tr><td style={tdStyle}>Stipulation</td><td style={tdStyle}>{(match.stipulation === 'Custom/Other' && (match.customStipulation || '').trim()) ? match.customStipulation.trim() : (match.stipulation || 'None')}</td></tr>
           <tr><td style={tdStyle}>Title</td><td style={tdStyle}>{match.title || 'None'}</td></tr>
           <tr><td style={tdStyle}>Title Outcome</td><td style={tdStyle}>{match.titleOutcome || 'None'}</td></tr>
         </tbody>

@@ -85,25 +85,13 @@ function getWinnerDisplay(match, wrestlerMap) {
   return '';
 }
 
-// Helper to format commentary elapsed time (copied from App.jsx)
-function formatCommentaryElapsedTime(ts, liveStart, commentary) {
-  let start = liveStart;
-  if (!start && commentary && commentary.length > 0) {
-    // Use the first (newest) commentary timestamp as start since we're now storing newest first
-    start = commentary[0].timestamp;
-  }
-  if (!ts || !start) return '0\'';
-  const elapsed = Math.max(0, Math.ceil((ts - start) / 60000));
-  return `${elapsed}'`;
-}
-
 export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {}, canEdit = false }) {
-  // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
-  // Ensure wrestlerMap is always an object
   const safeWrestlerMap = wrestlerMap || {};
   const user = useUser();
   const isEditor = canEdit || !!(user && user.email);
+  const showPreview = match?.eventStatus === 'upcoming' && match?.eventPreview;
+  const showRecap = (match?.eventStatus === 'completed' || match?.eventStatus === 'live') && match?.eventRecap;
 
   return (
     <>
@@ -129,18 +117,38 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
         <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
           ← Back to Event
         </Link>
+        {showPreview && (
+          <div style={{ marginBottom: 16, padding: 16, background: '#232323', borderRadius: 8, border: '1px solid #C6A04F44' }}>
+            <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>
+              Event Preview
+            </div>
+            <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {match.eventPreview}
+            </div>
+          </div>
+        )}
+        {showRecap && (
+          <div style={{ marginBottom: 16, padding: 16, background: '#111', borderRadius: 8, border: '1px solid #C6A04F66' }}>
+            <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>
+              Event Recap
+            </div>
+            <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {match.eventRecap}
+            </div>
+          </div>
+        )}
         <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
           {match.title}
         </div>
         
-        {/* Use the unified MatchCard component */}
+        {/* Use the unified MatchCard component (includes Summary / Commentary / Statistics pills) */}
         <MatchCard 
           match={match} 
           event={{ id: match.eventId }} 
           wrestlerMap={wrestlerMap} 
           isClickable={false}
         />
-        
+
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
           <div><b>Participants:</b> {getParticipantsDisplay(match.participants, safeWrestlerMap, match.stipulation, match.matchType)}</div>
@@ -218,22 +226,9 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           <div><b>Winner:</b> {getWinnerDisplay(match, safeWrestlerMap)}</div>
           <div><b>Method:</b> {match.method}</div>
           <div><b>Time:</b> {match.time}</div>
-          <div><b>Stipulation:</b> {match.stipulation}</div>
+          <div><b>Stipulation:</b> {(match.stipulation === 'Custom/Other' && (match.customStipulation || '').trim()) ? match.customStipulation.trim() : (match.stipulation || 'None')}</div>
           <div><b>Title:</b> {match.title}</div>
           <div><b>Title Outcome:</b> {match.titleOutcome}</div>
-        </div>
-        <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
-          <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Commentary</div>
-          {Array.isArray(match.commentary) && match.commentary.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {match.commentary.map((c, i) => (
-                <li key={i} style={{ marginBottom: 4 }}>
-                  <span style={{ color: '#C6A04F', marginRight: 8 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
-                  {c.text}
-                </li>
-              ))}
-            </ul>
-          ) : <div style={{ color: '#bbb' }}>No commentary yet.</div>}
         </div>
         <div style={{ textAlign: 'center' }}>
           {isEditor && (

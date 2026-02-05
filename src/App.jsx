@@ -581,6 +581,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
 
+  const showPreview = (event.status === 'upcoming' || event.status === 'live') && event.preview;
+  const showRecap = (event.status === 'completed' || event.status === 'live') && event.recap;
+
   const canEditMatches = !!user;
   const canDeleteEvent = !!user;
 
@@ -631,12 +634,11 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     return { ...m, cardType };
   });
 
-  // For display, always show any explicit main event as the final match in the list.
+  // For display, respect the chronological order (order field)
+  // so promos or segments that happen after the main event can
+  // still appear last, while the main event card is visually
+  // marked via its cardType.
   const matchesWithCardType = [...withCardTypes].sort((a, b) => {
-    const aMain = a.cardType === 'Main Event';
-    const bMain = b.cardType === 'Main Event';
-    if (aMain && !bMain) return 1;
-    if (!aMain && bMain) return -1;
     return (a.order || 0) - (b.order || 0);
   });
 
@@ -738,6 +740,26 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
               <strong>{formatDate(event.date)}</strong> — {event.location}
             </div>
           </div>
+          {showPreview && (
+            <div style={{ marginTop: 16, marginBottom: 16, padding: 16, background: '#232323', borderRadius: 8, border: '1px solid #C6A04F44' }}>
+              <div style={{ color: gold, fontWeight: 700, marginBottom: 8 }}>
+                Event Preview
+              </div>
+              <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                {event.preview}
+              </div>
+            </div>
+          )}
+          {showRecap && (
+            <div style={{ marginTop: 0, marginBottom: 16, padding: 16, background: '#1c1c1c', borderRadius: 8, border: '1px solid #C6A04F66' }}>
+              <div style={{ color: gold, fontWeight: 700, marginBottom: 8 }}>
+                Event Recap
+              </div>
+              <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                {event.recap}
+              </div>
+            </div>
+          )}
         {event.specialWinner && (
           <div style={{ marginBottom: 16, padding: 8, backgroundColor: '#f0f0f0', borderRadius: 4 }}>
             <p style={{ margin: 0 }}>
@@ -814,7 +836,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                     })()}</div>
                     <div><strong>Method:</strong> {match.method || 'None'}</div>
                     <div><strong>Time:</strong> {match.time || 'None'}</div>
-                    <div><strong>Stipulation:</strong> {match.stipulation || 'None'}</div>
+                    <div><strong>Stipulation:</strong> {(match.stipulation === 'Custom/Other' && (match.customStipulation || '').trim()) ? match.customStipulation.trim() : (match.stipulation || 'None')}</div>
                     <div><strong>Title:</strong> {match.title || 'None'}</div>
                     <div><strong>Title Outcome:</strong> {match.titleOutcome || 'None'}</div>
                     {match.notes && <div style={{ flexBasis: '100%' }}><strong>Notes:</strong> {match.notes}</div>}
@@ -956,6 +978,8 @@ function AddEvent({ addEvent, wrestlers }) {
   const [eventType, setEventType] = useState('');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
+  const [preview, setPreview] = useState('');
+  const [recap, setRecap] = useState('');
   const [matches, setMatches] = useState([]);
   const [match, setMatch] = useState({
     participants: '',
@@ -1015,6 +1039,8 @@ function AddEvent({ addEvent, wrestlers }) {
       eventType ||
       date ||
       location ||
+      preview ||
+      recap ||
       (Array.isArray(matches) && matches.length > 0) ||
       match.participants ||
       match.result ||
@@ -1583,6 +1609,8 @@ function AddEvent({ addEvent, wrestlers }) {
       name: eventType,
       date,
       location,
+      preview: preview.trim() || '',
+      recap: recap.trim() || '',
       matches,
       status: eventStatus,
       isLive: eventStatus === 'live'
@@ -1697,6 +1725,34 @@ function AddEvent({ addEvent, wrestlers }) {
               Location:<br />
               <input value={location} onChange={e => setLocation(e.target.value)} required style={{ width: '100%' }} />
             </label>
+          </div>
+          <div>
+            <label>
+              Event Preview (optional):<br />
+              <textarea
+                value={preview}
+                onChange={e => setPreview(e.target.value)}
+                placeholder="Briefly tease the matches, storylines, and why fans won't want to miss this event."
+                style={{ width: '100%', minHeight: 80, padding: 8, backgroundColor: '#232323', color: '#fff', border: '1px solid #888', borderRadius: 4 }}
+              />
+            </label>
+            <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+              This text will appear on the event and match pages for upcoming shows as a preview.
+            </div>
+          </div>
+          <div>
+            <label>
+              Event Recap (optional, after event finishes):<br />
+              <textarea
+                value={recap}
+                onChange={e => setRecap(e.target.value)}
+                placeholder="Once the event is over, add a short recap highlighting what happened and why it mattered."
+                style={{ width: '100%', minHeight: 120, padding: 8, backgroundColor: '#232323', color: '#fff', border: '1px solid #888', borderRadius: 4 }}
+              />
+            </label>
+            <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+              This recap will show on completed event pages and match pages to give readers a quick overview.
+            </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 16 }}>
             <h3 style={{ margin: 0 }}>Add Matches</h3>
@@ -1858,7 +1914,7 @@ function AddEvent({ addEvent, wrestlers }) {
               </div>
               <div>
                 <label>
-                  Notes / Description:<br />
+                  Promo Summary:<br />
                   <textarea
                     value={promo.notes}
                     onChange={e => setPromo({ ...promo, notes: e.target.value })}
@@ -3424,6 +3480,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [name, setName] = useState(event.name);
   const [date, setDate] = useState(event.date);
   const [location, setLocation] = useState(event.location);
+  const [preview, setPreview] = useState(event.preview || '');
+  const [recap, setRecap] = useState(event.recap || '');
   const [matches, setMatches] = useState(Array.isArray(event.matches) ? event.matches : []);
   
   // Debug: Log matches changes
@@ -3472,6 +3530,14 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     reason: ''
   });
   const [saveMessage, setSaveMessage] = useState('');
+  const [promo, setPromo] = useState({
+    title: '',
+    participants: [''],
+    notes: '',
+    outcome: 'None',
+    outcomeOther: '',
+  });
+  const [addEntryType, setAddEntryType] = useState('match'); // 'match' | 'promo' for add form
 
   const hasUnsavedChangesEditEvent =
     !!event &&
@@ -3479,8 +3545,50 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       name !== event.name ||
       date !== event.date ||
       location !== event.location ||
+      (preview || '') !== (event.preview || '') ||
+      (recap || '') !== (event.recap || '') ||
       JSON.stringify(matches || []) !== JSON.stringify(event.matches || [])
     );
+
+  // Add a promo/segment to the matches list
+  const handleAddPromo = (e) => {
+    e.preventDefault();
+    const trimmedTitle = promo.title.trim();
+    if (!trimmedTitle) {
+      alert('Please enter a promo type/title for the segment.');
+      return;
+    }
+
+    const resolvedOutcome =
+      promo.outcome === 'Other' && promo.outcomeOther.trim()
+        ? promo.outcomeOther.trim()
+        : (promo.outcome || 'None');
+
+    const newPromoMatch = {
+      participants: Array.isArray(promo.participants)
+        ? promo.participants.filter(Boolean)
+        : [],
+      result: '',
+      method: '',
+      time: '',
+      matchType: 'Promo',
+      stipulation: 'None',
+      customStipulation: '',
+      title: trimmedTitle,
+      titleOutcome: '',
+      defendingChampion: '',
+      notes: promo.notes.trim(),
+      isLive: false,
+      promoOutcome: resolvedOutcome,
+      order: matches.length + 1,
+    };
+
+    const currentMatches = Array.isArray(matches) ? matches : [];
+    const updatedMatches = [...currentMatches, newPromoMatch];
+
+    setMatches(updatedMatches);
+    setPromo({ title: '', participants: [''], notes: '', outcome: 'None', outcomeOther: '' });
+  };
   useUnsavedChangesWarning(hasUnsavedChangesEditEvent);
 
   // Winner options based on participants
@@ -4023,6 +4131,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       name,
       date,
       location,
+      preview: preview.trim() || '',
+      recap: recap.trim() || '',
       matches: updatedMatches,
       status: eventStatus,
       isLive: eventStatus === 'live'
@@ -4134,8 +4244,36 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               <input value={location} onChange={e => setLocation(e.target.value)} required style={{ width: '100%' }} />
             </label>
           </div>
+          <div>
+            <label>
+              Event Preview (optional):<br />
+              <textarea
+                value={preview}
+                onChange={e => setPreview(e.target.value)}
+                placeholder="Briefly tease the matches, storylines, and why fans won't want to miss this event."
+                style={{ width: '100%', minHeight: 80, padding: 8, backgroundColor: '#232323', color: '#fff', border: '1px solid #888', borderRadius: 4 }}
+              />
+            </label>
+            <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+              This text will appear on the event and match pages for upcoming shows as a preview.
+            </div>
+          </div>
+          <div>
+            <label>
+              Event Recap (optional, after event finishes):<br />
+              <textarea
+                value={recap}
+                onChange={e => setRecap(e.target.value)}
+                placeholder="Once the event is over, add a short recap highlighting what happened and why it mattered."
+                style={{ width: '100%', minHeight: 120, padding: 8, backgroundColor: '#232323', color: '#fff', border: '1px solid #888', borderRadius: 4 }}
+              />
+            </label>
+            <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+              This recap will show on completed event pages and match pages to give readers a quick overview.
+            </div>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 16 }}>
-            <h3 style={{ margin: 0 }}>Matches</h3>
+            <h3 style={{ margin: 0 }}>Matches / Promos</h3>
             <button
               type="button"
               onClick={() => setShowVacancyForm(!showVacancyForm)}
@@ -4286,10 +4424,25 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
-                        aria-label="Edit Match"
+                        aria-label={m.matchType === 'Promo' ? 'Edit Promo' : 'Edit Match'}
                       >
                         Edit
                       </button>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          marginRight: 10,
+                          background: m.matchType === 'Promo' ? '#5a4a8a' : '#C6A04F',
+                          color: m.matchType === 'Promo' ? '#e0d8f0' : '#232323',
+                        }}
+                      >
+                        {m.matchType === 'Promo' ? 'Promo' : 'Match'}
+                      </span>
                       <span style={{ flex: 1, fontWeight: 700, color: '#fff', fontSize: 17 }}>{m.participants}</span>
                       <span style={{ flex: 2, color: '#bbb', fontSize: 15, marginLeft: 12 }}>{m.result} {m.stipulation && m.stipulation !== 'None' ? `(${m.stipulation})` : ''}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 16 }}>
@@ -4396,8 +4549,41 @@ function EditEvent({ events, updateEvent, wrestlers }) {
           )}
         </form>
         {canEdit && (
-          <form onSubmit={handleAddMatch} style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
-            {/* Live Match Checkbox always visible */}
+          <div style={{ border: '1px solid #ccc', padding: 12, marginTop: 12 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <button
+                type="button"
+                onClick={() => setAddEntryType('match')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 16,
+                  border: '1px solid #C6A04F',
+                  background: addEntryType === 'match' ? '#C6A04F' : '#232323',
+                  color: addEntryType === 'match' ? '#000' : '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Match
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddEntryType('promo')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 16,
+                  border: '1px solid #C6A04F',
+                  background: addEntryType === 'promo' ? '#C6A04F' : '#232323',
+                  color: addEntryType === 'promo' ? '#000' : '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Promo
+              </button>
+            </div>
+            {addEntryType === 'match' && (
+          <form onSubmit={handleAddMatch}>
             <div style={{ marginBottom: 12 }}>
               <label style={{ color: gold, fontWeight: 600 }}>
                 <input
@@ -5082,6 +5268,137 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             )}
             <button type="submit" style={{ marginTop: 8 }}>Add Match</button>
           </form>
+            )}
+            {addEntryType === 'promo' && (
+          <form onSubmit={handleAddPromo}>
+            <div style={{ marginBottom: 12 }}>
+              <label>
+                Promo Type:<br />
+                <select
+                  value={promo.title}
+                  onChange={e => setPromo({ ...promo, title: e.target.value })}
+                  style={inputStyle}
+                >
+                  <option value="">Select promo type...</option>
+                  <option value="In-Ring Promo">In-Ring Promo</option>
+                  <option value="Backstage Promo">Backstage Promo</option>
+                  <option value="Vingette">Vingette</option>
+                </select>
+              </label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 4, color: '#fff', fontWeight: 500 }}>
+                Participant(s):
+              </div>
+              {Array.isArray(promo.participants) && promo.participants.map((id, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <WrestlerAutocomplete
+                      wrestlers={wrestlers}
+                      value={id}
+                      onChange={val =>
+                        setPromo(prev => ({
+                          ...prev,
+                          participants: prev.participants.map((p, i) => (i === idx ? val : p)),
+                        }))
+                      }
+                      placeholder={`Participant ${idx + 1}`}
+                    />
+                  </div>
+                  {promo.participants.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPromo(prev => ({
+                          ...prev,
+                          participants: prev.participants.filter((_, i) => i !== idx),
+                        }))
+                      }
+                      style={{
+                        background: '#d32f2f',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                      }}
+                      aria-label="Remove participant"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setPromo(prev => ({
+                    ...prev,
+                    participants: [...(Array.isArray(prev.participants) ? prev.participants : []), ''],
+                  }))
+                }
+                style={{
+                  marginTop: 4,
+                  background: '#C6A04F',
+                  color: '#232323',
+                  border: 'none',
+                  borderRadius: 4,
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                + Add Participant
+              </button>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>
+                Promo Summary:<br />
+                <textarea
+                  value={promo.notes}
+                  onChange={e => setPromo({ ...promo, notes: e.target.value })}
+                  style={{ ...inputStyle, minHeight: 80 }}
+                  placeholder="Brief summary of the promo or segment"
+                />
+              </label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>
+                Promo Outcome:<br />
+                <select
+                  value={promo.outcome || 'None'}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setPromo(prev => ({ ...prev, outcome: val }));
+                  }}
+                  style={inputStyle}
+                >
+                  {PROMO_OUTCOME_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {promo.outcome === 'Other' && (
+              <div style={{ marginBottom: 12 }}>
+                <label>
+                  Describe Outcome:<br />
+                  <input
+                    type="text"
+                    value={promo.outcomeOther || ''}
+                    onChange={e => setPromo(prev => ({ ...prev, outcomeOther: e.target.value }))}
+                    style={inputStyle}
+                    placeholder="Describe what happened in this promo..."
+                  />
+                </label>
+              </div>
+            )}
+            <button type="submit" style={{ marginTop: 8 }}>Add Promo</button>
+          </form>
+            )}
+          </div>
         )}
         <button
           type="button"
@@ -5322,7 +5639,7 @@ function App() {
       console.log('Attempting to add event to Supabase:', event);
       
       // Only send allowed fields to Supabase
-      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'status', 'isLive'];
+      const allowedFields = ['id', 'name', 'date', 'location', 'preview', 'recap', 'matches', 'status', 'isLive'];
       const sanitizedEvent = {};
       for (const key of allowedFields) {
         if (event[key] !== undefined) sanitizedEvent[key] = event[key];
@@ -5851,7 +6168,7 @@ function App() {
   const updateEvent = async (updatedEvent) => {
     try {
       // Only send allowed fields to Supabase
-      const allowedFields = ['id', 'name', 'date', 'location', 'matches', 'status', 'isLive'];
+      const allowedFields = ['id', 'name', 'date', 'location', 'preview', 'recap', 'matches', 'status', 'isLive'];
       const sanitizedEvent = {};
       for (const key of allowedFields) {
         if (updatedEvent[key] !== undefined) sanitizedEvent[key] = updatedEvent[key];
@@ -5866,7 +6183,7 @@ function App() {
         .eq('id', updatedEvent.id);
 
       if (error) {
-        console.error('Supabase update error details:', error);
+        console.error('Supabase update error details:', JSON.stringify(error, null, 2));
         throw error;
       }
       
@@ -6160,7 +6477,15 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
 
   return (
     <MatchPageNew 
-      match={{ ...match, eventId: event.id }} 
+      match={{ 
+        ...match, 
+        eventId: event.id,
+        eventName: event.name,
+        date: event.date,
+        eventStatus: event.status,
+        eventPreview: event.preview || '',
+        eventRecap: event.recap || '',
+      }} 
       wrestlers={wrestlers} 
       onEdit={handleEdit}
       wrestlerMap={wrestlerMap}

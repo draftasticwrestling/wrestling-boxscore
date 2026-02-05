@@ -83,6 +83,14 @@ function renderWrestlerMeta(wrestler) {
   );
 }
 
+// Elapsed time for commentary (minutes from start)
+function formatCommentaryElapsedTime(ts, liveStart, commentary) {
+  let start = liveStart;
+  if (!start && commentary?.length) start = commentary[0].timestamp;
+  if (!ts || !start) return "0'";
+  return `${Math.max(0, Math.ceil((ts - start) / 60000))}'`;
+}
+
 const getTeams = (participants) => {
   if (Array.isArray(participants)) {
     return participants;
@@ -156,10 +164,22 @@ const getCurrentChampionForTitle = (titleName) => {
   return titleToChampion[titleName] || null;
 };
 
+const pillBase = { padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: '2px solid #C6A04F', cursor: 'pointer', background: 'transparent', color: '#C6A04F' };
+const pillActive = { ...pillBase, background: '#C6A04F', color: '#232323' };
+const pillDisabled = { ...pillBase, opacity: 0.5, cursor: 'not-allowed' };
+
 export default function MatchCard({ match, event, wrestlerMap, isClickable = true, matchIndex }) {
   const navigate = useNavigate();
   const [expandedSlug, setExpandedSlug] = React.useState(null);
   const [showRumbleDetails, setShowRumbleDetails] = React.useState(false);
+  const [cardView, setCardView] = React.useState(null);
+  const hasCommentary = Array.isArray(match?.commentary) && match.commentary.length > 0;
+  const hasSummary = !!(match?.summary || (match?.matchType === 'Promo' && match?.notes));
+  const summaryContent = match?.matchType === 'Promo' ? (match?.notes || '') : (match?.summary || '');
+  // Show custom stipulation text (e.g. "Three Stages of Hell") instead of "Custom/Other" on the card
+  const displayStipulation = (match?.stipulation === 'Custom/Other' && (match?.customStipulation || '').trim())
+    ? match.customStipulation.trim()
+    : (match?.stipulation || '');
 
   // Create handler inline to ensure correct closure capture
   // Use matchIndex (array index) for navigation - it's more reliable than order
@@ -273,7 +293,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           overflow: 'hidden',
           textOverflow: 'ellipsis',
         }}>
-          {[match.matchType, match.stipulation !== 'None' ? match.stipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}
+          {[match.matchType, displayStipulation !== 'None' ? displayStipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
@@ -607,7 +627,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           overflow: 'hidden',
           textOverflow: 'ellipsis',
         }}>
-          {[match.matchType, match.stipulation !== 'None' ? match.stipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}
+          {[match.matchType, displayStipulation !== 'None' ? displayStipulation : null, match.title && match.title !== 'None' ? match.title : null].filter(Boolean).join(' — ')}
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
@@ -830,15 +850,15 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   let topLabel = '';
   const labelParts = [];
   
-  if (match.matchType && match.matchType !== 'Singles Match') {
+  if (match.matchType && match.matchType !== 'Singles Match' && match.matchType !== 'Promo') {
     labelParts.push(match.matchType);
   }
   
-  if (match.stipulation && match.stipulation !== 'None') {
-    labelParts.push(match.stipulation);
+  if (displayStipulation && displayStipulation !== 'None' && match.matchType !== 'Promo') {
+    labelParts.push(displayStipulation);
   }
   
-  if (match.title && match.title !== 'None') {
+  if (match.title && match.title !== 'None' && match.matchType !== 'Promo') {
     labelParts.push(match.title);
   }
   
@@ -1952,19 +1972,53 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         )
       ) : isMultiSide ? (
         <>
+          {/* Center meta area – special treatment for promos */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
-              {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
-            </div>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
-              {match.isLive ? (
-                <span style={{ color: '#27ae60' }}>LIVE</span>
-              ) : (
-                match.result && match.result !== 'No winner' ? 'Final' : match.result
-              )}
-            </div>
-            <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-            <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+            {match.matchType === 'Promo' ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '50%',
+                      background: '#C6A04F',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#232323',
+                      fontSize: 24,
+                      boxShadow: '0 0 12px #C6A04F66',
+                    }}
+                  >
+                    <span role="img" aria-label="Promo segment">🎤</span>
+                  </div>
+                  <div style={{ fontWeight: 800, color: '#C6A04F', fontSize: 14, marginTop: 6, textAlign: 'center', letterSpacing: 0.5 }}>
+                    PROMO SEGMENT
+                  </div>
+                  {match.title && (
+                    <div style={{ color: '#fff', fontSize: 13, marginTop: 2, textAlign: 'center', maxWidth: 260 }}>
+                      {match.title}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+                  {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
+                </div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
+                  {match.isLive ? (
+                    <span style={{ color: '#27ae60' }}>LIVE</span>
+                  ) : (
+                    match.result && match.result !== 'No winner' ? 'Final' : match.result
+                  )}
+                </div>
+                <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+                <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+              </>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
             {teamStrings.map((teamStr, sideIdx) => {
@@ -2094,18 +2148,51 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             {winnerIndex === 0 ? triangleRight : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
           </div>
           <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120, margin: 0, padding: 0 }}>
-            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 13, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>
-              {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
-            </div>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>
-              {isMatchInProgress ? (
-                <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
-              ) : (
-                match.result && match.result !== 'No winner' ? 'Final' : match.result
-              )}
-            </div>
-            <div style={{ color: '#bbb', fontSize: 12, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-            <div style={{ color: '#bbb', fontSize: 12, textAlign: 'center' }}>{match.time}</div>
+            {match.matchType === 'Promo' ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '50%',
+                      background: '#C6A04F',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#232323',
+                      fontSize: 24,
+                      boxShadow: '0 0 12px #C6A04F66',
+                    }}
+                  >
+                    <span role="img" aria-label="Promo segment">🎤</span>
+                  </div>
+                  <div style={{ fontWeight: 800, color: '#C6A04F', fontSize: 13, marginTop: 6, textAlign: 'center', letterSpacing: 0.5 }}>
+                    PROMO SEGMENT
+                  </div>
+                  {match.title && (
+                    <div style={{ color: '#fff', fontSize: 13, marginTop: 2, textAlign: 'center', maxWidth: 260 }}>
+                      {match.title}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 13, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>
+                  {match.cardType}{isTitleMatch ? ' - Title Match' : ''}
+                </div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 16, marginBottom: 2, textAlign: 'center' }}>
+                  {isMatchInProgress ? (
+                    <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
+                  ) : (
+                    match.result && match.result !== 'No winner' ? 'Final' : match.result
+                  )}
+                </div>
+                <div style={{ color: '#bbb', fontSize: 12, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+                <div style={{ color: '#bbb', fontSize: 12, textAlign: 'center' }}>{match.time}</div>
+              </>
+            )}
           </div>
           <div style={{ width: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {winnerIndex === 1 ? triangleLeft : <span style={{ display: 'inline-block', width: 14, height: 18, opacity: 0 }} />}
@@ -2276,6 +2363,57 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           ) : null}
         </div>
       )}
+
+      {/* Summary / Commentary / Statistics pills inside card (event page + match page) */}
+      <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #444', width: '100%' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 8 }}>
+          <button type="button" onClick={() => setCardView('summary')} style={cardView === 'summary' ? pillActive : pillBase}>
+            Summary
+          </button>
+          {match?.matchType !== 'Promo' && (
+            <>
+              <button type="button" onClick={() => setCardView('commentary')} style={cardView === 'commentary' ? pillActive : pillBase}>
+                Commentary
+              </button>
+              <button type="button" onClick={() => setCardView('statistics')} title="Wrestler statistics coming soon" style={cardView === 'statistics' ? pillActive : pillBase}>
+                Statistics
+              </button>
+            </>
+          )}
+        </div>
+        {cardView != null && (
+        <div style={{ background: '#1a1a1a', borderRadius: 8, padding: 12, minHeight: 48, width: '100%' }}>
+          {cardView === 'summary' && (
+            <div>
+              <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>{match?.matchType === 'Promo' ? 'Segment recap' : 'Summary'}</div>
+              <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                {summaryContent || (match?.matchType === 'Promo' ? 'No recap added.' : 'No summary added for this match.')}
+              </div>
+            </div>
+          )}
+          {cardView === 'commentary' && (
+            <div>
+              <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>Match Commentary</div>
+              {hasCommentary ? (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {match.commentary.map((c, i) => (
+                    <li key={i} style={{ marginBottom: 4, fontSize: 13, color: '#ccc' }}>
+                      <span style={{ color: '#C6A04F', marginRight: 6 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
+                      {c.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={{ color: '#888', fontSize: 13 }}>No match commentary available for this match.</div>
+              )}
+            </div>
+          )}
+          {cardView === 'statistics' && (
+            <div style={{ color: '#888', fontSize: 13 }}>Wrestler statistics for this match will appear here once that feature is available.</div>
+          )}
+        </div>
+        )}
+      </div>
     </div>
   );
 } 
