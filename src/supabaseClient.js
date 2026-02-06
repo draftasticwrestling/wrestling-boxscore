@@ -46,10 +46,24 @@ export async function uploadWrestlerImage(file, wrestlerSlug) {
 
   if (error) throw error;
 
-  // Return the public URL in the format specified
-  const publicUrl = `https://qvbqxietcmweltxoonvh.supabase.co/storage/v1/object/public/wrestler-images/${filePath}`;
-  return publicUrl;
-} 
+  const { data: urlData } = supabase.storage.from('wrestler-images').getPublicUrl(filePath);
+  return urlData.publicUrl;
+}
+
+/** Upload full-body image for wrestler profile. Stored as wrestlerSlug-full.ext */
+export async function uploadWrestlerFullBodyImage(file, wrestlerSlug) {
+  const fileExt = file.name.split('.').pop().toLowerCase();
+  if (fileExt !== 'png' && fileExt !== 'webp') {
+    throw new Error('File must be a .png or .webp file');
+  }
+  const filePath = `${wrestlerSlug}-full.${fileExt}`;
+  const { error } = await supabase.storage
+    .from('wrestler-images')
+    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+  if (error) throw error;
+  const { data: urlData } = supabase.storage.from('wrestler-images').getPublicUrl(filePath);
+  return urlData.publicUrl;
+}
 
 function slugify(name) {
   return name

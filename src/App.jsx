@@ -17,6 +17,7 @@ import {
 } from './options';
 import Menu from './components/Menu';
 import WrestlersPage from './components/WrestlersPage';
+import WrestlerProfile from './components/WrestlerProfile';
 import Layout from './components/Layout';
 import { Helmet } from 'react-helmet';
 import WrestlerAutocomplete from './components/WrestlerAutocomplete';
@@ -784,6 +785,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                   wrestlerMap={wrestlerMap} 
                   isClickable={true}
                   matchIndex={matchIndex}
+                  events={events}
                 />
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
                   <button
@@ -6243,12 +6245,21 @@ function App() {
       const { data } = await supabase.from('wrestlers').select('*');
       setWrestlers(data);
       const map = {};
-      data.forEach(w => { map[w.id] = w; }); // Revert to using id as key
-      console.log('Wrestler map keys:', Object.keys(map)); // Debug log
+      data.forEach(w => { map[w.id] = w; });
       setWrestlerMap(map);
     }
     fetchWrestlers();
   }, []);
+
+  const handleUpdateWrestler = (updatedWrestler, previousId) => {
+    setWrestlers(prev => prev.map(w => w.id === previousId ? updatedWrestler : w));
+    setWrestlerMap(prev => {
+      const next = { ...prev };
+      if (previousId !== updatedWrestler.id) delete next[previousId];
+      next[updatedWrestler.id] = updatedWrestler;
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -6331,6 +6342,7 @@ function App() {
               element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />}
             />
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
+            <Route path="/wrestler/:slug" element={<WrestlerProfile events={events} wrestlers={wrestlers} wrestlerMap={wrestlerMap} onUpdateWrestler={handleUpdateWrestler} />} />
             <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
             <Route path="/participant-demo" element={<ParticipantSelectionDemo wrestlers={wrestlers} />} />
             <Route
@@ -6490,6 +6502,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
       onEdit={handleEdit}
       wrestlerMap={wrestlerMap}
       canEdit={canEdit}
+      events={events}
     />
   );
 }

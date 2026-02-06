@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase, uploadWrestlerImage } from '../supabaseClient';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase, uploadWrestlerImage, uploadWrestlerFullBodyImage } from '../supabaseClient';
 import CountrySelect from './CountrySelect';
 
 const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned'];
@@ -17,6 +17,11 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
     tag_team_name: '',
     tag_team_partner_slug: '',
     stable: '',
+    accomplishments: '',
+    billed_from: '',
+    height: '',
+    weight: '',
+    nickname: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,6 +31,10 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageRemoved, setImageRemoved] = useState(false);
+  const [fullBodyImageFile, setFullBodyImageFile] = useState(null);
+  const [fullBodyImagePreview, setFullBodyImagePreview] = useState(null);
+  const [fullBodyImageRemoved, setFullBodyImageRemoved] = useState(false);
+  const initialFormDataRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -44,7 +53,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
 
   useEffect(() => {
     if (wrestler) {
-      setFormData({
+      const initial = {
         slug: wrestler.id || '',
         dob: wrestler.dob || '',
         nationality: wrestler.nationality || '',
@@ -54,8 +63,15 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         tag_team_name: wrestler.tag_team_name || '',
         tag_team_partner_slug: wrestler.tag_team_partner_slug || '',
         stable: wrestler.stable || wrestler.affiliation || '',
-      });
-      
+        accomplishments: wrestler.accomplishments || '',
+        billed_from: wrestler.billed_from || '',
+        height: wrestler.height || '',
+        weight: wrestler.weight || '',
+        nickname: wrestler.nickname || '',
+      };
+      setFormData(initial);
+      initialFormDataRef.current = initial;
+
       // Set partner search term to current partner's name if exists
       if (wrestler.tag_team_partner_slug) {
         const partner = allWrestlers.find(w => w.id === wrestler.tag_team_partner_slug);
@@ -74,6 +90,9 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
       // Reset image file
       setImageFile(null);
       setImageRemoved(false);
+      setFullBodyImageFile(null);
+      setFullBodyImageRemoved(false);
+      setFullBodyImagePreview(wrestler.full_body_image_url || null);
     }
   }, [wrestler, allWrestlers]);
 
@@ -101,6 +120,27 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
     boxShadow: isActive ? '0 0 0 1px #000 inset' : 'none',
     opacity: isActive ? 1 : 0.9,
   });
+
+  const isDirty =
+    initialFormDataRef.current != null &&
+    (JSON.stringify(formData) !== JSON.stringify(initialFormDataRef.current) ||
+      !!imageFile ||
+      !!fullBodyImageFile ||
+      imageRemoved ||
+      fullBodyImageRemoved);
+
+  const handleRequestClose = useCallback(() => {
+    if (isDirty && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) return;
+    onClose();
+  }, [isDirty, onClose]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') handleRequestClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleRequestClose]);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -177,6 +217,11 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         tag_team_name: formData.tag_team_name && formData.tag_team_name.trim() ? formData.tag_team_name.trim() : null,
         tag_team_partner_slug: formData.tag_team_partner_slug && formData.tag_team_partner_slug.trim() ? formData.tag_team_partner_slug.trim() : null,
         stable: formData.stable && formData.stable.trim() ? formData.stable.trim() : null,
+        accomplishments: formData.accomplishments && formData.accomplishments.trim() ? formData.accomplishments.trim() : null,
+        billed_from: formData.billed_from && formData.billed_from.trim() ? formData.billed_from.trim() : null,
+        height: formData.height && formData.height.trim() ? formData.height.trim() : null,
+        weight: formData.weight && formData.weight.trim() ? formData.weight.trim() : null,
+        nickname: formData.nickname && formData.nickname.trim() ? formData.nickname.trim() : null,
       };
 
       // Validate based on classification
@@ -197,6 +242,9 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
       if (imageRemoved && !imageFile) {
         updateData.image_url = null;
       }
+      if (fullBodyImageRemoved && !fullBodyImageFile) {
+        updateData.full_body_image_url = null;
+      }
 
       // Validate and upload image if provided
       if (imageFile) {
@@ -215,6 +263,16 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError);
           setError(uploadError.message || 'Failed to upload image');
+          setLoading(false);
+          return;
+        }
+      }
+      if (fullBodyImageFile) {
+        try {
+          const fullBodyUrl = await uploadWrestlerFullBodyImage(fullBodyImageFile, rawSlug);
+          updateData.full_body_image_url = fullBodyUrl;
+        } catch (uploadError) {
+          setError(uploadError.message || 'Failed to upload full-body image');
           setLoading(false);
           return;
         }
@@ -320,7 +378,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         justifyContent: 'center',
         zIndex: 1000,
       }}
-      onClick={onClose}
+      onClick={handleRequestClose}
     >
       <div
         style={{
@@ -372,6 +430,26 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* Nickname */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Nickname:
+            </label>
+            <input
+              type="text"
+              value={formData.nickname || ''}
+              onChange={(e) => handleChange('nickname', e.target.value)}
+              placeholder='e.g., The American Nightmare'
+              style={{
+                width: '100%', padding: 10, borderRadius: 8, background: '#232323',
+                color: '#fff', border: '1px solid #444', fontSize: 15,
+              }}
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Displayed under the wrestler&apos;s name on their profile.
+            </div>
+          </div>
+
           {/* Slug / ID */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
@@ -434,6 +512,57 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
               Optional. Choose the wrestler&apos;s country; the flag will be shown automatically.
             </div>
+          </div>
+
+          {/* Billed From (Hometown) */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Billed From (Hometown):
+            </label>
+            <input
+              type="text"
+              value={formData.billed_from || ''}
+              onChange={(e) => handleChange('billed_from', e.target.value)}
+              placeholder="e.g., Atlanta, Georgia"
+              style={{
+                width: '100%', padding: 10, borderRadius: 8, background: '#232323',
+                color: '#fff', border: '1px solid #444', fontSize: 15,
+              }}
+            />
+          </div>
+
+          {/* Height */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Height:
+            </label>
+            <input
+              type="text"
+              value={formData.height || ''}
+              onChange={(e) => handleChange('height', e.target.value)}
+              placeholder="e.g., 6ft 2in"
+              style={{
+                width: '100%', padding: 10, borderRadius: 8, background: '#232323',
+                color: '#fff', border: '1px solid #444', fontSize: 15,
+              }}
+            />
+          </div>
+
+          {/* Weight */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Weight:
+            </label>
+            <input
+              type="text"
+              value={formData.weight || ''}
+              onChange={(e) => handleChange('weight', e.target.value)}
+              placeholder="e.g., 200 lbs"
+              style={{
+                width: '100%', padding: 10, borderRadius: 8, background: '#232323',
+                color: '#fff', border: '1px solid #444', fontSize: 15,
+              }}
+            />
           </div>
 
           {/* Classification quick toggles */}
@@ -643,6 +772,77 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             </div>
           </div>
 
+          {/* Full-body image (profile page) */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Full-Body Image (profile page):
+            </label>
+            {(fullBodyImagePreview || wrestler.full_body_image_url) && !fullBodyImageRemoved && (
+              <div style={{ marginBottom: 12, position: 'relative', display: 'inline-block' }}>
+                <img
+                  src={fullBodyImagePreview || wrestler.full_body_image_url}
+                  alt="Full body"
+                  style={{ maxHeight: 180, borderRadius: 8, border: '1px solid #444' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFullBodyImagePreview(null);
+                    setFullBodyImageFile(null);
+                    setFullBodyImageRemoved(true);
+                  }}
+                  style={{
+                    position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%',
+                    border: 'none', background: 'rgba(0,0,0,0.8)', color: '#fff', cursor: 'pointer', fontSize: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                  aria-label="Remove full-body image"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            <input
+              type="file"
+              accept=".png,.webp"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setFullBodyImageFile(file);
+                  const reader = new FileReader();
+                  reader.onloadend = () => setFullBodyImagePreview(reader.result);
+                  reader.readAsDataURL(file);
+                  setFullBodyImageRemoved(false);
+                }
+                e.target.value = '';
+              }}
+              style={{ width: '100%', padding: 10, borderRadius: 8, background: '#232323', color: '#fff', border: '1px solid #444', fontSize: 15 }}
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Optional. Shown on the wrestler profile page.
+            </div>
+          </div>
+
+          {/* Accomplishments */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Accomplishments:
+            </label>
+            <textarea
+              value={formData.accomplishments}
+              onChange={(e) => handleChange('accomplishments', e.target.value)}
+              placeholder="e.g., 2X Undisputed WWE Champion\n2024 Men's Royal Rumble Winner"
+              style={{
+                width: '100%', minHeight: 100, padding: 10, borderRadius: 8, background: '#232323',
+                color: '#fff', border: '1px solid #444', fontSize: 15, resize: 'vertical',
+              }}
+              rows={4}
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              One accomplishment per line. Shown on the wrestler profile page.
+            </div>
+          </div>
+
           {/* Tag Team Information */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
@@ -779,7 +979,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
           <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 32 }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleRequestClose}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,

@@ -85,7 +85,7 @@ function getWinnerDisplay(match, wrestlerMap) {
   return '';
 }
 
-export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {}, canEdit = false }) {
+export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {}, canEdit = false, events }) {
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const safeWrestlerMap = wrestlerMap || {};
   const user = useUser();
@@ -147,6 +147,7 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
           event={{ id: match.eventId }} 
           wrestlerMap={wrestlerMap} 
           isClickable={false}
+          events={events}
         />
 
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>

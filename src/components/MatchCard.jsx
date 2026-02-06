@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import BeltIcon from './BeltIcon';
 import BriefcaseIcon from './BriefcaseIcon';
@@ -8,6 +8,12 @@ import ChamberIcon from './ChamberIcon';
 import WarGamesIcon from './WarGamesIcon';
 import SurvivorIcon from './SurvivorIcon';
 import countries from '../data/countries';
+import {
+  extractWrestlerSlugs,
+  getMatchOutcome,
+  getLastMatchesForWrestler,
+  shouldShowLastFiveStats,
+} from '../utils/matchOutcomes';
 
 // Helper functions
 function getSpecialWinnerIcon(specialWinnerType) {
@@ -168,7 +174,37 @@ const pillBase = { padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWei
 const pillActive = { ...pillBase, background: '#C6A04F', color: '#232323' };
 const pillDisabled = { ...pillBase, opacity: 0.5, cursor: 'not-allowed' };
 
-export default function MatchCard({ match, event, wrestlerMap, isClickable = true, matchIndex }) {
+const OUTCOME_COLORS = { W: '#2e7d32', D: '#f9a825', L: '#c62828' };
+
+function LastFiveBoxes({ outcomes, size = 24 }) {
+  if (!outcomes || outcomes.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 6 }}>
+      {outcomes.map((outcome, i) => (
+        <div
+          key={i}
+          title={outcome === 'W' ? 'Win' : outcome === 'D' ? 'Draw' : 'Loss'}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: size * 0.45,
+            fontWeight: 700,
+            color: '#fff',
+            background: OUTCOME_COLORS[outcome] || '#555',
+          }}
+        >
+          {outcome}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function MatchCard({ match, event, wrestlerMap, isClickable = true, matchIndex, events }) {
   const navigate = useNavigate();
   const [expandedSlug, setExpandedSlug] = React.useState(null);
   const [showRumbleDetails, setShowRumbleDetails] = React.useState(false);
@@ -176,6 +212,21 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   const hasCommentary = Array.isArray(match?.commentary) && match.commentary.length > 0;
   const hasSummary = !!(match?.summary || (match?.matchType === 'Promo' && match?.notes));
   const summaryContent = match?.matchType === 'Promo' ? (match?.notes || '') : (match?.summary || '');
+
+  const showStatsLastFive = useMemo(
+    () => events && match && shouldShowLastFiveStats(match),
+    [events, match]
+  );
+  const statsParticipantData = useMemo(() => {
+    if (!showStatsLastFive || !events || !match || !wrestlerMap) return [];
+    const slugs = [...extractWrestlerSlugs(match.participants)];
+    const excludeEventId = event?.id ?? null;
+    return slugs.map((slug) => {
+      const lastFive = getLastMatchesForWrestler(events, slug, 5, excludeEventId ? { excludeEventId } : {});
+      const outcomes = lastFive.map(({ match: m }) => getMatchOutcome(m, slug, wrestlerMap));
+      return { slug, name: wrestlerMap[slug]?.name || slug, imageUrl: wrestlerMap[slug]?.image_url, outcomes };
+    });
+  }, [showStatsLastFive, events, match, wrestlerMap, event?.id]);
   // Show custom stipulation text (e.g. "Three Stages of Hell") instead of "Custom/Other" on the card
   const displayStipulation = (match?.stipulation === 'Custom/Other' && (match?.customStipulation || '').trim())
     ? match.customStipulation.trim()
@@ -2054,6 +2105,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       </>
                     ) : individualNames}
                   </span>
+                  {cardView === 'statistics' && showStatsLastFive && (
+                    <div style={{ alignSelf: slugs.length > 1 ? 'stretch' : 'center', display: 'flex', flexDirection: 'column', alignItems: slugs.length > 1 ? (sideIdx === 1 ? 'flex-end' : 'flex-start') : 'center', marginTop: 2 }}>
+                      {slugs.map((slug) => {
+                        const d = statsParticipantData.find((x) => x.slug === slug);
+                        if (!d) return null;
+                        const showName = slugs.length > 1;
+                        const nameRight = sideIdx === 1;
+                        return (
+                          <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? (nameRight ? 'flex-end' : 'flex-start') : 'center' }}>
+                            {showName && !nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                            <LastFiveBoxes outcomes={d.outcomes} size={22} />
+                            {showName && nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
                     {shouldShowBeltIcon && championIndex === sideIdx && !match.title?.includes('Tag Team Championship') ? (
                       <>
@@ -2090,15 +2158,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                         {wrestlerMap[slug]?.image_url
                           ? (
-                            <img
-                              src={wrestlerMap[slug].image_url}
-                              alt={wrestlerMap[slug].name}
-                              style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedSlug(prev => (prev === slug ? null : slug));
-                              }}
-                            />
+                            <Link to={`/wrestler/${slug}`} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                              <img
+                                src={wrestlerMap[slug].image_url}
+                                alt={wrestlerMap[slug].name}
+                                style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+                              />
+                            </Link>
                           )
                           : <span role="img" aria-label="wrestler">&#128100;</span>
                         }
@@ -2115,6 +2181,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     </>
                   ) : individualNames}
                 </span>
+                {cardView === 'statistics' && showStatsLastFive && slugs.map((slug) => {
+                  const d = statsParticipantData.find((x) => x.slug === slug);
+                  if (!d) return null;
+                  const showName = slugs.length > 1;
+                  return (
+                    <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? 'flex-start' : 'center' }}>
+                      {showName && <span style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                      <LastFiveBoxes outcomes={d.outcomes} size={24} />
+                    </div>
+                  );
+                })}
                 {expandedWrestler && renderWrestlerMeta(expandedWrestler)}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                   {shouldShowBeltIcon && championIndex === 0 ? (
@@ -2210,15 +2287,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                         {wrestlerMap[slug]?.image_url
                           ? (
-                            <img
-                              src={wrestlerMap[slug].image_url}
-                              alt={wrestlerMap[slug].name}
-                              style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedSlug(prev => (prev === slug ? null : slug));
-                              }}
-                            />
+                            <Link to={`/wrestler/${slug}`} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                              <img
+                                src={wrestlerMap[slug].image_url}
+                                alt={wrestlerMap[slug].name}
+                                style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+                              />
+                            </Link>
                           )
                           : <span role="img" aria-label="wrestler">&#128100;</span>
                         }
@@ -2235,6 +2310,19 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     </>
                   ) : individualNames}
                 </span>
+                {cardView === 'statistics' && showStatsLastFive && slugs.map((slug) => {
+                  const d = statsParticipantData.find((x) => x.slug === slug);
+                  if (!d) return null;
+                  const showName = slugs.length > 1;
+                  const nameRight = true;
+                  return (
+                    <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? (nameRight ? 'flex-end' : 'flex-start') : 'center' }}>
+                      {showName && !nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                      <LastFiveBoxes outcomes={d.outcomes} size={24} />
+                      {showName && nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                    </div>
+                  );
+                })}
                 {expandedWrestler && renderWrestlerMeta(expandedWrestler)}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 18, marginTop: 2 }}>
                   {shouldShowBeltIcon && championIndex === 1 ? (
@@ -2375,13 +2463,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               <button type="button" onClick={() => setCardView('commentary')} style={cardView === 'commentary' ? pillActive : pillBase}>
                 Commentary
               </button>
-              <button type="button" onClick={() => setCardView('statistics')} title="Wrestler statistics coming soon" style={cardView === 'statistics' ? pillActive : pillBase}>
+              <button type="button" onClick={() => setCardView('statistics')} title="Last 5 matches: Win / Draw / Loss" style={cardView === 'statistics' ? pillActive : pillBase}>
                 Statistics
               </button>
             </>
           )}
         </div>
-        {cardView != null && (
+        {cardView != null && (cardView !== 'statistics' || !events || !shouldShowLastFiveStats(match)) && (
         <div style={{ background: '#1a1a1a', borderRadius: 8, padding: 12, minHeight: 48, width: '100%' }}>
           {cardView === 'summary' && (
             <div>
@@ -2409,7 +2497,15 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             </div>
           )}
           {cardView === 'statistics' && (
-            <div style={{ color: '#888', fontSize: 13 }}>Wrestler statistics for this match will appear here once that feature is available.</div>
+            <div>
+              {!events ? (
+                <div style={{ color: '#888', fontSize: 13 }}>Event data is needed to show wrestler statistics.</div>
+              ) : !shouldShowLastFiveStats(match) ? (
+                <div style={{ color: '#888', fontSize: 13 }}>
+                  Last-5 record is not shown for matches with many participants (e.g. Royal Rumble, Battle Royals, Survivor Series, War Games, Elimination Chamber).
+                </div>
+              ) : null}
+            </div>
           )}
         </div>
         )}

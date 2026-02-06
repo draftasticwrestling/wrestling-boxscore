@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import MedicalCrossIcon from './MedicalCrossIcon';
 import InactiveIcon from './InactiveIcon';
@@ -255,7 +256,9 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
         </button>
       )}
       <div style={{ position: 'relative', width: 72, height: 72 }}>
-        <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
+        <Link to={`/wrestler/${w.id}`} onClick={e => e.stopPropagation()} style={{ display: 'block' }}>
+          <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
+        </Link>
 
         {/* Get status - handle both lowercase and capital S (database has "Status") */}
         {(() => {
