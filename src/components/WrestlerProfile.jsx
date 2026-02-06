@@ -60,6 +60,7 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
   const age = calculateAge(wrestler.dob);
   const accomplishmentsText = (wrestler.accomplishments || '').trim();
   const accomplishmentsList = accomplishmentsText ? accomplishmentsText.split(/\n/).filter(Boolean) : [];
+  const isWrestler = (wrestler.person_type || 'Wrestler') === 'Wrestler';
 
   return (
     <>
@@ -94,33 +95,34 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
             )}
           </div>
 
-          {/* Header: name + full-body or avatar */}
+          {/* Header: full-body/avatar + name (simplified for GM/Manager/Announcer) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 32, alignItems: 'flex-start' }}>
             <div style={{ flex: '0 0 auto' }}>
-              {(wrestler.full_body_image_url || wrestler.image_url) ? (
+              {(isWrestler && (wrestler.full_body_image_url || wrestler.image_url)) || (!isWrestler && wrestler.image_url) ? (
                 <img
-                  src={wrestler.full_body_image_url || wrestler.image_url}
+                  src={isWrestler ? (wrestler.full_body_image_url || wrestler.image_url) : wrestler.image_url}
                   alt={wrestler.name}
                   style={{
-                    width: 200,
-                    maxHeight: 320,
-                    objectFit: 'contain',
+                    width: isWrestler ? 200 : 120,
+                    maxHeight: isWrestler ? 320 : 120,
+                    objectFit: isWrestler ? 'contain' : 'cover',
                     borderRadius: 12,
                     border: '1px solid #444',
+                    ...(isWrestler ? {} : { borderRadius: '50%' }),
                   }}
                 />
               ) : (
                 <div
                   style={{
-                    width: 200,
-                    height: 240,
+                    width: isWrestler ? 200 : 120,
+                    height: isWrestler ? 240 : 120,
                     background: '#232323',
-                    borderRadius: 12,
+                    borderRadius: isWrestler ? 12 : '50%',
                     border: '1px solid #444',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 48,
+                    fontSize: isWrestler ? 48 : 36,
                     color: '#555',
                   }}
                 >
@@ -132,6 +134,11 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
               <h1 style={{ color: '#fff', fontSize: 28, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>
                 {wrestler.name}
               </h1>
+              {!isWrestler && wrestler.person_type && (
+                <div style={{ display: 'inline-block', background: '#333', color: gold, fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 6, marginBottom: 8 }}>
+                  {wrestler.person_type}
+                </div>
+              )}
               {wrestler.nickname && (
                 <div style={{ color: gold, fontSize: 18, fontStyle: 'italic', marginBottom: 12 }}>
                   &ldquo;{wrestler.nickname}&rdquo;
@@ -143,7 +150,7 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
                   {wrestler.stable && <span style={{ marginLeft: wrestler.tag_team_name ? 12 : 0 }}>Stable: {wrestler.stable}</span>}
                 </div>
               )}
-              {/* Stacked profile information */}
+              {/* Stacked profile information (simplified for non-wrestlers) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14, color: '#ccc' }}>
                 {wrestler.dob && (
                   <div><span style={{ color: '#888', marginRight: 8 }}>Born:</span>{new Date(wrestler.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
@@ -156,15 +163,16 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
                     {wrestler.nationality}
                   </div>
                 )}
-                {wrestler.billed_from && <div><span style={{ color: '#888', marginRight: 8 }}>Billed From:</span>{wrestler.billed_from}</div>}
-                {wrestler.height && <div><span style={{ color: '#888', marginRight: 8 }}>Height:</span>{wrestler.height}</div>}
-                {wrestler.weight && <div><span style={{ color: '#888', marginRight: 8 }}>Weight:</span>{wrestler.weight}</div>}
+                {isWrestler && wrestler.billed_from && <div><span style={{ color: '#888', marginRight: 8 }}>Billed From:</span>{wrestler.billed_from}</div>}
+                {isWrestler && wrestler.height && <div><span style={{ color: '#888', marginRight: 8 }}>Height:</span>{wrestler.height}</div>}
+                {isWrestler && wrestler.weight && <div><span style={{ color: '#888', marginRight: 8 }}>Weight:</span>{wrestler.weight}</div>}
                 {wrestler.brand && <div><span style={{ color: '#888', marginRight: 8 }}>Brand:</span>{wrestler.brand}</div>}
               </div>
             </div>
           </div>
 
-          {/* Accomplishments - always show, placeholder when empty */}
+          {/* Accomplishments - only for wrestlers */}
+          {isWrestler && (
           <section style={{ marginBottom: 32 }}>
             <h2 style={{ color: gold, fontSize: 18, marginBottom: 12, borderBottom: '2px solid #C6A04F', paddingBottom: 6 }}>
               Accomplishments
@@ -179,6 +187,7 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
               <p style={{ color: '#888', margin: 0, fontStyle: 'italic' }}>No accomplishments added yet.</p>
             )}
           </section>
+          )}
 
           {/* Last 5 Matches */}
           <section>

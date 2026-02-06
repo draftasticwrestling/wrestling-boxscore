@@ -120,6 +120,8 @@ async function getWrestlersWithRecentAppearances() {
   }
 }
 
+const PERSONNEL_TYPES = ['Head of Creative', 'GM', 'Manager', 'Announcer'];
+
 function groupWrestlersByClassification(wrestlers) {
   const grouped = {
     Active: { RAW: [], SmackDown: [], NXT: [], AAA: [] },
@@ -130,6 +132,9 @@ function groupWrestlersByClassification(wrestlers) {
   };
 
   wrestlers.forEach(w => {
+    // Exclude GMs, Managers, Announcers from roster groups; they have their own section
+    if (w.person_type && PERSONNEL_TYPES.includes(w.person_type)) return;
+
     const classification = w.classification || 'Active'; // Default to Active for backward compatibility
     const status = w.status || w.Status || '';
     
@@ -282,6 +287,9 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
         })()}
       </div>
       <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', textAlign: 'center', wordBreak: 'break-word' }}>{w.name}</div>
+      {w.person_type && w.person_type !== 'Wrestler' && (
+        <div style={{ fontSize: 10, color: '#C6A04F', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{w.person_type}</div>
+      )}
       {/* Status indicator text */}
       {(() => {
         const status = w.status || w.Status || '';
@@ -401,6 +409,17 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
   });
   
   const grouped = groupWrestlersByClassification(filteredWrestlers);
+
+  // GMs, Managers, Announcers (from full list so they always show in their section)
+  const personnelList = safeWrestlers
+    .filter(w => w.person_type && PERSONNEL_TYPES.includes(w.person_type))
+    .sort((a, b) => {
+      const order = { 'Head of Creative': 0, GM: 1, Manager: 2, Announcer: 3 };
+      const ai = order[a.person_type] ?? 4;
+      const bi = order[b.person_type] ?? 4;
+      if (ai !== bi) return ai - bi;
+      return (a.name || '').localeCompare(b.name || '');
+    });
   
   // Debug: Log grouping results
   console.log('Wrestler grouping:', {
@@ -574,6 +593,36 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
                 <WrestlerCard 
                   key={w.id} 
                   w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Head of Creative, GMs, Managers & Announcers */}
+        {personnelList.length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>
+              Head of Creative, GMs, Managers & Announcers
+            </h3>
+            <div style={{ color: '#aaa', fontSize: 14, marginBottom: 16 }}>
+              Personnel who appear in promos and occasionally in segments.
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {personnelList.map(w => (
+                <WrestlerCard
+                  key={w.id}
+                  w={w}
                   onEdit={setEditingWrestler}
                   isAuthorized={isAuthorized}
                   isExpanded={expandedWrestlerId === w.id}

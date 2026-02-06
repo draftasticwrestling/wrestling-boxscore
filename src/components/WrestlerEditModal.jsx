@@ -4,6 +4,7 @@ import CountrySelect from './CountrySelect';
 
 const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned'];
 const CLASSIFICATION_OPTIONS = ['Active', 'Part-timer', 'Celebrity Guests', 'Alumni'];
+const PERSON_TYPE_OPTIONS = ['Wrestler', 'Head of Creative', 'GM', 'Manager', 'Announcer'];
 const STATUS_OPTIONS = ['', 'Injured', 'On Hiatus'];
 
 export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestlers = [] }) {
@@ -22,6 +23,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
     height: '',
     weight: '',
     nickname: '',
+    person_type: 'Wrestler',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -68,6 +70,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         height: wrestler.height || '',
         weight: wrestler.weight || '',
         nickname: wrestler.nickname || '',
+        person_type: wrestler.person_type || 'Wrestler',
       };
       setFormData(initial);
       initialFormDataRef.current = initial;
@@ -217,11 +220,12 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
         tag_team_name: formData.tag_team_name && formData.tag_team_name.trim() ? formData.tag_team_name.trim() : null,
         tag_team_partner_slug: formData.tag_team_partner_slug && formData.tag_team_partner_slug.trim() ? formData.tag_team_partner_slug.trim() : null,
         stable: formData.stable && formData.stable.trim() ? formData.stable.trim() : null,
-        accomplishments: formData.accomplishments && formData.accomplishments.trim() ? formData.accomplishments.trim() : null,
-        billed_from: formData.billed_from && formData.billed_from.trim() ? formData.billed_from.trim() : null,
-        height: formData.height && formData.height.trim() ? formData.height.trim() : null,
-        weight: formData.weight && formData.weight.trim() ? formData.weight.trim() : null,
+        accomplishments: formData.person_type === 'Wrestler' && formData.accomplishments && formData.accomplishments.trim() ? formData.accomplishments.trim() : null,
+        billed_from: formData.person_type === 'Wrestler' && formData.billed_from && formData.billed_from.trim() ? formData.billed_from.trim() : null,
+        height: formData.person_type === 'Wrestler' && formData.height && formData.height.trim() ? formData.height.trim() : null,
+        weight: formData.person_type === 'Wrestler' && formData.weight && formData.weight.trim() ? formData.weight.trim() : null,
         nickname: formData.nickname && formData.nickname.trim() ? formData.nickname.trim() : null,
+        person_type: formData.person_type || 'Wrestler',
       };
 
       // Validate based on classification
@@ -267,7 +271,7 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
           return;
         }
       }
-      if (fullBodyImageFile) {
+      if (formData.person_type === 'Wrestler' && fullBodyImageFile) {
         try {
           const fullBodyUrl = await uploadWrestlerFullBodyImage(fullBodyImageFile, rawSlug);
           updateData.full_body_image_url = fullBodyUrl;
@@ -276,6 +280,13 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
           setLoading(false);
           return;
         }
+      }
+      if (formData.person_type !== 'Wrestler') {
+        updateData.full_body_image_url = null;
+        updateData.billed_from = null;
+        updateData.height = null;
+        updateData.weight = null;
+        updateData.accomplishments = null;
       }
 
       // Update wrestler in database
@@ -450,6 +461,28 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             </div>
           </div>
 
+          {/* Person type */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
+              Type:
+            </label>
+            <select
+              value={formData.person_type || 'Wrestler'}
+              onChange={(e) => handleChange('person_type', e.target.value)}
+              style={{
+                width: '100%', padding: 10, borderRadius: 8, background: '#232323',
+                color: '#fff', border: '1px solid #444', fontSize: 15,
+              }}
+            >
+              {PERSON_TYPE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+              Wrestler = full profile. GM / Manager / Announcer = simplified profile.
+            </div>
+          </div>
+
           {/* Slug / ID */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
@@ -514,6 +547,8 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             </div>
           </div>
 
+          {formData.person_type === 'Wrestler' && (
+            <>
           {/* Billed From (Hometown) */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
@@ -564,6 +599,8 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
               }}
             />
           </div>
+            </>
+          )}
 
           {/* Classification quick toggles */}
           <div style={{ marginBottom: 20 }}>
@@ -772,6 +809,8 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
             </div>
           </div>
 
+          {formData.person_type === 'Wrestler' && (
+            <>
           {/* Full-body image (profile page) */}
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', color: '#fff', marginBottom: 8, fontWeight: 600 }}>
@@ -842,6 +881,8 @@ export default function WrestlerEditModal({ wrestler, onClose, onSave, allWrestl
               One accomplishment per line. Shown on the wrestler profile page.
             </div>
           </div>
+            </>
+          )}
 
           {/* Tag Team Information */}
           <div style={{ marginBottom: 20 }}>
