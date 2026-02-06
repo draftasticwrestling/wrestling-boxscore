@@ -2071,76 +2071,117 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               </>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32, width: '100%' }}>
-            {teamStrings.map((teamStr, sideIdx) => {
-              const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
-              const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
-              return (
-                <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
-                  <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                    {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
-                  </div>
-                  <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
-                    {slugs.map((slug, i) => (
-                      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
-                          {wrestlerMap[slug]?.image_url
-                            ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-                            : <span role="img" aria-label="wrestler">&#128100;</span>
-                          }
-                        </div>
-                                              {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
-                        <div style={{ marginTop: 4 }}>
-                          <BeltIcon size={24} />
-                        </div>
-                      )}
-                      </div>
-                    ))}
-                  </div>
-                  <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? '#C6A04F' : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
-                    {teamName ? (
-                      <>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === sideIdx ? '#C6A04F' : '#fff' }}>{teamName}</div>
-                        <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
-                      </>
-                    ) : individualNames}
-                  </span>
-                  {cardView === 'statistics' && showStatsLastFive && (
-                    <div style={{ alignSelf: slugs.length > 1 ? 'stretch' : 'center', display: 'flex', flexDirection: 'column', alignItems: slugs.length > 1 ? (sideIdx === 1 ? 'flex-end' : 'flex-start') : 'center', marginTop: 2 }}>
-                      {slugs.map((slug) => {
-                        const d = statsParticipantData.find((x) => x.slug === slug);
-                        if (!d) return null;
-                        const showName = slugs.length > 1;
-                        const nameRight = sideIdx === 1;
-                        return (
-                          <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? (nameRight ? 'flex-end' : 'flex-start') : 'center' }}>
-                            {showName && !nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
-                            <LastFiveBoxes outcomes={d.outcomes} size={22} />
-                            {showName && nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+          <div style={{ display: 'flex', flexDirection: match.matchType === 'Promo' && teamStrings.length > 7 ? 'column' : 'row', alignItems: 'flex-start', justifyContent: 'center', gap: match.matchType === 'Promo' && teamStrings.length > 7 ? 8 : 32, width: '100%' }}>
+            {match.matchType === 'Promo' && teamStrings.length > 7 ? (
+              (() => {
+                const half = Math.ceil(teamStrings.length / 2);
+                const row1 = teamStrings.slice(0, half);
+                const row2 = teamStrings.slice(half);
+                const renderPromoParticipant = (teamStr, sideIdx) => {
+                  const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
+                  const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+                  return (
+                    <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 6 }}>
+                        {slugs.map((slug, i) => (
+                          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 * 0.6, color: '#7da2c1' }}>
+                              {wrestlerMap[slug]?.image_url
+                                ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+                                : <span role="img" aria-label="wrestler">&#128100;</span>
+                              }
+                            </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
+                      <span style={{ fontWeight: 600, color: '#fff', fontSize: 12, textAlign: 'center', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {teamName || individualNames}
+                      </span>
                     </div>
-                  )}
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
-                    {shouldShowBeltIcon && championIndex === sideIdx && !match.title?.includes('Tag Team Championship') ? (
-                      <>
-                        <BeltIcon size={36} />
-                        {match.titleOutcome && match.titleOutcome !== 'None' && (
-                          <div style={{ fontSize: 10, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
-                        )}
-                      </>
-                    ) : 
-                     match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
-                     getSpecialWinnerIcon(match.specialWinnerType) : 
-                     match.titleOutcome && match.titleOutcome === 'No. 1 Contender' && winnerIndex === sideIdx ? (
-                       <div style={{ fontSize: 10, color: '#C6A04F', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
-                     ) : 
-                     <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                  );
+                };
+                return (
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 16, width: '100%', marginBottom: 8 }}>
+                      {row1.map((teamStr, i) => renderPromoParticipant(teamStr, i))}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 16, width: '100%' }}>
+                      {row2.map((teamStr, i) => renderPromoParticipant(teamStr, half + i))}
+                    </div>
+                  </>
+                );
+              })()
+            ) : (
+              teamStrings.map((teamStr, sideIdx) => {
+                const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
+                const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+                return (
+                  <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+                    <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                      {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
+                      {slugs.map((slug, i) => (
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
+                            {wrestlerMap[slug]?.image_url
+                              ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                              : <span role="img" aria-label="wrestler">&#128100;</span>
+                            }
+                          </div>
+                                              {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
+                            <div style={{ marginTop: 4 }}>
+                              <BeltIcon size={24} />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <span style={{ fontWeight: 700, color: winnerIndex === sideIdx ? '#C6A04F' : '#fff', fontSize: 18, textAlign: 'center', marginBottom: 2 }}>
+                      {teamName ? (
+                        <>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === sideIdx ? '#C6A04F' : '#fff' }}>{teamName}</div>
+                          <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                        </>
+                      ) : individualNames}
+                    </span>
+                    {cardView === 'statistics' && showStatsLastFive && (
+                      <div style={{ alignSelf: slugs.length > 1 ? 'stretch' : 'center', display: 'flex', flexDirection: 'column', alignItems: slugs.length > 1 ? (sideIdx === 1 ? 'flex-end' : 'flex-start') : 'center', marginTop: 2 }}>
+                        {slugs.map((slug) => {
+                          const d = statsParticipantData.find((x) => x.slug === slug);
+                          if (!d) return null;
+                          const showName = slugs.length > 1;
+                          const nameRight = sideIdx === 1;
+                          return (
+                            <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? (nameRight ? 'flex-end' : 'flex-start') : 'center' }}>
+                              {showName && !nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                              <LastFiveBoxes outcomes={d.outcomes} size={22} />
+                              {showName && nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 24, marginTop: 2 }}>
+                      {shouldShowBeltIcon && championIndex === sideIdx && !match.title?.includes('Tag Team Championship') ? (
+                        <>
+                          <BeltIcon size={36} />
+                          {match.titleOutcome && match.titleOutcome !== 'None' && (
+                            <div style={{ fontSize: 10, color: match.titleOutcome === 'New Champion' ? '#4CAF50' : '#FFC107', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
+                          )}
+                        </>
+                      ) : 
+                       match.specialWinnerType && match.specialWinnerType !== 'None' && winnerIndex === sideIdx ? 
+                       getSpecialWinnerIcon(match.specialWinnerType) : 
+                       match.titleOutcome && match.titleOutcome === 'No. 1 Contender' && winnerIndex === sideIdx ? (
+                         <div style={{ fontSize: 10, color: '#C6A04F', fontWeight: 600, marginTop: 2, textAlign: 'center' }}>{match.titleOutcome}</div>
+                       ) : 
+                       <span style={{ display: 'inline-block', width: 32, height: 16 }} />}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </>
       ) : !isMultiSide ? (
