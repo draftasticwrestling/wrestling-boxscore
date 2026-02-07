@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 import { useUser } from '../hooks/useUser';
 import ChampionshipEditModal from './ChampionshipEditModal';
 
-const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'Unassigned'];
+const BRAND_ORDER = ['RAW', 'SmackDown', 'Unassigned'];
 
 // Custom championship display order
 const CHAMPIONSHIP_ORDER = [
@@ -386,8 +386,8 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     <>
       <Helmet>
         <title>Current Champions - WWE Championships | Pro Wrestling Boxscore</title>
-        <meta name="description" content="View all current WWE champions across RAW, SmackDown, NXT, and undisputed titles. Stay updated with the latest championship holders." />
-        <meta name="keywords" content="WWE champions, current champions, WWE titles, RAW champions, SmackDown champions, NXT champions" />
+        <meta name="description" content="View all current WWE champions across RAW, SmackDown, and undisputed titles. Stay updated with the latest championship holders." />
+        <meta name="keywords" content="WWE champions, current champions, WWE titles, RAW champions, SmackDown champions" />
         <link rel="canonical" href="https://prowrestlingboxscore.com/championships" />
       </Helmet>
       
