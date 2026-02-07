@@ -605,8 +605,13 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   };
 
   const handleSaveMatch = (updatedMatch) => {
+    // Find index in event.matches by order (display list is sorted by order, so editingMatchIndex is not the same as event.matches index)
+    const indexToUpdate = event.matches.findIndex(
+      (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
+    );
+    const targetIndex = indexToUpdate >= 0 ? indexToUpdate : editingMatchIndex;
     const updatedMatches = [...event.matches];
-    updatedMatches[editingMatchIndex] = updatedMatch;
+    updatedMatches[targetIndex] = updatedMatch;
     onEditMatch(event.id, updatedMatches);
     setIsEditingMatch(false);
     setEditingMatchIndex(null);
@@ -6455,8 +6460,12 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   };
 
   const handleSave = (updatedMatch) => {
+    const indexToUpdate = event.matches.findIndex(
+      (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
+    );
+    const targetIndex = indexToUpdate >= 0 ? indexToUpdate : matchIndex;
     const updatedMatches = [...event.matches];
-    updatedMatches[matchIndex] = updatedMatch;
+    updatedMatches[targetIndex] = updatedMatch;
     onEditMatch(event.id, updatedMatches);
     setIsEditing(false);
   };

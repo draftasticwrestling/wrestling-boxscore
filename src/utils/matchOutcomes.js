@@ -61,23 +61,36 @@ export function isDrawResult(result, method) {
 
 /**
  * Returns 'W' | 'D' | 'L' for a match from the perspective of the given wrestler slug.
+ * Draw (D) is only returned when the match was explicitly No Winner (No Contest, Double Count Out, etc.).
  */
 export function getMatchOutcome(match, wrestlerSlug, wrestlerMap) {
   const wrestlerName = wrestlerMap?.[wrestlerSlug]?.name;
   const normalize = (s) =>
     (s || '').toLowerCase().trim().replace(/\s+/g, ' ');
+  const participantSlugs = extractWrestlerSlugs(match.participants);
+  const wasInMatch = participantSlugs.has(wrestlerSlug);
 
   if (match.winner) {
     if (match.winner === wrestlerSlug) return 'W';
-    const slugs = extractWrestlerSlugs(match.participants);
-    if (slugs.has(wrestlerSlug)) return 'L';
+    if (wasInMatch) return 'L';
     return 'D';
   }
+
   if (isDrawResult(match.result, match.method)) return 'D';
-  if (!match.result || !match.result.includes(' def. ')) return 'D';
+
+  if (!match.result || !match.result.includes(' def. ')) {
+    if (wasInMatch) return 'L';
+    return 'D';
+  }
+
   const [winnerSide, loserSide] = match.result.split(' def. ').map((s) => s.trim());
   const winnerSlugs = extractWrestlerSlugs(winnerSide);
-  const loserSlugs = extractWrestlerSlugs(loserSide);
+  const loserSlugs = new Set();
+  loserSide.split(/\s+and\s+|\s*&\s+/).forEach((part) => {
+    extractWrestlerSlugs(part.trim()).forEach((s) => loserSlugs.add(s));
+  });
+  if (loserSlugs.size === 0) extractWrestlerSlugs(loserSide).forEach((s) => loserSlugs.add(s));
+
   if (
     winnerSlugs.has(wrestlerSlug) ||
     (wrestlerName && normalize(winnerSide) === normalize(wrestlerName))
@@ -85,14 +98,16 @@ export function getMatchOutcome(match, wrestlerSlug, wrestlerMap) {
     return 'W';
   if (
     loserSlugs.has(wrestlerSlug) ||
-    (wrestlerName && normalize(loserSide) === normalize(wrestlerName))
+    (wrestlerName && loserSide.split(/\s+and\s+|\s*&\s+/).some((part) => normalize(part.trim()) === normalize(wrestlerName)))
   )
     return 'L';
+  if (wasInMatch) return 'L';
   return 'D';
 }
 
 /**
  * Get last N matches (excluding promos) that the wrestler participated in, newest first.
+ * Only includes matches from completed events; upcoming (and live) events are excluded.
  * @param {Array} events - All events (chronological order doesn't matter; we sort by date desc).
  * @param {string} wrestlerSlug - Wrestler slug to find matches for.
  * @param {number} limit - Max number of matches to return (default 5).
@@ -108,12 +123,14 @@ export function getLastMatchesForWrestler(events, wrestlerSlug, limit = 5, { exc
     return db - da;
   });
   for (const event of sortedEvents) {
+    if (event.status !== 'completed') continue;
     if (excludeEventId && event.id === excludeEventId) continue;
     const matches = Array.isArray(event.matches) ? event.matches : [];
     const sortedMatches = [...matches].sort((a, b) => (a.order || 0) - (b.order || 0));
     for (let i = 0; i < sortedMatches.length; i++) {
       const match = sortedMatches[i];
       if (match.matchType === 'Promo') continue;
+      if (match.status != null && match.status !== 'completed') continue;
       const slugs = extractWrestlerSlugs(match.participants);
       if (slugs.has(wrestlerSlug)) {
         results.push({ event, match, matchIndex: i });
