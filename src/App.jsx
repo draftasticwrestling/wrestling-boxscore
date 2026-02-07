@@ -28,6 +28,7 @@ import TwoOutOfThreeFallsBuilder from './components/TwoOutOfThreeFallsBuilder';
 import WarGamesMatchBuilder from './components/WarGamesMatchBuilder';
 import SurvivorSeriesMatchBuilder from './components/SurvivorSeriesMatchBuilder';
 import ChampionshipsPage from './components/ChampionshipsPage';
+import ChampionshipDetailPage from './components/ChampionshipDetailPage';
 
 // Place these at the top level, after imports
 
@@ -6349,6 +6350,7 @@ function App() {
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
             <Route path="/wrestler/:slug" element={<WrestlerProfile events={events} wrestlers={wrestlers} wrestlerMap={wrestlerMap} onUpdateWrestler={handleUpdateWrestler} />} />
             <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
+            <Route path="/championship/:id" element={<ChampionshipDetailPage />} />
             <Route path="/participant-demo" element={<ParticipantSelectionDemo wrestlers={wrestlers} />} />
             <Route
               path="/about"

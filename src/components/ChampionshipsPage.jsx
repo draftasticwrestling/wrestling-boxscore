@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../hooks/useUser';
 import ChampionshipEditModal from './ChampionshipEditModal';
@@ -475,7 +476,12 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
 
               {isAuthorized && (
                 <button
-                  onClick={() => setEditingChampionship(champ)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setEditingChampionship(champ);
+                  }}
                   style={{
                     position: 'absolute',
                     top: 12,
@@ -493,6 +499,10 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   Edit
                 </button>
               )}
+              <Link
+                to={`/championship/${champ.id}`}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'block', cursor: 'pointer' }}
+              >
               {/* Brand Badge */}
               <div style={{
                 position: 'absolute',
@@ -601,26 +611,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   {formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}
                 </div>
               </div>
-              
-              {/* Championship Details */}
-              <div style={{ 
-                background: '#222', 
-                padding: 16, 
-                borderRadius: 8,
-                border: '1px solid #444'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: '#ccc' }}>Champion:</span>
-                  <span style={{ fontWeight: 600 }}>{formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}</span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: '#ccc' }}>Brand:</span>
-                  <span style={{ color: getBrandColor(champ.brand), fontWeight: 600 }}>{champ.brand}</span>
-                </div>
-
-
-              </div>
+              </Link>
             </div>
           ))}
         </div>
