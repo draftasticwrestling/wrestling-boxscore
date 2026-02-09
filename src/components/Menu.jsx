@@ -13,7 +13,6 @@ const menuIcon = (
 
 const menuItems = [
   { label: 'Events', path: '/' },
-  { label: 'Add Event', path: '/add-event' },
   { label: 'Wrestlers', path: '/wrestlers' },
   { label: 'Championships', path: '/championships' },
   { label: 'About', path: '/about' },

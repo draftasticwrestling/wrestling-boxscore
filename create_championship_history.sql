@@ -95,6 +95,17 @@ CREATE POLICY "Enable read access for all users" ON championship_history
   FOR SELECT
   USING (true);
 
+-- Allow authenticated users (logged-in admins) to add/edit/delete title history
+DROP POLICY IF EXISTS "Enable insert for authenticated" ON championship_history;
+CREATE POLICY "Enable insert for authenticated" ON championship_history
+  FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Enable update for authenticated" ON championship_history;
+CREATE POLICY "Enable update for authenticated" ON championship_history
+  FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Enable delete for authenticated" ON championship_history;
+CREATE POLICY "Enable delete for authenticated" ON championship_history
+  FOR DELETE TO authenticated USING (true);
+
 -- 5. Function to backfill history from existing championships table
 -- This will create initial history records for current champions
 CREATE OR REPLACE FUNCTION backfill_championship_history()

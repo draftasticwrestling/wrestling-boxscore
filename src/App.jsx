@@ -174,7 +174,9 @@ function isUpcomingEST(event) {
 
 function isTodayEvent(event) {
   if (!event?.date) return false;
-  const [year, month, day] = event.date.split('-').map(Number);
+  const parts = event.date.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return false;
+  const [year, month, day] = parts;
   const eventDate = new Date(year, month - 1, day);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -183,11 +185,21 @@ function isTodayEvent(event) {
 
 function isYesterdayEvent(event) {
   if (!event?.date) return false;
-  const [year, month, day] = event.date.split('-').map(Number);
+  const parts = event.date.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return false;
+  const [year, month, day] = parts;
   const eventDate = new Date(year, month - 1, day);
   const now = new Date();
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
   return eventDate.getTime() === yesterday.getTime();
+}
+
+// Returns 'last night' | 'tonight' | null for use in titles/meta (only when event date is yesterday or today).
+function getEventDateRecency(event) {
+  if (!event?.date) return null;
+  if (isYesterdayEvent(event)) return 'last night';
+  if (isTodayEvent(event)) return 'tonight';
+  return null;
 }
 
 // Public editing helper. Currently always false so that
@@ -243,15 +255,44 @@ function EventLogoOrText({ name, alt, style, textStyle }) {
   return <strong style={textStyle}>{name}</strong>;
 }
 
-function EventList({ events }) {
+// Classify event for show filter: raw | smackdown | ple (from name only; no DB field)
+function getEventShowType(event) {
+  const name = (event?.name || '').toLowerCase().trim();
+  if (name.includes('raw') && !name.includes('tag team')) return 'raw';
+  if (name.includes('smackdown') || name.includes('smack down')) return 'smackdown';
+  return 'ple';
+}
+
+const SHOW_FILTER_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'raw', label: 'Raw' },
+  { value: 'smackdown', label: 'SmackDown' },
+  { value: 'ple', label: 'PLEs' },
+];
+
+function EventList({ events, showFilterFromRoute }) {
   const user = useUser();
+  const navigate = useNavigate();
   const [visibleCount, setVisibleCount] = useState(30);
   const [activeTab, setActiveTab] = useState('completed'); // 'completed' | 'upcoming'
+  const [showFilter, setShowFilterState] = useState(showFilterFromRoute || 'all'); // 'all' | 'raw' | 'smackdown' | 'ple'
 
-  // Reset pagination when switching tabs
+  // Sync state with route when navigating to a show-specific URL
+  React.useEffect(() => {
+    if (showFilterFromRoute) setShowFilterState(showFilterFromRoute);
+    else setShowFilterState('all');
+  }, [showFilterFromRoute]);
+
+  const setShowFilter = (value) => {
+    setShowFilterState(value);
+    if (value === 'all') navigate('/');
+    else navigate(`/${value}`);
+  };
+
+  // Reset pagination when switching tabs or show filter
   React.useEffect(() => {
     setVisibleCount(30);
-  }, [activeTab]);
+  }, [activeTab, showFilter]);
 
   const allEvents = Array.isArray(events) ? events : [];
   // Completed events keep the overall sort order (newest first)
@@ -261,11 +302,30 @@ function EventList({ events }) {
     .filter(isUpcomingEST)
     .slice()
     .sort((a, b) => new Date(a.date) - new Date(b.date));
-  const sourceEvents = activeTab === 'completed' ? completedEvents : upcomingEvents;
+  const tabEvents = activeTab === 'completed' ? completedEvents : upcomingEvents;
+  const sourceEvents =
+    showFilter === 'all'
+      ? tabEvents
+      : tabEvents.filter(e => getEventShowType(e) === showFilter);
   const visibleEvents = sourceEvents.slice(0, visibleCount);
+
+  const showTitles = {
+    raw: { title: 'Raw Results', name: 'Raw', description: 'WWE Raw results from last night and recent shows. Full match cards, winners, and championship updates for Monday Night Raw.' },
+    smackdown: { title: 'SmackDown Results', name: 'SmackDown', description: 'WWE SmackDown results from last night and recent shows. Full match cards, winners, and championship updates for Friday Night SmackDown.' },
+    ple: { title: 'PLE Results', name: 'Premium Live Events', description: 'WWE Premium Live Event results — WrestleMania, SummerSlam, Royal Rumble, and more. Full match cards and championship updates.' },
+  };
+  const showMeta = showFilterFromRoute ? showTitles[showFilterFromRoute] : null;
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      {showMeta && (
+        <Helmet>
+          <title>WWE {showMeta.title} — Last Night & Tonight | Pro Wrestling Boxscore</title>
+          <meta name="description" content={showMeta.description} />
+          <meta name="keywords" content={`WWE results, ${showMeta.name} results, WWE ${showMeta.name} results last night, ${showMeta.name} results tonight, wrestling results, match cards`} />
+          <link rel="canonical" href={`https://prowrestlingboxscore.com/${showFilterFromRoute}`} />
+        </Helmet>
+      )}
       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 24 }}>
         {user && (
           <Link
@@ -303,6 +363,65 @@ function EventList({ events }) {
         Looking for RAW results tonight, SmackDown results tonight, or full WWE results tonight? Pro Wrestling Boxscore
         tracks every show with box score-style match details and championship updates.
       </p>
+      <p style={{ textAlign: 'center', margin: '0 0 20px', fontSize: 15 }}>
+        <Link to="/raw" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
+        {' · '}
+        <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+        {' · '}
+        <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
+      </p>
+
+      {/* Latest WWE results */}
+      {completedEvents.length > 0 && (
+        <section style={{
+          marginBottom: 28,
+          padding: '20px 24px',
+          background: 'rgba(34,34,34,0.98)',
+          borderRadius: 12,
+          border: '1px solid #333',
+        }}>
+          <h2 style={{ color: gold, fontSize: 20, fontWeight: 700, margin: '0 0 6px' }}>
+            Latest WWE results
+          </h2>
+          <p style={{ color: '#aaa', fontSize: 14, margin: '0 0 16px' }}>
+            Results from last night and recent shows — full match cards and winners.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {completedEvents.slice(0, 3).map(event => (
+              <Link
+                to={`/event/${event.id}`}
+                key={event.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  background: '#222',
+                  borderRadius: 8,
+                  border: '1px solid #444',
+                  textDecoration: 'none',
+                  color: '#fff',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.background = '#2a2a2a';
+                  e.currentTarget.style.borderColor = gold;
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.background = '#222';
+                  e.currentTarget.style.borderColor = '#444';
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: 16 }}>{event.name}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12, color: gold, fontSize: 14 }}>
+                  {formatDate(event.date)}{event.location ? ` · ${event.location}` : ''}
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>View results →</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Completed / Upcoming toggle */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 8 }}>
@@ -339,6 +458,30 @@ function EventList({ events }) {
           Upcoming Events
         </button>
       </div>
+
+      {/* Show filter: Raw / SmackDown / PLEs */}
+      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+        {SHOW_FILTER_OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setShowFilter(value)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 999,
+              border: '1px solid #444',
+              background: showFilter === value ? 'rgba(198, 160, 79, 0.25)' : '#232323',
+              color: showFilter === value ? gold : '#aaa',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 13,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div style={{ marginTop: 24 }}>
         {visibleEvents.map(event => {
           const isUpcoming = isUpcomingEST(event);
@@ -682,19 +825,28 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   }
 
   const formattedDate = formatDate(event.date);
-  const brandPrefix = (event.name || '').split(' ')[0] || 'WWE';
+  const recency = getEventDateRecency(event);
+  const showType = getEventShowType(event);
+  const showLabel = showType === 'raw' ? 'Raw' : showType === 'smackdown' ? 'SmackDown' : null;
+
+  const titleRecency = recency ? ` ${recency.charAt(0).toUpperCase() + recency.slice(1)}` : '';
+  const titleShow = showLabel ? `WWE ${showLabel}` : `WWE ${event.name}`;
+  const metaDescription = recency && showLabel
+    ? `WWE ${showLabel} results from ${recency} (${formattedDate}), including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`
+    : recency
+      ? `WWE results from ${recency} (${formattedDate}), including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`
+      : showLabel
+        ? `Full WWE ${showLabel} results for ${formattedDate}, including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`
+        : `Full WWE results for ${formattedDate}, including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`;
 
   return (
     <>
       <Helmet>
         <title>
-          WWE {event.name} Results - {formattedDate}
-          {event.location ? ` - ${event.location}` : ''} | Pro Wrestling Boxscore
+          {titleShow} Results{titleRecency ? ` ${titleRecency}` : ''} — {formattedDate}
+          {event.location ? ` · ${event.location}` : ''} | Pro Wrestling Boxscore
         </title>
-        <meta
-          name="description"
-          content={`Full WWE ${brandPrefix} results for ${formattedDate}, including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`}
-        />
+        <meta name="description" content={metaDescription} />
         <link rel="canonical" href={`https://prowrestlingboxscore.com/event/${event.id}`} />
         <script type="application/ld+json">
           {JSON.stringify({
@@ -6301,14 +6453,14 @@ function App() {
   return (
     <>
       <Helmet>
-        <title>Pro Wrestling Boxscore - WWE Results Tonight, RAW & SmackDown Event Results</title>
+        <title>WWE Results Tonight & Last Night — Raw, SmackDown, PLE | Pro Wrestling Boxscore</title>
         <meta
           name="description"
-          content="See WWE results tonight with full match cards, including RAW results tonight and SmackDown results tonight, plus championship updates and box score-style coverage."
+          content="WWE results last night and tonight: Raw results, SmackDown results, and Premium Live Event results with full match cards, winners, and championship updates."
         />
         <meta
           name="keywords"
-          content="WWE results tonight, RAW results tonight, SmackDown results tonight, WWE, wrestling, event results, match cards, wrestlers, SmackDown, RAW, NXT, pay-per-view, championship, live results, wrestling stats, WWE news"
+          content="WWE results, WWE results tonight, WWE results last night, Raw results, SmackDown results, Raw results tonight, SmackDown results last night, PLE results, WWE, wrestling, event results, match cards, wrestlers, pay-per-view, championship, wrestling stats"
         />
         <link rel="canonical" href="https://prowrestlingboxscore.com/" />
         {/* Open Graph and Twitter tags as above */}
@@ -6317,6 +6469,9 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<EventList events={events} />} />
+            <Route path="/raw" element={<EventList events={events} showFilterFromRoute="raw" />} />
+            <Route path="/smackdown" element={<EventList events={events} showFilterFromRoute="smackdown" />} />
+            <Route path="/ple" element={<EventList events={events} showFilterFromRoute="ple" />} />
             <Route
               path="/event/:eventId"
               element={
