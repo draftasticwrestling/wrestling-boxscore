@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
@@ -713,18 +713,25 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
 function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap, wrestlers }) {
   const user = useUser();
   const { eventId } = useParams();
-  const event = events.find(e => e.id === eventId);
+  const eventsList = Array.isArray(events) ? events : [];
+  const event = eventsList.find(e => e && e.id === eventId);
   const navigate = useNavigate();
   const [isEditingMatch, setIsEditingMatch] = useState(false);
   const [editingMatchIndex, setEditingMatchIndex] = useState(null);
   const [editedMatch, setEditedMatch] = useState(null);
-  const logo = getEventLogo(event.name);
   const [showCustomStipulation, setShowCustomStipulation] = useState(false);
-  const [expanded, setExpanded] = React.useState(false);
+  const [expandedMatchIndex, setExpandedMatchIndex] = useState(null);
 
   if (!event) {
-    return <div style={{ padding: 24 }}>Event not found.</div>;
+    return (
+      <div style={{ padding: 24, color: cream, minHeight: 200 }}>
+        <Link to="/" style={{ color: gold }}>← Back to Events</Link>
+        <p style={{ marginTop: 16 }}>Event not found. It may still be loading—try refreshing or <Link to="/" style={{ color: gold }}>browse all events</Link>.</p>
+      </div>
+    );
   }
+
+  const logo = getEventLogo(event.name);
 
   const showPreview = (event.status === 'upcoming' || event.status === 'live') && event.preview;
   const showRecap = (event.status === 'completed' || event.status === 'live') && event.recap;
@@ -828,6 +835,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   const recency = getEventDateRecency(event);
   const showType = getEventShowType(event);
   const showLabel = showType === 'raw' ? 'Raw' : showType === 'smackdown' ? 'SmackDown' : null;
+  const brandPrefix = showLabel || (event.name || '').split(' ')[0] || 'WWE';
 
   const titleRecency = recency ? ` ${recency.charAt(0).toUpperCase() + recency.slice(1)}` : '';
   const titleShow = showLabel ? `WWE ${showLabel}` : `WWE ${event.name}`;
@@ -929,10 +937,8 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
         <h3 style={{ marginTop: 24, color: '#fff' }}>Match Results</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {matchesWithCardType.map((match, index) => {
-            const [expanded, setExpanded] = React.useState(false);
-            // Use index for navigation - it's stable and reliable
-            const matchIndex = index; // 0-based index
-            // Use both order and index for key to ensure uniqueness
+            const isExpanded = expandedMatchIndex === index;
+            const matchIndex = index;
             const uniqueKey = `match-${match.order || index}-${index}`;
             return (
               <div key={uniqueKey}>
@@ -947,7 +953,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                 />
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
                   <button
-                    onClick={e => { e.stopPropagation(); setExpanded(exp => !exp); }}
+                    onClick={e => { e.stopPropagation(); setExpandedMatchIndex(prev => prev === index ? null : index); }}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -958,9 +964,9 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                       alignItems: 'center',
                       justifyContent: 'center',
                       transition: 'transform 0.2s',
-                      transform: expanded ? 'rotate(180deg)' : 'none',
+                      transform: isExpanded ? 'rotate(180deg)' : 'none',
                     }}
-                    aria-label={expanded ? 'Collapse details' : 'Expand details'}
+                    aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
                   >
                     <svg width="32" height="20" viewBox="0 0 32 20">
                       <polyline points="4,6 16,18 28,6" fill="none" stroke="#C6A04F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
@@ -970,16 +976,16 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                 {/* Animated expandable details */}
                 <div
                   style={{
-                    maxHeight: expanded ? 400 : 0,
+                    maxHeight: isExpanded ? 400 : 0,
                     overflow: 'hidden',
                     transition: 'max-height 0.35s cubic-bezier(0.4,0,0.2,1)',
-                    opacity: expanded ? 1 : 0,
-                    pointerEvents: expanded ? 'auto' : 'none',
-                    marginTop: expanded ? 16 : 0,
+                    opacity: isExpanded ? 1 : 0,
+                    pointerEvents: isExpanded ? 'auto' : 'none',
+                    marginTop: isExpanded ? 16 : 0,
                     background: '#181511',
                     borderRadius: 8,
-                    boxShadow: expanded ? '0 2px 12px #C6A04F22' : 'none',
-                    padding: expanded ? '16px 12px' : '0 12px',
+                    boxShadow: isExpanded ? '0 2px 12px #C6A04F22' : 'none',
+                    padding: isExpanded ? '16px 12px' : '0 12px',
                     color: '#fff',
                   }}
                 >
@@ -5743,6 +5749,28 @@ function PrivacyPolicyPage() {
   );
 }
 
+// Error boundary so event page shows a message instead of blank when a child throws
+class EventPageErrorBoundary extends Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err, info) {
+    console.error('Event page error:', err, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 24, color: '#F5E7D0', maxWidth: 600, margin: '0 auto' }}>
+          <Link to="/" style={{ color: '#C6A04F' }}>← Back to Events</Link>
+          <p style={{ marginTop: 16 }}>Something went wrong loading this event. Please try again or <Link to="/" style={{ color: '#C6A04F' }}>browse all events</Link>.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Main App with Routing and Supabase persistence
 function App() {
   const [events, setEvents] = useState([]);
@@ -6475,14 +6503,16 @@ function App() {
             <Route
               path="/event/:eventId"
               element={
-                <EventBoxScore
-                  events={events}
-                  onDelete={deleteEvent}
-                  onEditMatch={handleEditMatch}
-                  onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate}
-                  wrestlerMap={wrestlerMap}
-                  wrestlers={wrestlers}
-                />
+                <EventPageErrorBoundary>
+                  <EventBoxScore
+                    events={events}
+                    onDelete={deleteEvent}
+                    onEditMatch={handleEditMatch}
+                    onRealTimeCommentaryUpdate={handleRealTimeCommentaryUpdate}
+                    wrestlerMap={wrestlerMap}
+                    wrestlers={wrestlers}
+                  />
+                </EventPageErrorBoundary>
               }
             />
             <Route
