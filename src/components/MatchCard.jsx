@@ -784,6 +784,61 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             );
           })}
         </div>
+
+        {/* Summary / Commentary / Statistics pills (same as default card) */}
+        <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #444', width: '100%' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 8 }}>
+            <button type="button" onClick={() => setCardView('summary')} style={cardView === 'summary' ? pillActive : pillBase}>
+              Summary
+            </button>
+            <button type="button" onClick={() => setCardView('commentary')} style={cardView === 'commentary' ? pillActive : pillBase}>
+              Commentary
+            </button>
+            <button type="button" onClick={() => setCardView('statistics')} title="Last 5 matches: Win / Draw / Loss" style={cardView === 'statistics' ? pillActive : pillBase}>
+              Statistics
+            </button>
+          </div>
+          {cardView != null && (cardView !== 'statistics' || !events || !shouldShowLastFiveStats(match)) && (
+            <div style={{ background: '#1a1a1a', borderRadius: 8, padding: 12, minHeight: 48, width: '100%' }}>
+              {cardView === 'summary' && (
+                <div>
+                  <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>Summary</div>
+                  <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {summaryContent || 'No summary added for this match.'}
+                  </div>
+                </div>
+              )}
+              {cardView === 'commentary' && (
+                <div>
+                  <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>Match Commentary</div>
+                  {hasCommentary ? (
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {match.commentary.map((c, i) => (
+                        <li key={i} style={{ marginBottom: 4, fontSize: 13, color: '#ccc' }}>
+                          <span style={{ color: '#C6A04F', marginRight: 6 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
+                          {c.text}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ color: '#888', fontSize: 13 }}>No match commentary available for this match.</div>
+                  )}
+                </div>
+              )}
+              {cardView === 'statistics' && (
+                <div>
+                  {!events ? (
+                    <div style={{ color: '#888', fontSize: 13 }}>Event data is needed to show wrestler statistics.</div>
+                  ) : !shouldShowLastFiveStats(match) ? (
+                    <div style={{ color: '#888', fontSize: 13 }}>
+                      Last-5 record is not shown for matches with many participants (e.g. Royal Rumble, Battle Royals, Survivor Series, War Games, Elimination Chamber).
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
