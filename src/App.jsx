@@ -721,6 +721,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   const [editedMatch, setEditedMatch] = useState(null);
   const [showCustomStipulation, setShowCustomStipulation] = useState(false);
   const [expandedMatchIndex, setExpandedMatchIndex] = useState(null);
+  const [previewRecapView, setPreviewRecapView] = useState(() => (event?.status === 'completed' ? 'recap' : 'preview'));
 
   if (!event) {
     return (
@@ -733,8 +734,14 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
 
   const logo = getEventLogo(event.name);
 
-  const showPreview = (event.status === 'upcoming' || event.status === 'live') && event.preview;
-  const showRecap = (event.status === 'completed' || event.status === 'live') && event.recap;
+  const hasPreview = !!(event.preview && String(event.preview).trim());
+  const hasRecap = !!(event.recap && String(event.recap).trim());
+  const showPreviewRecapSection = hasPreview || hasRecap;
+  const showBothPills = hasPreview && hasRecap;
+
+  React.useEffect(() => {
+    if (event?.status === 'completed') setPreviewRecapView('recap');
+  }, [event?.id]);
 
   const canEditMatches = !!user;
   const canDeleteEvent = !!user;
@@ -907,24 +914,60 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
               <strong>{formatDate(event.date)}</strong> — {event.location}
             </div>
           </div>
-          {showPreview && (
-            <div style={{ marginTop: 16, marginBottom: 16, padding: 16, background: '#232323', borderRadius: 8, border: '1px solid #C6A04F44' }}>
-              <div style={{ color: gold, fontWeight: 700, marginBottom: 8 }}>
-                Event Preview
-              </div>
-              <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                {event.preview}
-              </div>
-            </div>
-          )}
-          {showRecap && (
-            <div style={{ marginTop: 0, marginBottom: 16, padding: 16, background: '#1c1c1c', borderRadius: 8, border: '1px solid #C6A04F66' }}>
-              <div style={{ color: gold, fontWeight: 700, marginBottom: 8 }}>
-                Event Recap
-              </div>
-              <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                {event.recap}
-              </div>
+          {showPreviewRecapSection && (
+            <div style={{ marginTop: 16, marginBottom: 16 }}>
+              {showBothPills && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewRecapView('preview')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 999,
+                      border: '2px solid #C6A04F',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: previewRecapView === 'preview' ? '#C6A04F' : 'transparent',
+                      color: previewRecapView === 'preview' ? '#232323' : '#C6A04F',
+                    }}
+                  >
+                    Event Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewRecapView('recap')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 999,
+                      border: '2px solid #C6A04F',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: previewRecapView === 'recap' ? '#C6A04F' : 'transparent',
+                      color: previewRecapView === 'recap' ? '#232323' : '#C6A04F',
+                    }}
+                  >
+                    Event Recap
+                  </button>
+                </div>
+              )}
+              {(previewRecapView === 'preview' || !hasRecap) && hasPreview && (
+                <div style={{ padding: 16, background: '#232323', borderRadius: 8, border: '1px solid #C6A04F44' }}>
+                  <div style={{ color: gold, fontWeight: 700, marginBottom: 8 }}>Event Preview</div>
+                  <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {event.preview}
+                  </div>
+                </div>
+              )}
+              {(previewRecapView === 'recap' || !hasPreview) && hasRecap && (
+                <div style={{ padding: 16, background: '#1c1c1c', borderRadius: 8, border: '1px solid #C6A04F66' }}>
+                  <div style={{ color: gold, fontWeight: 700, marginBottom: 8 }}>Event Recap</div>
+                  <div style={{ color: '#fff', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {event.recap}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         {event.specialWinner && (
