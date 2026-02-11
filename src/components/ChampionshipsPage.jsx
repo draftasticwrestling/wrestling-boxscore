@@ -95,7 +95,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       // Transform data and check if titles were won from vacant status
       // Check if previous_champion_slug is 'vacant' which indicates title was won from vacant
       // Note: Only check for titles that are currently held (not currently vacant)
-      const transformedData = (data || []).map(champ => {
+      const transformedData = (data || []).filter(Boolean).map(champ => {
         // Only mark as wonFromVacant if title is currently held (not vacant) and was won from vacant
         const isCurrentlyVacant = champ.current_champion === 'VACANT' || champ.current_champion_slug === 'vacant';
         const wonFromVacant = !isCurrentlyVacant && (
@@ -105,6 +105,8 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         
         return {
           ...champ,
+          title_name: champ.title_name ?? 'Unknown Title',
+          brand: champ.brand ?? 'Unassigned',
           event: champ.event_name || champ.event || 'Unknown Event',
           wonFromVacant: wonFromVacant
         };
@@ -184,6 +186,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
 
   // Helper function to format champion name (handles both individuals and tag teams)
   const formatChampionName = (championName, championSlug, champType = null) => {
+    const name = championName != null ? String(championName) : '';
     // For non–tag-team titles, always prefer the wrestler's proper name from the wrestlers table
     if (champType !== 'Tag Team' && championSlug && championSlug !== 'vacant' && championSlug !== 'unknown') {
       const wrestlerBySlug = wrestlers.find(w => w.id === championSlug);
@@ -202,9 +205,9 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       
       // If champion name contains " & " it might be individual slugs
       // Also handle format like "The Kabuki Warriors (asuka & kairi-sane)"
-      if (championName && championName.includes(' & ')) {
+      if (name && name.includes(' & ')) {
         // Check if it's in format "Team Name (slug1 & slug2)"
-        const teamMatch = championName.match(/^([^(]+)\s*\(([^)]+)\)$/);
+        const teamMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/);
         if (teamMatch) {
           const teamName = teamMatch[1].trim();
           const slugs = teamMatch[2].split('&').map(s => s.trim());
@@ -217,7 +220,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         }
         
         // Otherwise, just slugs separated by " & "
-        const slugs = championName.split(' & ').map(s => s.trim());
+        const slugs = name.split(' & ').map(s => s.trim());
         // Try to find a tag team that contains these members
         for (const team of tagTeams) {
           const teamId = team.id;
@@ -239,7 +242,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       }
       
       // If champion name looks like a slug, try to get tag team name
-      if (championSlug && championName && championSlug === championName.toLowerCase().replace(/\s+/g, '-')) {
+      if (championSlug && name && championSlug === name.toLowerCase().replace(/\s+/g, '-')) {
         const teamName = getTagTeamName(championSlug);
         if (teamName) return teamName;
       }
@@ -247,14 +250,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     
     // Check if championName looks like a slug (contains hyphens and is lowercase)
     // This handles cases where the database stores slugs instead of names
-    if (championName && championName.includes('-') && championName === championName.toLowerCase()) {
+    if (name && name.includes('-') && name === name.toLowerCase()) {
       // Try to look up by the name itself (treating it as a slug)
-      const wrestler = wrestlers.find(w => w.id === championName);
+      const wrestler = wrestlers.find(w => w.id === name);
       if (wrestler?.name) {
         return wrestler.name;
       }
       // Also try with the championSlug parameter
-      if (championSlug && championSlug !== championName) {
+      if (championSlug && championSlug !== name) {
         const wrestlerBySlug = wrestlers.find(w => w.id === championSlug);
         if (wrestlerBySlug?.name) {
           return wrestlerBySlug.name;
@@ -263,7 +266,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     }
     
     // For individuals, if name is "Unknown" or empty but we have a slug, look up by slug
-    if ((!championName || championName === 'Unknown') && championSlug && championSlug !== 'unknown' && championSlug !== 'vacant') {
+    if ((!name || name === 'Unknown') && championSlug && championSlug !== 'unknown' && championSlug !== 'vacant') {
       const wrestler = wrestlers.find(w => w.id === championSlug);
       if (wrestler?.name) {
         return wrestler.name;
@@ -272,14 +275,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     
     // For individuals, return the name (should already be a proper name)
     // But if it's empty or null, try slug lookup as fallback
-    if (!championName && championSlug && championSlug !== 'unknown' && championSlug !== 'vacant') {
+    if (!name && championSlug && championSlug !== 'unknown' && championSlug !== 'vacant') {
       const wrestler = wrestlers.find(w => w.id === championSlug);
       if (wrestler?.name) {
         return wrestler.name;
       }
     }
     
-    return championName || 'Unknown';
+    return name || 'Unknown';
   };
 
   // Helper function to get wrestler image
@@ -292,24 +295,25 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   // Helper function to get tag team wrestler images
   const getTagTeamImages = (championName, championSlug) => {
     if (championSlug === 'vacant') return [];
+    const name = championName != null ? String(championName) : '';
     
     // Normalize slug - remove "the-" prefix if present for lookup
-    const normalizedSlug = championSlug.replace(/^the-/, '');
+    const normalizedSlug = (championSlug != null ? String(championSlug) : '').replace(/^the-/, '');
     
     // Clean up champion name - remove member names in parentheses if present
-    const cleanChampionName = championName.replace(/\s*\([^)]+\)\s*$/, '').trim();
+    const cleanChampionName = name.replace(/\s*\([^)]+\)\s*$/, '').trim();
     
     // Try to find tag team in database by multiple methods
     const tagTeam = tagTeams.find(team => {
       // Match by exact slug
       if (team.id === championSlug || team.id === normalizedSlug) return true;
       // Match by name (case insensitive)
-      if (team.name.toLowerCase() === championName.toLowerCase()) return true;
+      if (team.name.toLowerCase() === name.toLowerCase()) return true;
       // Match by cleaned name (without member names in parentheses)
       if (team.name.toLowerCase() === cleanChampionName.toLowerCase()) return true;
       // Match if team name is contained in champion name or vice versa
       const teamNameLower = team.name.toLowerCase();
-      const champNameLower = championName.toLowerCase();
+      const champNameLower = name.toLowerCase();
       if (champNameLower.includes(teamNameLower) || teamNameLower.includes(champNameLower)) return true;
       return false;
     });
@@ -346,7 +350,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     }
     
     // Fallback: try to find individual wrestlers by name
-    const names = championName.split('&').map(name => name.trim());
+    const names = name.split('&').map(n => n.trim());
     const images = names.map(name => {
       const wrestler = wrestlers.find(w => 
         w.name?.toLowerCase().includes(name.toLowerCase()) ||
@@ -468,8 +472,8 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               background: '#181818', 
               padding: 24, 
               borderRadius: 12,
-              border: `2px solid ${getBrandColor(champ.brand)}`,
-              boxShadow: `0 0 20px ${getBrandColor(champ.brand)}33`,
+              border: `2px solid ${getBrandColor(champ.brand || 'Unassigned')}`,
+              boxShadow: `0 0 20px ${getBrandColor(champ.brand || 'Unassigned')}33`,
               position: 'relative',
               overflow: 'hidden'
             }}>
@@ -508,14 +512,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                 position: 'absolute',
                 top: 12,
                 left: 12,
-                background: getBrandColor(champ.brand),
+                background: getBrandColor(champ.brand || 'Unassigned'),
                 color: '#fff',
                 padding: '4px 8px',
                 borderRadius: 12,
                 fontSize: 11,
                 fontWeight: 600
               }}>
-                {champ.brand}
+                {champ.brand || 'Unassigned'}
               </div>
               
               {/* Championship Title */}

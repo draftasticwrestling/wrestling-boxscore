@@ -26,7 +26,14 @@
   status = 301
   force = true
 
+# Dynamic sitemap (live events from Supabase) – must be before catch-all
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200

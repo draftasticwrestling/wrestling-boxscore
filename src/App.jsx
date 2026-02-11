@@ -1152,6 +1152,27 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                 Delete
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                const sitemapUrl = 'https://prowrestlingboxscore.com/sitemap.xml';
+                const q = encodeURIComponent(sitemapUrl);
+                window.open(`https://www.google.com/ping?sitemap=${q}`, '_blank', 'noopener');
+                window.open(`https://www.bing.com/ping?sitemap=${q}`, '_blank', 'noopener');
+              }}
+              style={{
+                fontSize: 12,
+                padding: '4px 10px',
+                border: '1px solid #444',
+                borderRadius: 4,
+                background: 'transparent',
+                color: '#888',
+                cursor: 'pointer',
+              }}
+              title="Ask Google and Bing to recrawl the sitemap (event pages get discovered sooner)"
+            >
+              Notify search engines
+            </button>
           </div>
         )}
       </div>
