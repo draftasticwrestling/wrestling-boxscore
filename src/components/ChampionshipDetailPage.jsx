@@ -87,6 +87,14 @@ export default function ChampionshipDetailPage() {
     });
   }, [history]);
 
+  // Current reign from title history (most recent row with no date_lost) so header matches the table
+  const currentReignFromHistory = useMemo(() => {
+    if (!sortedHistory.length) return null;
+    const mostRecent = sortedHistory[0];
+    if (mostRecent.date_lost != null && mostRecent.date_lost !== '') return null;
+    return mostRecent;
+  }, [sortedHistory]);
+
   useEffect(() => {
     if (!id) return;
     async function load() {
@@ -327,7 +335,7 @@ export default function ChampionshipDetailPage() {
     <>
       <Helmet>
         <title>{championship.title_name} - Title History | Pro Wrestling Boxscore</title>
-        <meta name="description" content={`${championship.title_name} history, current champion ${championship.current_champion}, and title facts.`} />
+        <meta name="description" content={`${championship.title_name} history, current champion ${currentReignFromHistory?.champion ?? championship.current_champion}, and title facts.`} />
         <link rel="canonical" href={`https://prowrestlingboxscore.com/championship/${championship.id}`} />
       </Helmet>
 
@@ -374,12 +382,14 @@ export default function ChampionshipDetailPage() {
             </div>
           )}
           <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>
-            Current Champion: {championship.current_champion === 'VACANT' ? 'VACANT' : championship.current_champion}
+            Current Champion: {currentReignFromHistory
+              ? (currentReignFromHistory.champion === 'VACANT' ? 'VACANT' : currentReignFromHistory.champion)
+              : (championship.current_champion === 'VACANT' ? 'VACANT' : championship.current_champion)}
           </div>
-          {championship.date_won && (
+          {(currentReignFromHistory?.date_won ?? championship.date_won) && (
             <div style={{ fontSize: 14, color: '#aaa', marginTop: 4 }}>
-              Won {formatDate(championship.date_won)}
-              {championship.event_name && ` at ${championship.event_name}`}
+              Won {formatDate(currentReignFromHistory?.date_won ?? championship.date_won)}
+              {(currentReignFromHistory?.event_name ?? championship.event_name) && ` at ${currentReignFromHistory?.event_name ?? championship.event_name}`}
             </div>
           )}
         </div>

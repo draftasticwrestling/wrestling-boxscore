@@ -652,6 +652,8 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         <ChampionshipEditModal
           championship={editingChampionship}
           wrestlers={wrestlers}
+          tagTeams={tagTeams}
+          tagTeamMembers={tagTeamMembers}
           onClose={() => setEditingChampionship(null)}
           onSave={handleChampionUpdated}
         />

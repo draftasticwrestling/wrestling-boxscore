@@ -823,13 +823,13 @@ export default function MatchEdit({
 
       const existingMatch = existingMatches[matchIndex] || {};
 
-      // Update the specific match in the array, preserving other fields and ensuring liveStart/commentary are updated
+      // Update only commentary and liveStart. Do NOT spread form state (match) here—
+      // it can have empty or stale result/winner and would overwrite the correct stored values.
       const updatedMatches = [...existingMatches];
-      updatedMatches[matchIndex] = { 
+      updatedMatches[matchIndex] = {
         ...existingMatch,
-        ...match, 
         commentary: newCommentary,
-        liveStart: newLiveStart || liveStart || existingMatch.liveStart
+        ...(newLiveStart != null ? { liveStart: newLiveStart } : {})
       };
       
       // Update the event with the new matches array

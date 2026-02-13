@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 
-export default function ChampionshipEditModal({ championship, wrestlers = [], onClose, onSave }) {
+export default function ChampionshipEditModal({ championship, wrestlers = [], tagTeams = [], tagTeamMembers = {}, onClose, onSave }) {
   const [selectedSlug, setSelectedSlug] = useState(championship.current_champion_slug || '');
   const [championName, setChampionName] = useState(championship.current_champion || '');
   const [brand, setBrand] = useState(championship.brand || '');
@@ -14,10 +14,36 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], on
     [wrestlers]
   );
 
+  const sortedTagTeams = useMemo(
+    () => [...(tagTeams || [])].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    [tagTeams]
+  );
+
+  // Build display label for each tag team: "Team Name (Member1 & Member2)"
+  const tagTeamDisplayLabels = useMemo(() => {
+    const labels = {};
+    const wrestlerById = (wrestlers || []).reduce((acc, w) => { acc[w.id] = w.name; return acc; }, {});
+    (tagTeams || []).forEach((team) => {
+      const memberSlugs = tagTeamMembers[team.id];
+      if (Array.isArray(memberSlugs) && memberSlugs.length > 0) {
+        const names = memberSlugs.map((slug) => wrestlerById[slug] || slug);
+        labels[team.id] = `${team.name || team.id} (${names.join(' & ')})`;
+      } else {
+        labels[team.id] = team.name || team.id;
+      }
+    });
+    return labels;
+  }, [tagTeams, tagTeamMembers, wrestlers]);
+
   const handleSelectChange = (slug) => {
     setSelectedSlug(slug);
     if (slug === 'vacant') {
       setChampionName('VACANT');
+      return;
+    }
+    const tagTeam = sortedTagTeams.find((t) => t.id === slug);
+    if (tagTeam) {
+      setChampionName(tagTeamDisplayLabels[tagTeam.id] ?? tagTeam.name ?? slug);
       return;
     }
     const wrestler = sortedWrestlers.find((w) => w.id === slug);
@@ -32,15 +58,20 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], on
     setError('');
 
     try {
-      if (!championName && selectedSlug && selectedSlug !== 'vacant') {
-        const wrestler = sortedWrestlers.find((w) => w.id === selectedSlug);
-        if (wrestler) {
-          setChampionName(wrestler.name);
+      // Resolve display name from slug when saving (covers tag team or wrestler selected but override left blank)
+      let effectiveChampionName = championName;
+      if (!effectiveChampionName && selectedSlug && selectedSlug !== 'vacant') {
+        const tagTeam = sortedTagTeams.find((t) => t.id === selectedSlug);
+        if (tagTeam) {
+          effectiveChampionName = tagTeamDisplayLabels[tagTeam.id] ?? tagTeam.name ?? selectedSlug;
+        } else {
+          const wrestler = sortedWrestlers.find((w) => w.id === selectedSlug);
+          if (wrestler) effectiveChampionName = wrestler.name;
         }
       }
 
       const updateData = {
-        current_champion: championName || null,
+        current_champion: effectiveChampionName || null,
         current_champion_slug: selectedSlug || null,
         brand: brand || null,
         date_won: dateWon || null,
@@ -125,11 +156,22 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], on
             >
               <option value="">-- Select champion --</option>
               <option value="vacant">VACANT (Title Vacant)</option>
-              {sortedWrestlers.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
+              {sortedTagTeams.length > 0 && (
+                <optgroup label="Tag Teams">
+                  {sortedTagTeams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {tagTeamDisplayLabels[t.id] ?? t.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Wrestlers">
+                {sortedWrestlers.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
