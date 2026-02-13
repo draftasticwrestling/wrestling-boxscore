@@ -615,6 +615,24 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                   {formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}
                 </div>
               </div>
+
+              {/* Title History pill (card links to championship detail page) */}
+              <div style={{ textAlign: 'center', marginTop: 8 }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: '2px solid #C6A04F',
+                    background: 'transparent',
+                    color: '#C6A04F',
+                  }}
+                >
+                  Title History
+                </span>
+              </div>
               </Link>
             </div>
           ))}
