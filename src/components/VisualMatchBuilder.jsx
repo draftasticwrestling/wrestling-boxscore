@@ -637,6 +637,7 @@ export default function VisualMatchBuilder({
       if (hasTeams) {
         if (participantsPerSide === 3) matchType = '6-person Tag Team';
         else if (participantsPerSide === 4) matchType = '8-person Tag Team';
+        else if (participantsPerSide === 5) matchType = '10-man Tag Team';
         else matchType = 'Tag Team';
       } else {
         matchType = 'Singles Match';

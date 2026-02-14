@@ -6812,6 +6812,11 @@ const getMatchStructureFromMatchType = (matchType) => {
         { type: 'team', participants: ['', '', '', ''], name: '' },
         { type: 'team', participants: ['', '', '', ''], name: '' }
       ];
+    case '10-man Tag Team':
+      return [
+        { type: 'team', participants: ['', '', '', '', ''], name: '' },
+        { type: 'team', participants: ['', '', '', '', ''], name: '' }
+      ];
     case 'Fatal Four-way match':
       return [
         { type: 'individual', participants: [''] },

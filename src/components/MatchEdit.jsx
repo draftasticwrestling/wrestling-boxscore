@@ -962,6 +962,11 @@ export default function MatchEdit({
           { type: 'team', participants: ['', '', '', ''], name: '' },
           { type: 'team', participants: ['', '', '', ''], name: '' }
         ];
+      case '10-man Tag Team':
+        return [
+          { type: 'team', participants: ['', '', '', '', ''], name: '' },
+          { type: 'team', participants: ['', '', '', '', ''], name: '' }
+        ];
       case 'Fatal Four-way match':
         return [
           { type: 'individual', participants: [''] },
@@ -1061,7 +1066,7 @@ export default function MatchEdit({
             match.matchType.includes('Tag Team') || 
             match.matchType.includes('6-Man') || 
             match.matchType.includes('8-Man') || 
-            match.matchType.includes('10-Man') || 
+            (match.matchType.includes('10-Man') || match.matchType.includes('10-man')) || 
             match.matchType.includes('12-Man') ||
             match.matchType.includes('WarGames') ||
             match.matchType.includes('Survivor Series')
