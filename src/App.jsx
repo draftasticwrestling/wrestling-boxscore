@@ -294,6 +294,36 @@ function EventList({ events, showFilterFromRoute }) {
     setVisibleCount(30);
   }, [activeTab, showFilter]);
 
+  // Restore scroll position when returning from an event page
+  const [restoreScrollY, setRestoreScrollY] = useState(null);
+  React.useEffect(() => {
+    const raw = sessionStorage.getItem('eventListScrollRestore');
+    if (!raw) return;
+    sessionStorage.removeItem('eventListScrollRestore');
+    try {
+      const { scrollY: savedY, visibleCount: savedCount } = JSON.parse(raw);
+      if (typeof savedCount === 'number' && savedCount > 0) setVisibleCount(savedCount);
+      if (typeof savedY === 'number') setRestoreScrollY(savedY);
+    } catch (_) {}
+  }, []);
+  React.useEffect(() => {
+    if (restoreScrollY == null) return;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, restoreScrollY);
+        setRestoreScrollY(null);
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [restoreScrollY]);
+
+  const saveListScroll = () => {
+    sessionStorage.setItem('eventListScrollRestore', JSON.stringify({
+      scrollY: window.scrollY,
+      visibleCount,
+    }));
+  };
+
   const allEvents = Array.isArray(events) ? events : [];
   // Completed events keep the overall sort order (newest first)
   const completedEvents = allEvents.filter(e => !isUpcomingEST(e));
@@ -391,6 +421,7 @@ function EventList({ events, showFilterFromRoute }) {
               <Link
                 to={`/event/${event.id}`}
                 key={event.id}
+                onClick={saveListScroll}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -490,6 +521,7 @@ function EventList({ events, showFilterFromRoute }) {
             <Link
               to={`/event/${event.id}`}
               key={event.id}
+              onClick={saveListScroll}
               style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -1852,7 +1884,7 @@ function AddEvent({ addEvent, wrestlers }) {
       };
     }
     addEvent(eventData);
-    navigate('/');
+    navigate(`/event/${id}`);
   };
 
   return (
@@ -4374,7 +4406,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       setTimeout(() => setSaveMessage(''), 3000);
     }
     if (navigateBack) {
-      navigate('/');
+      navigate(`/event/${event.id}`);
     }
   };
 
