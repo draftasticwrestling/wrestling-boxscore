@@ -6438,20 +6438,10 @@ function App() {
         console.error('Supabase update error details:', JSON.stringify(error, null, 2));
         throw error;
       }
-      
-      // Update championships if there are any completed title matches with "New Champion"
-      if (updatedEvent.matches && Array.isArray(updatedEvent.matches)) {
-        const hasNewChampion = updatedEvent.matches.some(match => 
-          match.title && 
-          match.title !== 'None' && 
-          match.status === 'completed' &&
-          match.titleOutcome === 'New Champion'
-        );
-        if (hasNewChampion) {
-          await updateChampionships(updatedEvent.matches, updatedEvent.id, updatedEvent.date, wrestlerMap);
-        }
-      }
-      
+
+      // Championship auto-update disabled: we use title history as the source of truth.
+      // Update current champions via the championship detail page (+ Add reign / Edit) or Edit Championship on the championships list.
+
       // Update local state with the sanitized event data (always include promos in local state)
       setEvents(events.map(e => e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e));
     } catch (error) {
