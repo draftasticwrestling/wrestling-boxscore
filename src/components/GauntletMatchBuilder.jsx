@@ -70,7 +70,9 @@ export default function GauntletMatchBuilder({
   wrestlers = [], 
   value, 
   onChange, 
-  onResultChange 
+  onResultChange,
+  /** When editing an existing gauntlet, pass stored progression so we don't overwrite with empty results */
+  initialProgression = null
 }) {
   // Ensure wrestlers is always an array
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
@@ -78,29 +80,47 @@ export default function GauntletMatchBuilder({
   const [matchResults, setMatchResults] = useState([]);
   const [currentWinner, setCurrentWinner] = useState('');
 
-  // Parse initial value
+  // Parse initial value and optionally hydrate from existing gauntletProgression
   useEffect(() => {
     if (value && typeof value === 'string') {
       const parts = value.split(' → ').map(p => p.trim()).filter(Boolean);
       setParticipants(parts);
       
-      // Initialize match results
-      const results = [];
-      let winner = parts[0];
-      for (let i = 1; i < parts.length; i++) {
-        results.push({
-          match: i,
-          participant1: winner,
-          participant2: parts[i],
-          winner: '', // Will be filled by user
-          method: '',
-          time: ''
-        });
+      const expectedResultsLength = parts.length >= 2 ? parts.length - 1 : 0;
+      const hasValidProgression = Array.isArray(initialProgression) && 
+        initialProgression.length === expectedResultsLength &&
+        initialProgression.every(p => p && (p.participant1 != null || p.participant2 != null));
+
+      if (hasValidProgression) {
+        const results = initialProgression.map((p, i) => ({
+          match: (p.match ?? p.order ?? i + 1),
+          participant1: p.participant1 ?? parts[i],
+          participant2: p.participant2 ?? parts[i + 1],
+          winner: p.winner ?? '',
+          method: p.method ?? '',
+          time: p.time ?? ''
+        }));
+        setMatchResults(results);
+        const lastWinner = initialProgression[initialProgression.length - 1]?.winner;
+        setCurrentWinner(lastWinner ?? parts[0]);
+      } else {
+        const results = [];
+        let winner = parts[0];
+        for (let i = 1; i < parts.length; i++) {
+          results.push({
+            match: i,
+            participant1: winner,
+            participant2: parts[i],
+            winner: '',
+            method: '',
+            time: ''
+          });
+        }
+        setMatchResults(results);
+        setCurrentWinner(parts[0]);
       }
-      setMatchResults(results);
-      setCurrentWinner(parts[0]);
     }
-  }, [value]);
+  }, [value, initialProgression]);
 
   // Update parent when participants change
   useEffect(() => {

@@ -661,6 +661,24 @@ export default function MatchEdit({
     if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls' || match.matchType === '5-on-5 War Games Match' || match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) {
       result = match.result || result;
     }
+    // Never overwrite a stored result with empty when user only changed summary/commentary/etc.
+    if (initialMatch && initialMatch.result && !result) {
+      result = initialMatch.result;
+    }
+    const isGauntletOr2o3 = match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls';
+    const isStandardMatch = !isBattleRoyal && !isRoyalRumble && !isEliminationChamber && !isGauntletOr2o3 &&
+      match.matchType !== '5-on-5 War Games Match' && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series');
+    // Standard matches: if form would save a different result but winner wasn't set (init race), keep stored result
+    let useStoredResultForStandard = false;
+    if (initialMatch && initialMatch.result && isStandardMatch) {
+      if (!result) {
+        result = initialMatch.result;
+        useStoredResultForStandard = true;
+      } else if (result !== initialMatch.result && !winner) {
+        result = initialMatch.result;
+        useStoredResultForStandard = true;
+      }
+    }
 
     // If the match has a result, it should not be live.
     // Live state is controlled solely by the explicit isLive flag so that
@@ -704,6 +722,14 @@ export default function MatchEdit({
       commentary,
       titleOutcome: titleOutcome || match.titleOutcome,
     };
+
+    // Standard match: when we kept stored result, keep stored winner (and method/time if form had none)
+    if (useStoredResultForStandard && initialMatch) {
+      updatedMatch.result = initialMatch.result;
+      if (initialMatch.winner != null) updatedMatch.winner = initialMatch.winner;
+      if (initialMatch.method && !updatedMatch.method) updatedMatch.method = initialMatch.method;
+      if (initialMatch.time != null && updatedMatch.time == null) updatedMatch.time = initialMatch.time;
+    }
 
     // Store Battle Royal data (participants and eliminations)
     if (isBattleRoyal) {
@@ -785,6 +811,18 @@ export default function MatchEdit({
         eliminations: clonedEliminations,
         participants: allParticipants
       };
+    }
+
+    // Gauntlet / 2 out of 3 Falls: never overwrite stored result with empty form state
+    if (isGauntletOr2o3 && initialMatch) {
+      const progression = updatedMatch.gauntletProgression;
+      const hasCompleteProgression = Array.isArray(progression) && progression.length > 0 &&
+        progression.every(p => p && (p.winner || p.method));
+      if (!hasCompleteProgression && Array.isArray(initialMatch.gauntletProgression) && initialMatch.gauntletProgression.length > 0) {
+        updatedMatch.gauntletProgression = initialMatch.gauntletProgression;
+        updatedMatch.winner = initialMatch.winner ?? updatedMatch.winner;
+        updatedMatch.result = initialMatch.result ?? updatedMatch.result;
+      }
     }
 
     console.log('✅ MatchEdit handleSave - calling onSave with updatedMatch');
@@ -2075,10 +2113,11 @@ export default function MatchEdit({
               <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                 Participants (Visual Builder):
               </label>
-              {match.matchType === 'Gauntlet Match' ? (
+                {match.matchType === 'Gauntlet Match' ? (
                 <GauntletMatchBuilder
                   wrestlers={safeWrestlers}
                   value={match.participants}
+                  initialProgression={initialMatch.gauntletProgression}
                   onChange={(value, matchType) => {
                     console.log('GauntletMatchBuilder onChange called with value:', value, 'matchType:', matchType);
                     const newMatch = { ...match, participants: value };
