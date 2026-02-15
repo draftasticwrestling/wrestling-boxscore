@@ -29,6 +29,7 @@ import WarGamesMatchBuilder from './components/WarGamesMatchBuilder';
 import SurvivorSeriesMatchBuilder from './components/SurvivorSeriesMatchBuilder';
 import ChampionshipsPage from './components/ChampionshipsPage';
 import ChampionshipDetailPage from './components/ChampionshipDetailPage';
+import { getRoyalRumbleHighlights } from './utils/royalRumbleStats';
 
 // Place these at the top level, after imports
 
@@ -1064,6 +1065,34 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                     color: '#fff',
                   }}
                 >
+                  {/* Royal Rumble: Winner, Most Eliminations, Ironman in expanded details */}
+                  {match.matchType === 'Royal Rumble' && (() => {
+                    const rr = getRoyalRumbleHighlights(match);
+                    if (!rr) return null;
+                    return (
+                      <div style={{ marginBottom: 12, padding: '12px 14px', background: '#1a1a1a', borderRadius: 8, border: '1px solid #C6A04F', flexBasis: '100%' }}>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong style={{ color: gold }}>Winner:</strong>{' '}
+                          {rr.winner ? (wrestlerMap?.[rr.winner]?.name || rr.winner) : '—'}
+                        </div>
+                        {rr.mostEliminations && rr.mostEliminations.length > 0 && (
+                          <div style={{ marginBottom: 4 }}>
+                            <strong style={{ color: gold }}>Most Eliminations:</strong>{' '}
+                            {rr.mostEliminations.map((w, i) => (
+                              <span key={w.slug}>{i > 0 && ' & '}{wrestlerMap?.[w.slug]?.name || w.slug}</span>
+                            ))} ({rr.mostEliminations[0].count})
+                          </div>
+                        )}
+                        {rr.ironman && (
+                          <div>
+                            <strong style={{ color: gold }}>Ironman/Ironwoman:</strong>{' '}
+                            {wrestlerMap?.[rr.ironman.slug]?.name || rr.ironman.slug}
+                            {rr.ironman.time && ` (${rr.ironman.time})`}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   {/* Modern compact details layout */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
                     <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation, match.matchType)}</div>

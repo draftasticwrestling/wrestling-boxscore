@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet';
 import { useUser } from '../hooks/useUser';
 import MatchEdit from './MatchEdit';
 import MatchCard from './MatchCard';
+import { getRoyalRumbleHighlights } from '../utils/royalRumbleStats';
 
 // Helper to get display names for participants from slugs
 function getParticipantsDisplay(participants, wrestlerMap, stipulation, matchType) {
@@ -152,6 +153,33 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
 
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
+          {match.matchType === 'Royal Rumble' && (() => {
+            const rr = getRoyalRumbleHighlights(match);
+            if (!rr) return null;
+            return (
+              <div style={{ marginBottom: 12, padding: '12px 14px', background: '#1a1a1a', borderRadius: 8, border: '1px solid #C6A04F' }}>
+                <div style={{ marginBottom: 4 }}>
+                  <b style={{ color: '#C6A04F' }}>Winner:</b>{' '}
+                  {rr.winner ? (safeWrestlerMap[rr.winner]?.name || rr.winner) : '—'}
+                </div>
+                {rr.mostEliminations && rr.mostEliminations.length > 0 && (
+                  <div style={{ marginBottom: 4 }}>
+                    <b style={{ color: '#C6A04F' }}>Most Eliminations:</b>{' '}
+                    {rr.mostEliminations.map((w, i) => (
+                      <span key={w.slug}>{i > 0 && ' & '}{safeWrestlerMap[w.slug]?.name || w.slug}</span>
+                    ))} ({rr.mostEliminations[0].count})
+                  </div>
+                )}
+                {rr.ironman && (
+                  <div>
+                    <b style={{ color: '#C6A04F' }}>Ironman/Ironwoman:</b>{' '}
+                    {safeWrestlerMap[rr.ironman.slug]?.name || rr.ironman.slug}
+                    {rr.ironman.time && ` (${rr.ironman.time})`}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <div><b>Participants:</b> {getParticipantsDisplay(match.participants, safeWrestlerMap, match.stipulation, match.matchType)}</div>
           {match.matchType === 'Gauntlet Match' && Array.isArray(match.gauntletProgression) && match.gauntletProgression.length > 0 && (
             <div style={{ marginTop: 8, marginBottom: 8 }}>
