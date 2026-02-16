@@ -33,11 +33,11 @@
   status = 200
   force = true
 
-# Serve static ads.txt from build (catch-all would otherwise send it to index.html)
+# Ezoic ads.txt – 301 to Ezoic’s manager (Step 2: https://docs.ezoic.com/docs/ezoicads/adstxt/)
 [[redirects]]
   from = "/ads.txt"
-  to = "/ads.txt"
-  status = 200
+  to = "https://srv.adstxtmanager.com/19390/prowrestlingboxscore.com"
+  status = 301
   force = true
 
 [[redirects]]
