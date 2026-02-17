@@ -540,7 +540,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
           )}
 
           {history.length === 0 && !showAddReign && !editingRowId ? (
-            <p style={{ color: '#888' }}>No title history recorded yet. History is updated automatically when champions change. Log in to add historical reigns.</p>
+            <p style={{ color: '#888' }}>No title history recorded yet. History is updated automatically when champions change. Authorized users can add historical reigns.</p>
           ) : (
             <div style={{ background: '#181818', borderRadius: 8, border: '1px solid #333', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>

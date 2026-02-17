@@ -29,6 +29,7 @@ import WarGamesMatchBuilder from './components/WarGamesMatchBuilder';
 import SurvivorSeriesMatchBuilder from './components/SurvivorSeriesMatchBuilder';
 import ChampionshipsPage from './components/ChampionshipsPage';
 import ChampionshipDetailPage from './components/ChampionshipDetailPage';
+import AdminLoginPage from './components/AdminLoginPage';
 import { getRoyalRumbleHighlights } from './utils/royalRumbleStats';
 
 // Place these at the top level, after imports
@@ -6737,6 +6738,7 @@ function App() {
                 </>
               }
             />
+            <Route path="/admin" element={<AdminLoginPage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
           </Route>
         </Routes>
