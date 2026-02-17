@@ -7,6 +7,23 @@ import MatchEdit from './MatchEdit';
 import MatchCard from './MatchCard';
 import { getRoyalRumbleHighlights } from '../utils/royalRumbleStats';
 
+// Short date for title/meta (e.g. "Feb 16, 2026")
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  let dateObj;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-');
+    dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+  } else {
+    dateObj = new Date(dateStr);
+  }
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 // Helper to get display names for participants from slugs
 function getParticipantsDisplay(participants, wrestlerMap, stipulation, matchType) {
   if (Array.isArray(participants)) {
@@ -86,7 +103,7 @@ function getWinnerDisplay(match, wrestlerMap) {
   return '';
 }
 
-export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMap = {}, canEdit = false, events }) {
+export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [], onEdit, wrestlerMap = {}, canEdit = false, events }) {
   const safeWrestlers = Array.isArray(wrestlers) ? wrestlers : [];
   const safeWrestlerMap = wrestlerMap || {};
   const user = useUser();
@@ -94,21 +111,22 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
   const showPreview = match?.eventStatus === 'upcoming' && match?.eventPreview;
   const showRecap = (match?.eventStatus === 'completed' || match?.eventStatus === 'live') && match?.eventRecap;
 
+  const eventName = match?.eventName || match?.title || 'WWE';
+  const matchTitle = match?.title || 'Match';
+  const dateShort = match?.date ? formatDateShort(match.date) : '';
+  const winnerDisplay = getWinnerDisplay(match, safeWrestlerMap);
+  const metaDescription =
+    `${matchTitle} at ${eventName}${dateShort ? ` (${dateShort})` : ''}. ` +
+    (winnerDisplay ? `${winnerDisplay} wins. ` : '') +
+    'Full match results, method, and time.';
+
   return (
     <>
       <Helmet>
         <title>
-          {(match?.eventName || match?.title || 'Event') +
-            ' Match Results - ' +
-            (match?.date || '') +
-            ' | Pro Wrestling Boxscore'}
+          {[matchTitle, eventName + ' Results', dateShort].filter(Boolean).join(' — ')} | Pro Wrestling Boxscore
         </title>
-        <meta
-          name="description"
-          content={`Detailed match results for ${match?.eventName || match?.title || 'this event'}${
-            match?.date ? ' on ' + match.date : ''
-          }${match?.location ? ' from ' + match.location : ''}, including participants, winner, method, and time.`}
-        />
+        <meta name="description" content={metaDescription} />
         <link
           rel="canonical"
           href={`https://prowrestlingboxscore.com/event/${match?.eventId || ''}/match/${match?.order || ''}`}
@@ -138,16 +156,17 @@ export default function MatchPageNew({ match, wrestlers = [], onEdit, wrestlerMa
             </div>
           </div>
         )}
-        <div style={{ textAlign: 'center', color: '#C6A04F', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
+        <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800, marginBottom: 8, textAlign: 'center' }}>
           {match.title}
-        </div>
+        </h1>
         
         {/* Use the unified MatchCard component (includes Summary / Commentary / Statistics pills) */}
         <MatchCard 
           match={match} 
-          event={{ id: match.eventId }} 
+          event={{ id: match.eventId, name: match.eventName }} 
           wrestlerMap={wrestlerMap} 
           isClickable={false}
+          matchIndex={matchOrderFromUrl != null ? parseInt(matchOrderFromUrl, 10) - 1 : undefined}
           events={events}
         />
 

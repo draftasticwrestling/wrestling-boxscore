@@ -40,10 +40,26 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-export default function ChampionshipDetailPage() {
+export default function ChampionshipDetailPage({ wrestlers = [] }) {
   const { id } = useParams();
   const user = useUser();
   const isAuthorized = !!user;
+
+  // Fallback: resolve slug from champion/previous_champion name when row has no slug (e.g. older data)
+  const nameToSlug = useMemo(() => {
+    const map = {};
+    (wrestlers || []).forEach((w) => {
+      if (w?.name && w?.id) {
+        const key = String(w.name).trim().toLowerCase();
+        if (!map[key]) map[key] = w.id;
+      }
+    });
+    return map;
+  }, [wrestlers]);
+  const getSlugForName = (name) => {
+    if (!name || typeof name !== 'string') return null;
+    return nameToSlug[name.trim().toLowerCase()] || null;
+  };
 
   const [championship, setChampionship] = useState(null);
   const [history, setHistory] = useState([]);
@@ -335,14 +351,21 @@ export default function ChampionshipDetailPage() {
     <>
       <Helmet>
         <title>{championship.title_name} - Title History | Pro Wrestling Boxscore</title>
-        <meta name="description" content={`${championship.title_name} history, current champion ${currentReignFromHistory?.champion ?? championship.current_champion}, and title facts.`} />
+        <meta name="description" content={`${championship.title_name} history, current champion ${currentReignFromHistory?.champion ?? championship.current_champion}, past champions, and title facts.`} />
         <link rel="canonical" href={`https://prowrestlingboxscore.com/championship/${championship.id}`} />
       </Helmet>
 
       <div style={{ color: '#fff', padding: 40, maxWidth: 900, margin: '0 auto' }}>
-        <Link to="/championships" style={{ color: gold, marginBottom: 24, display: 'inline-block' }}>
+        <Link to="/championships" style={{ color: gold, marginBottom: 12, display: 'inline-block' }}>
           ← Back to Championships
         </Link>
+        <p style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', fontSize: 14, marginBottom: 24 }}>
+          <Link to="/raw" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
+          <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+          <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
+          <Link to="/wrestlers" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Roster</Link>
+          <Link to="/championships" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Championships</Link>
+        </p>
 
         {/* Header: belt, title, current champion, brand */}
         <div
@@ -382,9 +405,16 @@ export default function ChampionshipDetailPage() {
             </div>
           )}
           <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>
-            Current Champion: {currentReignFromHistory
-              ? (currentReignFromHistory.champion === 'VACANT' ? 'VACANT' : currentReignFromHistory.champion)
-              : (championship.current_champion === 'VACANT' ? 'VACANT' : championship.current_champion)}
+            Current Champion:{' '}
+            {(() => {
+              const champ = currentReignFromHistory ?? championship;
+              const name = champ?.champion ?? championship?.current_champion;
+              let slug = champ?.champion_slug ?? championship?.current_champion_slug;
+              if (!slug && name) slug = getSlugForName(name);
+              const isVacant = name === 'VACANT' || slug === 'vacant';
+              if (isVacant || !slug) return name || 'VACANT';
+              return <Link to={`/wrestler/${slug}`} style={{ color: '#fff', textDecoration: 'none' }}>{name}</Link>;
+            })()}
           </div>
           {(currentReignFromHistory?.date_won ?? championship.date_won) && (
             <div style={{ fontSize: 14, color: '#aaa', marginTop: 4 }}>
@@ -526,10 +556,29 @@ export default function ChampionshipDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedHistory.map((row) => (
+                  {sortedHistory.map((row) => {
+                    const championSlug = (row.champion_slug && row.champion_slug !== 'vacant')
+                      ? row.champion_slug
+                      : getSlugForName(row.champion);
+                    const defeatedSlug = (row.previous_champion_slug && row.previous_champion_slug !== 'vacant')
+                      ? row.previous_champion_slug
+                      : getSlugForName(row.previous_champion);
+                    return (
                     <tr key={row.id} style={{ borderTop: '1px solid #333' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 600 }}>{row.champion}</td>
-                      <td style={{ padding: '10px 12px', color: '#bbb' }}>{row.previous_champion || '—'}</td>
+                      <td style={{ padding: '10px 12px', fontWeight: 600 }}>
+                        {championSlug ? (
+                          <Link to={`/wrestler/${championSlug}`} style={{ color: '#fff', textDecoration: 'none' }}>{row.champion}</Link>
+                        ) : (
+                          row.champion
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 12px', color: '#bbb' }}>
+                        {defeatedSlug ? (
+                          <Link to={`/wrestler/${defeatedSlug}`} style={{ color: gold, textDecoration: 'none' }}>{row.previous_champion || '—'}</Link>
+                        ) : (
+                          row.previous_champion || '—'
+                        )}
+                      </td>
                       <td style={{ padding: '10px 12px' }}>{formatDate(row.date_won)}</td>
                       <td style={{ padding: '10px 12px' }}>{formatDate(row.date_lost)}</td>
                       <td style={{ padding: '10px 12px', textAlign: 'right' }}>{row.days_held != null ? row.days_held : '—'}</td>
@@ -570,7 +619,7 @@ export default function ChampionshipDetailPage() {
                         </td>
                       )}
                     </tr>
-                  ))}
+                  ); })}
                 </tbody>
               </table>
             </div>

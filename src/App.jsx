@@ -57,6 +57,23 @@ function formatDate(dateStr) {
   });
 }
 
+// Short date for title tags (e.g. "Feb 16, 2026") to keep titles under ~60 chars
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  let dateObj;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-');
+    dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+  } else {
+    dateObj = new Date(dateStr);
+  }
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 // Add a gold/black theme style at the top level
 const appBackground = {
   minHeight: '100vh',
@@ -776,6 +793,18 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     if (event?.status === 'completed') setPreviewRecapView('recap');
   }, [event?.id]);
 
+  // Store event context so wrestler profile can show "Back to event" even if navigation state is lost
+  React.useEffect(() => {
+    if (event?.id) {
+      try {
+        sessionStorage.setItem(
+          'wrestlerProfileReturnContext',
+          JSON.stringify({ fromEvent: event.id, eventName: event.name || 'Event' })
+        );
+      } catch (_) {}
+    }
+  }, [event?.id, event?.name]);
+
   const canEditMatches = !!user;
   const canDeleteEvent = !!user;
 
@@ -872,28 +901,27 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   }
 
   const formattedDate = formatDate(event.date);
+  const formattedDateShort = formatDateShort(event.date);
   const recency = getEventDateRecency(event);
   const showType = getEventShowType(event);
   const showLabel = showType === 'raw' ? 'Raw' : showType === 'smackdown' ? 'SmackDown' : null;
   const brandPrefix = showLabel || (event.name || '').split(' ')[0] || 'WWE';
 
-  const titleRecency = recency ? ` ${recency.charAt(0).toUpperCase() + recency.slice(1)}` : '';
   const titleShow = showLabel ? `WWE ${showLabel}` : `WWE ${event.name}`;
+  // SEO title: keyword-rich, date prominent, under ~60 chars (e.g. "WWE Raw Results — Feb 16, 2026 | Pro Wrestling Boxscore")
+  const eventPageTitle = `${titleShow} Results — ${formattedDateShort} | Pro Wrestling Boxscore`;
   const metaDescription = recency && showLabel
-    ? `WWE ${showLabel} results from ${recency} (${formattedDate}), including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`
+    ? `Full WWE ${showLabel} results from ${recency} (${formattedDate})${event.location ? ` in ${event.location}` : ''}. Match card, winners, times, and title changes.`
     : recency
-      ? `WWE results from ${recency} (${formattedDate}), including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`
+      ? `Full WWE results from ${recency} (${formattedDate})${event.location ? ` in ${event.location}` : ''}. Match card, winners, times, and title changes.`
       : showLabel
-        ? `Full WWE ${showLabel} results for ${formattedDate}, including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`
-        : `Full WWE results for ${formattedDate}, including complete match card, winners, times, and title changes from ${event.name}${event.location ? ' in ' + event.location : ''}.`;
+        ? `Full WWE ${showLabel} results for ${formattedDate}${event.location ? ` in ${event.location}` : ''}. Match card, winners, times, and title changes.`
+        : `Full WWE results for ${formattedDate}${event.location ? ` in ${event.location}` : ''}. Match card, winners, times, and title changes.`;
 
   return (
     <>
       <Helmet>
-        <title>
-          {titleShow} Results{titleRecency ? ` ${titleRecency}` : ''} — {formattedDate}
-          {event.location ? ` · ${event.location}` : ''} | Pro Wrestling Boxscore
-        </title>
+        <title>{eventPageTitle}</title>
         <meta name="description" content={metaDescription} />
         <link rel="canonical" href={`https://prowrestlingboxscore.com/event/${event.id}`} />
         <script type="application/ld+json">
@@ -937,11 +965,17 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
               {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
             </div>
             <h1 style={{ color: '#fff', fontSize: 26, fontWeight: 800, marginTop: 8, marginBottom: 4, textAlign: 'center' }}>
-              WWE {brandPrefix} Results – {formattedDate}
+              {titleShow} Results — {formattedDate}
             </h1>
             <p style={{ color: '#ccc', fontSize: 14, maxWidth: 700, textAlign: 'center', marginTop: 4 }}>
-              Live WWE {brandPrefix} results for {formattedDate}, with full match-by-match coverage, times, methods of victory,
-              and championship updates from {event.name}{event.location ? ' in ' + event.location : ''}.
+              Full WWE {brandPrefix} results for {formattedDate}{event.location ? ` in ${event.location}` : ''}. Match card, winners, methods, and championship updates.
+            </p>
+            <p style={{ marginTop: 12, marginBottom: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 16px', fontSize: 14 }}>
+              <Link to="/raw" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
+              <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+              <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
+              <Link to="/wrestlers" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Roster</Link>
+              <Link to="/championships" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Championships</Link>
             </p>
             <div style={{ color: gold, marginTop: 8, fontSize: 18 }}>
               <strong>{formatDate(event.date)}</strong> — {event.location}
@@ -6650,7 +6684,7 @@ function App() {
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
             <Route path="/wrestler/:slug" element={<WrestlerProfile events={events} wrestlers={wrestlers} wrestlerMap={wrestlerMap} onUpdateWrestler={handleUpdateWrestler} />} />
             <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
-            <Route path="/championship/:id" element={<ChampionshipDetailPage />} />
+            <Route path="/championship/:id" element={<ChampionshipDetailPage wrestlers={wrestlers} />} />
             <Route path="/participant-demo" element={<ParticipantSelectionDemo wrestlers={wrestlers} />} />
             <Route
               path="/about"
@@ -6809,6 +6843,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
         eventPreview: event.preview || '',
         eventRecap: event.recap || '',
       }} 
+      matchOrderFromUrl={matchOrder}
       wrestlers={wrestlers} 
       onEdit={handleEdit}
       wrestlerMap={wrestlerMap}

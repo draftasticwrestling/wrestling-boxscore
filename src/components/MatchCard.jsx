@@ -301,7 +301,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   const eventId = event?.id;
   // matchIndex is 0-based, but we'll use 1-based for URL (1, 2, 3...)
   const navigationIndex = matchIndex !== undefined ? matchIndex + 1 : (match?.order || 1);
-  
+
+  // Pass event/match context when linking to wrestler profile so profile can show "Back to event" / "Back to match"
+  const wrestlerLinkState = React.useMemo(
+    () => (eventId ? { fromEvent: eventId, eventName: event?.name || 'Event', matchOrder: navigationIndex } : null),
+    [eventId, event?.name, navigationIndex]
+  );
+  const wrestlerTo = React.useCallback(
+    (slugOrId) => (slugOrId ? { pathname: `/wrestler/${slugOrId}`, state: wrestlerLinkState || {} } : '/wrestlers'),
+    [wrestlerLinkState]
+  );
+
   const handleClick = React.useCallback((e) => {
     if (!isClickable || !eventId || navigationIndex == null) {
       return;
@@ -470,26 +480,28 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     alignItems: 'center',
                     gap: 4,
                   }}>
-                    <img
-                      src={wrestlerMap[participant1]?.image_url || '/images/placeholder.png'}
-                      alt={wrestlerMap[participant1]?.name || participant1}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: participant1IsWinner ? '2px solid #C6A04F' : '2px solid #666',
-                      }}
-                    />
-                    <span style={{
-                      fontSize: 11,
-                      color: participant1IsWinner ? '#C6A04F' : '#fff',
-                      fontWeight: participant1IsWinner ? 'bold' : 'normal',
-                      textAlign: 'center',
-                      maxWidth: 70,
-                    }}>
-                      {wrestlerMap[participant1]?.name || participant1}
-                    </span>
+                    <Link to={wrestlerTo(participant1)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, textDecoration: 'none' }}>
+                      <img
+                        src={wrestlerMap[participant1]?.image_url || '/images/placeholder.png'}
+                        alt={wrestlerMap[participant1]?.name || participant1}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: participant1IsWinner ? '2px solid #C6A04F' : '2px solid #666',
+                        }}
+                      />
+                      <span style={{
+                        fontSize: 11,
+                        color: participant1IsWinner ? '#C6A04F' : '#fff',
+                        fontWeight: participant1IsWinner ? 'bold' : 'normal',
+                        textAlign: 'center',
+                        maxWidth: 70,
+                      }}>
+                        {wrestlerMap[participant1]?.name || participant1}
+                      </span>
+                    </Link>
                   </div>
                   
                   <div style={{ color: '#C6A04F', fontSize: 13, fontWeight: 'bold' }}>vs</div>
@@ -500,26 +512,28 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     alignItems: 'center',
                     gap: 4,
                   }}>
-                    <img
-                      src={wrestlerMap[participant2]?.image_url || '/images/placeholder.png'}
-                      alt={wrestlerMap[participant2]?.name || participant2}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: participant2IsWinner ? '2px solid #C6A04F' : '2px solid #666',
-                      }}
-                    />
-                    <span style={{
-                      fontSize: 11,
-                      color: participant2IsWinner ? '#C6A04F' : '#fff',
-                      fontWeight: participant2IsWinner ? 'bold' : 'normal',
-                      textAlign: 'center',
-                      maxWidth: 70,
-                    }}>
-                      {wrestlerMap[participant2]?.name || participant2}
-                    </span>
+                    <Link to={wrestlerTo(participant2)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, textDecoration: 'none' }}>
+                      <img
+                        src={wrestlerMap[participant2]?.image_url || '/images/placeholder.png'}
+                        alt={wrestlerMap[participant2]?.name || participant2}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: participant2IsWinner ? '2px solid #C6A04F' : '2px solid #666',
+                        }}
+                      />
+                      <span style={{
+                        fontSize: 11,
+                        color: participant2IsWinner ? '#C6A04F' : '#fff',
+                        fontWeight: participant2IsWinner ? 'bold' : 'normal',
+                        textAlign: 'center',
+                        maxWidth: 70,
+                      }}>
+                        {wrestlerMap[participant2]?.name || participant2}
+                      </span>
+                    </Link>
                   </div>
                 </div>
                 
@@ -572,27 +586,29 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 }}>
                   WINNER
                 </div>
-                <img
-                  src={wrestlerMap[overallWinner]?.image_url || '/images/placeholder.png'}
-                  alt={overallWinner}
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid #C6A04F',
-                    marginBottom: 8,
-                  }}
-                />
-                <span style={{
-                  fontSize: 14,
-                  color: '#C6A04F',
-                  fontWeight: 'bold',
-                  textAlign: 'center',
-                  maxWidth: 80,
-                }}>
-                  {wrestlerMap[overallWinner]?.name || overallWinner}
-                </span>
+                <Link to={wrestlerTo(overallWinner)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none' }}>
+                  <img
+                    src={wrestlerMap[overallWinner]?.image_url || '/images/placeholder.png'}
+                    alt={overallWinner}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #C6A04F',
+                      marginBottom: 8,
+                    }}
+                  />
+                  <span style={{
+                    fontSize: 14,
+                    color: '#C6A04F',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    maxWidth: 80,
+                  }}>
+                    {wrestlerMap[overallWinner]?.name || overallWinner}
+                  </span>
+                </Link>
               </div>
             </div>
           )}
@@ -788,24 +804,25 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '6px' }}>
                   {slugs.map((slug, i) => (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <div style={{ 
-                        width: '40px', 
-                        height: '40px', 
-                        borderRadius: '50%', 
-                        background: '#444', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        fontSize: '24px', 
-                        color: '#7da2c1',
-                        border: winnerIndex === sideIdx ? '2px solid #C6A04F' : '1px solid #666',
-                      }}>
-                        {wrestlerMap[slug]?.image_url
-                          ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                          : <span role="img" aria-label="wrestler">&#128100;</span>
-                        }
-                      </div>
-
+                      <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                        <div style={{ 
+                          width: '40px', 
+                          height: '40px', 
+                          borderRadius: '50%', 
+                          background: '#444', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '24px', 
+                          color: '#7da2c1',
+                          border: winnerIndex === sideIdx ? '2px solid #C6A04F' : '1px solid #666',
+                        }}>
+                          {wrestlerMap[slug]?.image_url
+                            ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                            : <span role="img" aria-label="wrestler">&#128100;</span>
+                          }
+                        </div>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -820,9 +837,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   {teamName ? (
                     <>
                       <div style={{ fontSize: '14px', fontWeight: 800, color: winnerIndex === sideIdx ? '#C6A04F' : '#fff' }}>{teamName}</div>
-                      <div style={{ fontSize: '10px', color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                      <div style={{ fontSize: '10px', color: '#bbb', fontStyle: 'italic' }}>
+                        {slugs.map((slug, i) => (
+                          <React.Fragment key={slug}>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                            {i < slugs.length - 1 ? ' & ' : ''}
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </>
-                  ) : individualNames}
+                  ) : (
+                    slugs.map((slug, i) => (
+                      <React.Fragment key={slug}>
+                        <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: winnerIndex === sideIdx ? '#C6A04F' : '#fff', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                        {i < slugs.length - 1 ? ' & ' : ''}
+                      </React.Fragment>
+                    ))
+                  )}
                 </span>
                 {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px' }}>
@@ -870,19 +901,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   {royalRumbleHighlights && (
                     <div style={{ marginBottom: 12, padding: '10px 12px', background: '#1a1a1a', borderRadius: 8, border: '1px solid #C6A04F' }}>
                       <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
-                        <span style={{ color: '#C6A04F', fontWeight: 600 }}>Winner:</span> {royalRumbleHighlights.winner ? (wrestlerMap[royalRumbleHighlights.winner]?.name || royalRumbleHighlights.winner) : '—'}
+                        <span style={{ color: '#C6A04F', fontWeight: 600 }}>Winner:</span>{' '}
+                        {royalRumbleHighlights.winner ? (
+                          <Link to={wrestlerTo(royalRumbleHighlights.winner)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.winner]?.name || royalRumbleHighlights.winner}</Link>
+                        ) : '—'}
                       </div>
                       {royalRumbleHighlights.mostEliminations && (
                         <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
                           <span style={{ color: '#C6A04F', fontWeight: 600 }}>Most Eliminations:</span>{' '}
                           {royalRumbleHighlights.mostEliminations.map((w, i) => (
-                            <span key={w.slug}>{i > 0 && ' & '}{wrestlerMap[w.slug]?.name || w.slug}</span>
+                            <span key={w.slug}>{i > 0 && ' & '}<Link to={wrestlerTo(w.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[w.slug]?.name || w.slug}</Link></span>
                           ))} ({royalRumbleHighlights.mostEliminations[0].count})
                         </div>
                       )}
                       {royalRumbleHighlights.ironman && (
                         <div style={{ fontSize: 13, color: '#ccc' }}>
-                          <span style={{ color: '#C6A04F', fontWeight: 600 }}>Ironman/Ironwoman:</span> {wrestlerMap[royalRumbleHighlights.ironman.slug]?.name || royalRumbleHighlights.ironman.slug}
+                          <span style={{ color: '#C6A04F', fontWeight: 600 }}>Ironman/Ironwoman:</span>{' '}
+                          <Link to={wrestlerTo(royalRumbleHighlights.ironman.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.ironman.slug]?.name || royalRumbleHighlights.ironman.slug}</Link>
                           {royalRumbleHighlights.ironman.time && ` (${royalRumbleHighlights.ironman.time})`}
                         </div>
                       )}
@@ -1206,12 +1241,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       border: '1px solid #444',
                       minWidth: 140,
                     }}>
-                      <div style={{
+                      <Link to={wrestlerTo(participant1)} onClick={e => e.stopPropagation()} style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 4,
                         color: winner === wrestlerMap[participant1]?.name ? '#C6A04F' : '#fff',
                         fontWeight: winner === wrestlerMap[participant1]?.name ? 'bold' : 'normal',
+                        textDecoration: 'none',
                       }}>
                         <img
                           src={wrestlerMap[participant1]?.image_url || '/images/placeholder.png'}
@@ -1227,16 +1263,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                         <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {wrestlerMap[participant1]?.name || participant1}
                         </span>
-                      </div>
+                      </Link>
                       
                       <div style={{ color: '#C6A04F', fontSize: 9, fontWeight: 'bold' }}>vs</div>
                       
-                      <div style={{
+                      <Link to={wrestlerTo(participant2)} onClick={e => e.stopPropagation()} style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 4,
                         color: winner === wrestlerMap[participant2]?.name ? '#C6A04F' : '#fff',
                         fontWeight: winner === wrestlerMap[participant2]?.name ? 'bold' : 'normal',
+                        textDecoration: 'none',
                       }}>
                         <img
                           src={wrestlerMap[participant2]?.image_url || '/images/placeholder.png'}
@@ -1252,7 +1289,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                         <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {wrestlerMap[participant2]?.name || participant2}
                         </span>
-                      </div>
+                      </Link>
                     </div>
                     
                     {!isLastMatch && (
@@ -1314,27 +1351,29 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   }}>
                     WINNER
                   </div>
-                  <img
-                    src={wrestlerMap[finalWinnerSlug]?.image_url || '/images/placeholder.png'}
-                    alt={finalWinner || 'Winner'}
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '2px solid #C6A04F',
-                      marginBottom: 8,
-                    }}
-                  />
-                  <span style={{
-                    fontSize: 14,
-                    color: '#C6A04F',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    maxWidth: 80,
-                  }}>
-                    {finalWinner || 'Winner'}
-                  </span>
+                  <Link to={wrestlerTo(finalWinnerSlug)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none' }}>
+                    <img
+                      src={wrestlerMap[finalWinnerSlug]?.image_url || '/images/placeholder.png'}
+                      alt={finalWinner || 'Winner'}
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #C6A04F',
+                        marginBottom: 8,
+                      }}
+                    />
+                    <span style={{
+                      fontSize: 14,
+                      color: '#C6A04F',
+                      fontWeight: 'bold',
+                      textAlign: 'center',
+                      maxWidth: 80,
+                    }}>
+                      {finalWinner || 'Winner'}
+                    </span>
+                  </Link>
                 </div>
               </div>
             ) : null;
@@ -1356,25 +1395,27 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               for (let col = 0; col < numCols; col++) {
                 const idx = row + col * numRows;
                 if (arr[idx]) {
+                  const slug = arr[idx];
                   rowItems.push(
-                    <img
-                      key={arr[idx]}
-                      src={wrestlerMap[arr[idx]]?.image_url || '/images/placeholder.png'}
-                      alt={wrestlerMap[arr[idx]]?.name || arr[idx]}
-                      title={wrestlerMap[arr[idx]]?.name || arr[idx]}
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid #888',
-                        background: '#222',
-                        margin: 6,
-                        boxShadow: '0 0 6px #0008',
-                        transition: 'all 0.2s',
-                        display: 'block',
-                      }}
-                    />
+                    <Link key={slug} to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                      <img
+                        src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                        alt={wrestlerMap[slug]?.name || slug}
+                        title={wrestlerMap[slug]?.name || slug}
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid #888',
+                          background: '#222',
+                          margin: 6,
+                          boxShadow: '0 0 6px #0008',
+                          transition: 'all 0.2s',
+                          display: 'block',
+                        }}
+                      />
+                    </Link>
                   );
                 } else {
                   rowItems.push(<div key={`empty-${col}-${row}`} style={{ width: 38, height: 38, margin: 6 }} />);
@@ -1403,26 +1444,28 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 {renderGrid(left)}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120 }}>
-                <img
-                  src={wrestlerMap[match.winner]?.image_url || '/images/placeholder.png'}
-                  alt={wrestlerMap[match.winner]?.name || match.winner}
-                  title={wrestlerMap[match.winner]?.name || match.winner}
-                  style={{
-                    width: 90,
-                    height: 90,
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '5px solid #C6A04F',
-                    boxShadow: '0 0 18px #C6A04F88',
-                    background: '#222',
-                    margin: 2,
-                    transition: 'all 0.2s',
-                  }}
-                />
-                <div style={{ fontWeight: 800, fontSize: 20, color: '#C6A04F', marginTop: 10, textAlign: 'center' }}>
-                  {wrestlerMap[match.winner]?.name || match.winner}
-                </div>
-                <div style={{ color: '#fff', fontSize: 15, textAlign: 'center' }}>Winner</div>
+                <Link to={wrestlerTo(match.winner)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none' }}>
+                  <img
+                    src={wrestlerMap[match.winner]?.image_url || '/images/placeholder.png'}
+                    alt={wrestlerMap[match.winner]?.name || match.winner}
+                    title={wrestlerMap[match.winner]?.name || match.winner}
+                    style={{
+                      width: 90,
+                      height: 90,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '5px solid #C6A04F',
+                      boxShadow: '0 0 18px #C6A04F88',
+                      background: '#222',
+                      margin: 2,
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                  <div style={{ fontWeight: 800, fontSize: 20, color: '#C6A04F', marginTop: 10, textAlign: 'center' }}>
+                    {wrestlerMap[match.winner]?.name || match.winner}
+                  </div>
+                  <div style={{ color: '#fff', fontSize: 15, textAlign: 'center' }}>Winner</div>
+                </Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 {renderGrid(right)}
@@ -1442,21 +1485,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           }}>
             {(Array.isArray(match.participants) ? match.participants : []).map(slug => (
               <div key={slug} style={{display:'inline-block',textAlign:'center'}}>
-                <img
-                  src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
-                  alt={wrestlerMap[slug]?.name || slug}
-                  title={wrestlerMap[slug]?.name || slug}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid #888',
-                    background: '#222',
-                    margin: 2,
-                    transition: 'all 0.2s',
-                  }}
-                />
+                <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'inline-block', textDecoration: 'none' }}>
+                  <img
+                    src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                    alt={wrestlerMap[slug]?.name || slug}
+                    title={wrestlerMap[slug]?.name || slug}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #888',
+                      background: '#222',
+                      margin: 2,
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                </Link>
                 {!wrestlerMap[slug] && <div style={{color:'red',fontSize:10}}>{slug}</div>}
               </div>
             ))}
@@ -1478,25 +1523,27 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               for (let col = 0; col < numCols; col++) {
                 const idx = row + col * numRows;
                 if (arr[idx]) {
+                  const slug = arr[idx];
                   rowItems.push(
-                    <img
-                      key={arr[idx]}
-                      src={wrestlerMap[arr[idx]]?.image_url || '/images/placeholder.png'}
-                      alt={wrestlerMap[arr[idx]]?.name || arr[idx]}
-                      title={wrestlerMap[arr[idx]]?.name || arr[idx]}
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid #888',
-                        background: '#222',
-                        margin: 6,
-                        boxShadow: '0 0 6px #0008',
-                        transition: 'all 0.2s',
-                        display: 'block',
-                      }}
-                    />
+                    <Link key={slug} to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                      <img
+                        src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                        alt={wrestlerMap[slug]?.name || slug}
+                        title={wrestlerMap[slug]?.name || slug}
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid #888',
+                          background: '#222',
+                          margin: 6,
+                          boxShadow: '0 0 6px #0008',
+                          transition: 'all 0.2s',
+                          display: 'block',
+                        }}
+                      />
+                    </Link>
                   );
                 } else {
                   rowItems.push(<div key={`empty-${col}-${row}`} style={{ width: 38, height: 38, margin: 6 }} />);
@@ -1854,25 +1901,27 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               for (let col = 0; col < numCols; col++) {
                 const idx = row + col * numRows;
                 if (arr[idx]) {
+                  const slug = arr[idx];
                   rowItems.push(
-                    <img
-                      key={arr[idx]}
-                      src={wrestlerMap[arr[idx]]?.image_url || '/images/placeholder.png'}
-                      alt={wrestlerMap[arr[idx]]?.name || arr[idx]}
-                      title={wrestlerMap[arr[idx]]?.name || arr[idx]}
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid #888',
-                        background: '#222',
-                        margin: 6,
-                        boxShadow: '0 0 6px #0008',
-                        transition: 'all 0.2s',
-                        display: 'block',
-                      }}
-                    />
+                    <Link key={slug} to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                      <img
+                        src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                        alt={wrestlerMap[slug]?.name || slug}
+                        title={wrestlerMap[slug]?.name || slug}
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid #888',
+                          background: '#222',
+                          margin: 6,
+                          boxShadow: '0 0 6px #0008',
+                          transition: 'all 0.2s',
+                          display: 'block',
+                        }}
+                      />
+                    </Link>
                   );
                 } else {
                   rowItems.push(<div key={`empty-${col}-${row}`} style={{ width: 38, height: 38, margin: 6 }} />);
@@ -2198,17 +2247,24 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 6 }}>
                         {slugs.map((slug, i) => (
                           <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 * 0.6, color: '#7da2c1' }}>
-                              {wrestlerMap[slug]?.image_url
-                                ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
-                                : <span role="img" aria-label="wrestler">&#128100;</span>
-                              }
-                            </div>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                              <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 * 0.6, color: '#7da2c1' }}>
+                                {wrestlerMap[slug]?.image_url
+                                  ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+                                  : <span role="img" aria-label="wrestler">&#128100;</span>
+                                }
+                              </div>
+                            </Link>
                           </div>
                         ))}
                       </div>
                       <span style={{ fontWeight: 600, color: '#fff', fontSize: 12, textAlign: 'center', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {teamName || individualNames}
+                        {teamName ? teamName : (slugs.map((slug, i) => (
+                          <React.Fragment key={slug}>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#fff', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                            {i < slugs.length - 1 ? ' & ' : ''}
+                          </React.Fragment>
+                        )))}
                       </span>
                     </div>
                   );
@@ -2236,13 +2292,15 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 8 }}>
                       {slugs.map((slug, i) => (
                         <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1' }}>
-                            {wrestlerMap[slug]?.image_url
-                              ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-                              : <span role="img" aria-label="wrestler">&#128100;</span>
-                            }
-                          </div>
-                                              {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
+                          <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 * 0.6, color: '#7da2c1', overflow: 'hidden', cursor: 'pointer' }}>
+                              {wrestlerMap[slug]?.image_url
+                                ? <img src={wrestlerMap[slug].image_url} alt={wrestlerMap[slug].name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                                : <span role="img" aria-label="wrestler">&#128100;</span>
+                              }
+                            </div>
+                          </Link>
+                          {shouldShowBeltIcon && championIndex === sideIdx && match.title?.includes('Tag Team Championship') && (
                             <div style={{ marginTop: 4 }}>
                               <BeltIcon size={24} />
                             </div>
@@ -2254,9 +2312,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       {teamName ? (
                         <>
                           <div style={{ fontSize: 20, fontWeight: 800, color: winnerIndex === sideIdx ? '#C6A04F' : '#fff' }}>{teamName}</div>
-                          <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                          <div style={{ fontSize: 15, color: '#bbb', fontStyle: 'italic' }}>
+                            {slugs.map((slug, i) => (
+                              <React.Fragment key={slug}>
+                                <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                                {i < slugs.length - 1 ? ' & ' : ''}
+                              </React.Fragment>
+                            ))}
+                          </div>
                         </>
-                      ) : individualNames}
+                      ) : (
+                        slugs.map((slug, i) => (
+                          <React.Fragment key={slug}>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: winnerIndex === sideIdx ? '#C6A04F' : '#fff', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                            {i < slugs.length - 1 ? ' & ' : ''}
+                          </React.Fragment>
+                        ))
+                      )}
                     </span>
                     {cardView === 'statistics' && showStatsLastFive && (
                       <div style={{ alignSelf: slugs.length > 1 ? 'stretch' : 'center', display: 'flex', flexDirection: 'column', alignItems: slugs.length > 1 ? (sideIdx === 1 ? 'flex-end' : 'flex-start') : 'center', marginTop: 2 }}>
@@ -2267,9 +2339,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                           const nameRight = sideIdx === 1;
                           return (
                             <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? (nameRight ? 'flex-end' : 'flex-start') : 'center' }}>
-                              {showName && !nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                              {showName && !nameRight && <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>{d.name}</Link>}
                               <LastFiveBoxes outcomes={d.outcomes} size={22} />
-                              {showName && nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                              {showName && nameRight && <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', fontSize: 11, minWidth: 72, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>{d.name}</Link>}
                             </div>
                           );
                         })}
@@ -2312,7 +2384,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                         {wrestlerMap[slug]?.image_url
                           ? (
-                            <Link to={`/wrestler/${slug}`} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
                               <img
                                 src={wrestlerMap[slug].image_url}
                                 alt={wrestlerMap[slug].name}
@@ -2331,9 +2403,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   {teamName ? (
                     <>
                       <div style={{ fontSize: 18, fontWeight: 800, color: winnerIndex === 0 ? '#C6A04F' : '#fff' }}>{teamName}</div>
-                      <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                      <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>
+                        {slugs.map((slug, i) => (
+                          <React.Fragment key={slug}>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                            {i < slugs.length - 1 ? ' & ' : ''}
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </>
-                  ) : individualNames}
+                  ) : (
+                    slugs.map((slug, i) => (
+                      <React.Fragment key={slug}>
+                        <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: winnerIndex === 0 ? '#C6A04F' : '#fff', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                        {i < slugs.length - 1 ? ' & ' : ''}
+                      </React.Fragment>
+                    ))
+                  )}
                 </span>
                 {cardView === 'statistics' && showStatsLastFive && slugs.map((slug) => {
                   const d = statsParticipantData.find((x) => x.slug === slug);
@@ -2341,7 +2427,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   const showName = slugs.length > 1;
                   return (
                     <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? 'flex-start' : 'center' }}>
-                      {showName && <span style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                      {showName && <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>{d.name}</Link>}
                       <LastFiveBoxes outcomes={d.outcomes} size={24} />
                     </div>
                   );
@@ -2441,7 +2527,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54 * 0.6, color: '#7da2c1' }}>
                         {wrestlerMap[slug]?.image_url
                           ? (
-                            <Link to={`/wrestler/${slug}`} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
                               <img
                                 src={wrestlerMap[slug].image_url}
                                 alt={wrestlerMap[slug].name}
@@ -2460,9 +2546,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   {teamName ? (
                     <>
                       <div style={{ fontSize: 18, fontWeight: 800, color: winnerIndex === 1 ? '#C6A04F' : '#fff' }}>{teamName}</div>
-                      <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>{individualNames}</div>
+                      <div style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>
+                        {slugs.map((slug, i) => (
+                          <React.Fragment key={slug}>
+                            <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                            {i < slugs.length - 1 ? ' & ' : ''}
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </>
-                  ) : individualNames}
+                  ) : (
+                    slugs.map((slug, i) => (
+                      <React.Fragment key={slug}>
+                        <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: winnerIndex === 1 ? '#C6A04F' : '#fff', textDecoration: 'none' }}>{wrestlerMap[slug]?.name || slug}</Link>
+                        {i < slugs.length - 1 ? ' & ' : ''}
+                      </React.Fragment>
+                    ))
+                  )}
                 </span>
                 {cardView === 'statistics' && showStatsLastFive && slugs.map((slug) => {
                   const d = statsParticipantData.find((x) => x.slug === slug);
@@ -2471,9 +2571,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   const nameRight = true;
                   return (
                     <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: showName ? (nameRight ? 'flex-end' : 'flex-start') : 'center' }}>
-                      {showName && !nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                      {showName && !nameRight && <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>{d.name}</Link>}
                       <LastFiveBoxes outcomes={d.outcomes} size={24} />
-                      {showName && nameRight && <span style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>}
+                      {showName && nameRight && <Link to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ color: '#bbb', fontSize: 11, minWidth: 60, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>{d.name}</Link>}
                     </div>
                   );
                 })}
@@ -2674,19 +2774,23 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               {royalRumbleHighlights && (
                 <div style={{ marginBottom: 12, padding: '10px 12px', background: '#1a1a1a', borderRadius: 8, border: '1px solid #C6A04F' }}>
                   <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
-                    <span style={{ color: '#C6A04F', fontWeight: 600 }}>Winner:</span> {royalRumbleHighlights.winner ? (wrestlerMap[royalRumbleHighlights.winner]?.name || royalRumbleHighlights.winner) : '—'}
+                    <span style={{ color: '#C6A04F', fontWeight: 600 }}>Winner:</span>{' '}
+                    {royalRumbleHighlights.winner ? (
+                      <Link to={wrestlerTo(royalRumbleHighlights.winner)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.winner]?.name || royalRumbleHighlights.winner}</Link>
+                    ) : '—'}
                   </div>
                   {royalRumbleHighlights.mostEliminations && (
                     <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
                       <span style={{ color: '#C6A04F', fontWeight: 600 }}>Most Eliminations:</span>{' '}
                       {royalRumbleHighlights.mostEliminations.map((w, i) => (
-                        <span key={w.slug}>{i > 0 && ' & '}{wrestlerMap[w.slug]?.name || w.slug}</span>
+                        <span key={w.slug}>{i > 0 && ' & '}<Link to={wrestlerTo(w.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[w.slug]?.name || w.slug}</Link></span>
                       ))} ({royalRumbleHighlights.mostEliminations[0].count})
                     </div>
                   )}
                   {royalRumbleHighlights.ironman && (
                     <div style={{ fontSize: 13, color: '#ccc' }}>
-                      <span style={{ color: '#C6A04F', fontWeight: 600 }}>Ironman/Ironwoman:</span> {wrestlerMap[royalRumbleHighlights.ironman.slug]?.name || royalRumbleHighlights.ironman.slug}
+                      <span style={{ color: '#C6A04F', fontWeight: 600 }}>Ironman/Ironwoman:</span>{' '}
+                      <Link to={wrestlerTo(royalRumbleHighlights.ironman.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.ironman.slug]?.name || royalRumbleHighlights.ironman.slug}</Link>
                       {royalRumbleHighlights.ironman.time && ` (${royalRumbleHighlights.ironman.time})`}
                     </div>
                   )}

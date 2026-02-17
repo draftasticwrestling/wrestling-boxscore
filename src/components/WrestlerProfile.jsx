@@ -1,14 +1,22 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import MatchCard from './MatchCard';
 import WrestlerEditModal from './WrestlerEditModal';
 import countries from '../data/countries';
 import { useUser } from '../hooks/useUser';
+import { supabase } from '../supabaseClient';
 import {
   getMatchOutcome,
   getLastMatchesForWrestler,
 } from '../utils/matchOutcomes';
+
+function formatReignDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
 
 function getCountryForNationality(nationality) {
   if (!nationality) return null;
@@ -31,6 +39,22 @@ const gold = '#C6A04F';
 export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpdateWrestler }) {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromState = location.state && typeof location.state === 'object' ? location.state : null;
+  // Fallback to sessionStorage if state was lost (e.g. refresh, or some navigation paths)
+  const storedContext = React.useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem('wrestlerProfileReturnContext');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed.fromEvent === 'string' ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, []);
+  const fromEvent = fromState?.fromEvent ?? storedContext?.fromEvent ?? null;
+  const eventName = fromState?.eventName ?? storedContext?.eventName ?? null;
+  const matchOrder = fromState?.matchOrder;
   const user = useUser();
   const canEdit = !!(user && user.email);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -47,6 +71,64 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
     [lastFiveMatches, slug, map]
   );
 
+  const [titleHistory, setTitleHistory] = useState([]);
+  const [titleHistoryLoading, setTitleHistoryLoading] = useState(true);
+
+  useEffect(() => {
+    if (!slug) {
+      setTitleHistory([]);
+      setTitleHistoryLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setTitleHistoryLoading(true);
+    (async () => {
+      try {
+        const { data: historyData, error: historyError } = await supabase
+          .from('championship_history')
+          .select('*')
+          .eq('champion_slug', slug)
+          .order('date_won', { ascending: false });
+
+        if (cancelled) return;
+        if (historyError) {
+          setTitleHistory([]);
+          setTitleHistoryLoading(false);
+          return;
+        }
+        const reigns = historyData || [];
+        if (reigns.length === 0) {
+          setTitleHistory([]);
+          setTitleHistoryLoading(false);
+          return;
+        }
+        const champIds = [...new Set(reigns.map((r) => r.championship_id).filter(Boolean))];
+        const { data: champData, error: champError } = await supabase
+          .from('championships')
+          .select('id, title_name')
+          .in('id', champIds);
+
+        if (cancelled) return;
+        const titleByName = (champData || []).reduce((acc, c) => {
+          acc[c.id] = c.title_name || c.id;
+          return acc;
+        }, {});
+
+        setTitleHistory(
+          reigns.map((r) => ({
+            ...r,
+            titleName: titleByName[r.championship_id] || r.championship_id || 'Championship',
+          }))
+        );
+      } catch (_) {
+        if (!cancelled) setTitleHistory([]);
+      } finally {
+        if (!cancelled) setTitleHistoryLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [slug]);
+
   if (!wrestler) {
     return (
       <div style={{ padding: 32, color: '#fff', textAlign: 'center' }}>
@@ -62,19 +144,38 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
   const accomplishmentsList = accomplishmentsText ? accomplishmentsText.split(/\n/).filter(Boolean) : [];
   const isWrestler = (wrestler.person_type || 'Wrestler') === 'Wrestler';
 
+  const metaTitle = `${wrestler.name} — Stats, Results & Profile | Pro Wrestling Boxscore`;
+  const metaDescription = [
+    wrestler.name,
+    wrestler.brand ? `WWE ${wrestler.brand} wrestler.` : 'Wrestler profile.',
+    'View match history, last 5 results, and accomplishments.',
+  ].join(' ');
+
   return (
     <>
       <Helmet>
-        <title>{wrestler.name} | Pro Wrestling Boxscore</title>
-        <meta name="description" content={`Profile, accomplishments, and recent matches for ${wrestler.name}.`} />
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
         <link rel="canonical" href={`https://prowrestlingboxscore.com/wrestler/${wrestler.id}`} />
       </Helmet>
       <div style={{ background: '#181818', color: '#fff', minHeight: '100vh', padding: '24px 16px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-            <Link to="/wrestlers" style={{ color: gold, textDecoration: 'none', display: 'inline-block' }}>
-              ← Back to Wrestlers
-            </Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+              {matchOrder != null && fromEvent && (
+                <Link to={`/event/${fromEvent}/match/${matchOrder}`} style={{ color: gold, textDecoration: 'none' }}>
+                  ← Back to match
+                </Link>
+              )}
+              {fromEvent && (
+                <Link to={`/event/${fromEvent}`} style={{ color: gold, textDecoration: 'none' }}>
+                  ← Back to event{eventName ? `: ${eventName}` : ''}
+                </Link>
+              )}
+              <Link to="/wrestlers" style={{ color: gold, textDecoration: 'none' }}>
+                ← Back to Wrestlers
+              </Link>
+            </div>
             {canEdit && onUpdateWrestler && (
               <button
                 type="button"
@@ -94,6 +195,15 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
               </button>
             )}
           </div>
+
+          {/* Internal links: events & championships (at top of profile) */}
+          <p style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 16px', fontSize: 14 }}>
+            <Link to="/raw" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
+            <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+            <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
+            <Link to="/wrestlers" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Roster</Link>
+            <Link to="/championships" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Championships</Link>
+          </p>
 
           {/* Header: full-body/avatar + name (simplified for GM/Manager/Announcer) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 32, alignItems: 'flex-start' }}>
@@ -189,6 +299,37 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
           </section>
           )}
 
+          {/* Title history - from championship_history (wrestlers only) */}
+          {isWrestler && (
+          <section style={{ marginBottom: 32 }}>
+            <h2 style={{ color: gold, fontSize: 18, marginBottom: 12, borderBottom: '2px solid #C6A04F', paddingBottom: 6 }}>
+              Title history
+            </h2>
+            {titleHistoryLoading ? (
+              <p style={{ color: '#888', margin: 0 }}>Loading title history…</p>
+            ) : titleHistory.length === 0 ? (
+              <p style={{ color: '#888', margin: 0, fontStyle: 'italic' }}>No title reigns on record.</p>
+            ) : (
+              <ul style={{ margin: 0, paddingLeft: 20, color: '#ddd', lineHeight: 1.8 }}>
+                {titleHistory.map((reign) => (
+                  <li key={reign.id} style={{ marginBottom: 8 }}>
+                    <Link to={`/championship/${reign.championship_id}`} style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>
+                      {reign.titleName}
+                    </Link>
+                    {' — '}
+                    Won {formatReignDate(reign.date_won)}
+                    {reign.date_lost ? ` · Lost ${formatReignDate(reign.date_lost)}` : ' · Present'}
+                    {reign.event_name && ` (${reign.event_name})`}
+                    {reign.days_held != null && reign.days_held !== '' && (
+                      <span style={{ color: '#888', fontSize: 13 }}> · {reign.days_held} days</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          )}
+
           {/* Last 5 Matches */}
           <section>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -227,7 +368,9 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
                 {lastFiveMatches.map(({ event, match, matchIndex }) => (
                   <div key={`${event.id}-${match.order ?? matchIndex}`}>
                     <div style={{ color: '#aaa', fontSize: 13, marginBottom: 8 }}>
-                      {event.name}
+                      <Link to={`/event/${event.id}`} style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>
+                        {event.name}
+                      </Link>
                       {event.date && ` — ${event.date}`}
                       {event.location && ` — ${event.location}`}
                     </div>

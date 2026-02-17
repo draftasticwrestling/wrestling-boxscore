@@ -396,10 +396,16 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       </Helmet>
       
       <div style={{ color: '#fff', padding: 40, maxWidth: 1200, margin: '0 auto' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: 32, color: '#C6A04F', fontSize: 36, fontWeight: 800 }}>
+        <h1 style={{ textAlign: 'center', marginBottom: 12, color: '#C6A04F', fontSize: 36, fontWeight: 800 }}>
           Current Champions
         </h1>
-        
+        <p style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 16px', fontSize: 14, marginBottom: 32 }}>
+          <Link to="/raw" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
+          <Link to="/smackdown" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+          <Link to="/ple" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
+          <Link to="/wrestlers" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>Roster</Link>
+        </p>
+
         {error && (
           <div style={{ 
             background: '#b02a37', 
@@ -593,26 +599,48 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                     </div>
                   )
                 ) : (
-                  // Individual Wrestler Image
+                  // Individual Wrestler Image (link to profile when slug available)
                   getWrestlerImage(champ.current_champion_slug) && (
                     <div style={{ marginBottom: 12 }}>
-                      <img 
-                        src={getWrestlerImage(champ.current_champion_slug)} 
-                        alt={champ.current_champion}
-                        style={{ 
-                          width: '80px', 
-                          height: '80px', 
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '3px solid #C6A04F'
-                        }} 
-                      />
+                      {champ.current_champion_slug && champ.current_champion_slug !== 'vacant' ? (
+                        <Link to={`/wrestler/${champ.current_champion_slug}`} onClick={e => e.stopPropagation()} style={{ display: 'inline-block' }}>
+                          <img 
+                            src={getWrestlerImage(champ.current_champion_slug)} 
+                            alt={champ.current_champion}
+                            style={{ 
+                              width: '80px', 
+                              height: '80px', 
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '3px solid #C6A04F'
+                            }} 
+                          />
+                        </Link>
+                      ) : (
+                        <img 
+                          src={getWrestlerImage(champ.current_champion_slug)} 
+                          alt={champ.current_champion}
+                          style={{ 
+                            width: '80px', 
+                            height: '80px', 
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '3px solid #C6A04F'
+                          }} 
+                        />
+                      )}
                     </div>
                   )
                 )}
                 
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-                  {formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}
+                  {champ.type !== 'Tag Team' && champ.current_champion_slug && champ.current_champion_slug !== 'vacant' ? (
+                    <Link to={`/wrestler/${champ.current_champion_slug}`} onClick={e => e.stopPropagation()} style={{ color: '#fff', textDecoration: 'none' }}>
+                      {formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}
+                    </Link>
+                  ) : (
+                    formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)
+                  )}
                 </div>
               </div>
 
