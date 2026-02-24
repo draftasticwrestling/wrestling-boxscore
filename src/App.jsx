@@ -367,12 +367,18 @@ function EventList({ events, showFilterFromRoute }) {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      {showMeta && (
+      {showFilterFromRoute ? (
+        showMeta && (
+          <Helmet>
+            <title>WWE {showMeta.title} — Last Night & Tonight | Pro Wrestling Boxscore</title>
+            <meta name="description" content={showMeta.description} />
+            <meta name="keywords" content={`WWE results, ${showMeta.name} results, WWE ${showMeta.name} results last night, ${showMeta.name} results tonight, wrestling results, match cards`} />
+            <link rel="canonical" href={`https://prowrestlingboxscore.com/${showFilterFromRoute}`} />
+          </Helmet>
+        )
+      ) : (
         <Helmet>
-          <title>WWE {showMeta.title} — Last Night & Tonight | Pro Wrestling Boxscore</title>
-          <meta name="description" content={showMeta.description} />
-          <meta name="keywords" content={`WWE results, ${showMeta.name} results, WWE ${showMeta.name} results last night, ${showMeta.name} results tonight, wrestling results, match cards`} />
-          <link rel="canonical" href={`https://prowrestlingboxscore.com/${showFilterFromRoute}`} />
+          <link rel="canonical" href="https://prowrestlingboxscore.com/" />
         </Helmet>
       )}
       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 24 }}>
@@ -6640,7 +6646,7 @@ function App() {
           name="keywords"
           content="WWE results, WWE results tonight, WWE results last night, Raw results, SmackDown results, Raw results tonight, SmackDown results last night, PLE results, WWE, wrestling, event results, match cards, wrestlers, pay-per-view, championship, wrestling stats"
         />
-        <link rel="canonical" href="https://prowrestlingboxscore.com/" />
+        {/* Canonical is set per-route (EventList for /, EventBoxScore for /event/:id, etc.) so event pages are not declared as alternates of the homepage */}
         {/* Open Graph and Twitter tags as above */}
       </Helmet>
       <Router>
