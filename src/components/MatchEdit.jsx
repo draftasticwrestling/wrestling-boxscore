@@ -145,7 +145,21 @@ export default function MatchEdit({
     (initialMatch.royalRumbleData && initialMatch.royalRumbleData.manualIronman) || ''
   );
 
-  // Elimination Chamber specific state
+  // Elimination Chamber: 6 participants (required); starters/pod/result optional
+  const [ecParticipants, setEcParticipants] = useState(() => {
+    if (initialMatch.eliminationChamberData && Array.isArray(initialMatch.eliminationChamberData.participants) && initialMatch.eliminationChamberData.participants.length === 6) {
+      return [...initialMatch.eliminationChamberData.participants];
+    }
+    if (Array.isArray(initialMatch.participants) && initialMatch.participants.length === 6) {
+      return [...initialMatch.participants];
+    }
+    if (initialMatch.eliminationChamberData && Array.isArray(initialMatch.eliminationChamberData.starters) && initialMatch.eliminationChamberData.podEntrants) {
+      const s = initialMatch.eliminationChamberData.starters;
+      const p = initialMatch.eliminationChamberData.podEntrants;
+      if (s.length === 2 && p.length === 4) return [...s, ...p];
+    }
+    return Array(6).fill('');
+  });
   const [ecStarter1, setEcStarter1] = useState(() => {
     if (initialMatch.eliminationChamberData && Array.isArray(initialMatch.eliminationChamberData.starters) && initialMatch.eliminationChamberData.starters.length >= 1) {
       return initialMatch.eliminationChamberData.starters[0] || '';
@@ -178,6 +192,9 @@ export default function MatchEdit({
     }
     return [];
   });
+  const [ecManualIronman, setEcManualIronman] = useState(
+    (initialMatch.eliminationChamberData && initialMatch.eliminationChamberData.manualIronman) || ''
+  );
 
   // Define isBattleRoyal early to avoid "Cannot access before initialization" error
   const isBattleRoyal = match.matchType === 'Battle Royal' || match.stipulation === 'Battle Royal';
@@ -623,15 +640,16 @@ export default function MatchEdit({
               const eliminatedName = safeWrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
               const eliminatedByName = safeWrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? safeWrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
         }
-        
+
         result = `${winnerName} won the Elimination Chamber${eliminationsText}`;
       } else if (status === 'completed') {
         result = 'No winner';
@@ -786,30 +804,31 @@ export default function MatchEdit({
     };
     }
     
-    // Store Elimination Chamber data (starters, pod entrants, entry order, eliminations)
+    // Store Elimination Chamber data (participants required; starters/pod/result optional)
     if (isEliminationChamber) {
+      const allParticipants = Array.isArray(ecParticipants) ? ecParticipants.filter(Boolean) : [];
       const starters = [ecStarter1, ecStarter2].filter(Boolean);
       const podEntrants = Array.isArray(ecPodEntrants) ? ecPodEntrants.filter(Boolean) : [];
-      const allParticipants = [...starters, ...podEntrants];
+      const hasFullResult = allParticipants.length === 6 && starters.length === 2 && podEntrants.length === 4;
       
-      // Use manually entered entry times for pod entrants
       const entryOrder = podEntrants.map((slug, index) => ({
         slug,
         entryNumber: index + 1,
-        entryTime: ecPodEntryTimes[index] || '' // Use manually entered time
+        entryTime: ecPodEntryTimes[index] || ''
       }));
       
-      updatedMatch.participants = allParticipants;
-      updatedMatch.winner = ecWinner;
+      updatedMatch.participants = allParticipants.length === 6 ? allParticipants : (updatedMatch.participants || []);
+      updatedMatch.winner = hasFullResult ? ecWinner : updatedMatch.winner;
       
       const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
       
       updatedMatch.eliminationChamberData = {
-        starters: starters,
-        podEntrants: podEntrants,
-        entryOrder: entryOrder,
+        participants: allParticipants.length === 6 ? allParticipants : (initialMatch.eliminationChamberData?.participants || []),
+        starters: hasFullResult ? starters : [],
+        podEntrants: hasFullResult ? podEntrants : [],
+        entryOrder: hasFullResult ? entryOrder : [],
         eliminations: clonedEliminations,
-        participants: allParticipants
+        manualIronman: ecManualIronman || null
       };
     }
 
@@ -1792,77 +1811,70 @@ export default function MatchEdit({
             Elimination Chamber (6 Participants)
           </div>
           <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
-            2 wrestlers start in the ring. 4 wrestlers start in pods and enter every 5 minutes.
+            Add the 6 participants so the match can be listed ahead of time. Result details (who started, pod order, winner) can be filled in when posting results.
           </div>
           
-          {/* Starters */}
+          {/* Participants (6) */}
           <div style={{ marginBottom: 16, padding: 12, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
-            <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
-              Starters (In Ring)
-            </div>
-            <WrestlerAutocomplete
-              wrestlers={safeWrestlers}
-              value={ecStarter1}
-              onChange={val => setEcStarter1(val)}
-              placeholder="Starter 1"
-            />
-            <div style={{ marginTop: 8 }}>
-              <WrestlerAutocomplete
-                wrestlers={safeWrestlers}
-                value={ecStarter2}
-                onChange={val => setEcStarter2(val)}
-                placeholder="Starter 2"
-              />
-            </div>
+            <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>Participants (6)</div>
+            {Array.isArray(ecParticipants) && ecParticipants.map((slug, i) => (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <WrestlerAutocomplete
+                  wrestlers={safeWrestlers}
+                  value={slug}
+                  onChange={val => setEcParticipants(prev => Array.isArray(prev) ? prev.map((s, idx) => idx === i ? val : s) : [])}
+                  placeholder={`Participant ${i + 1}`}
+                />
+              </div>
+            ))}
           </div>
           
-          {/* Pod Entrants */}
-          <div style={{ marginBottom: 16, padding: 12, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
-            <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
-              Pod Entrants (Entry Order)
-            </div>
-            <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
-              Enter the wrestler and the time they entered from their pod.
-            </div>
-            {Array.isArray(ecPodEntrants) && ecPodEntrants.map((slug, i) => {
-              const entryNumber = i + 1;
-              
-              return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                  <div style={{ minWidth: 60, color: gold, fontWeight: 600, fontSize: 12 }}>
-                    #{entryNumber}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <WrestlerAutocomplete
-                      wrestlers={safeWrestlers}
-                      value={slug}
-                      onChange={val => setEcPodEntrants(prev => Array.isArray(prev) ? prev.map((s, idx) => idx === i ? val : s) : [])}
-                      placeholder={`Pod Entrant #${entryNumber}`}
-                    />
-                  </div>
-                  <div style={{ minWidth: 100 }}>
-                    <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
-                      Entry Time:
-                    </label>
-                    <input
-                      type="text"
-                      value={ecPodEntryTimes[i] || ''}
-                      onChange={(e) => {
-                        const newTimes = [...ecPodEntryTimes];
-                        newTimes[i] = e.target.value;
-                        setEcPodEntryTimes(newTimes);
-                      }}
-                      placeholder="e.g. 5:00"
-                      style={inputStyle}
-                    />
-                  </div>
+          {/* Result details (optional) */}
+          {ecParticipants.filter(Boolean).length === 6 && (
+            <div style={{ marginBottom: 16, padding: 12, background: '#1a2a1a', borderRadius: 8, border: '1px solid #355' }}>
+              <div style={{ color: gold, fontWeight: 600, marginBottom: 4 }}>Result details (optional)</div>
+              <div style={{ color: '#aaa', fontSize: 12, marginBottom: 12 }}>Fill in when posting results: starters, pod entry order and times, winner, eliminations.</div>
+              <div style={{ color: '#fff', fontSize: 12, marginBottom: 8 }}>Starters (In Ring)</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <select value={ecStarter1} onChange={e => setEcStarter1(e.target.value)} style={inputStyle}>
+                    <option value="">Starter 1</option>
+                    {ecParticipants.filter(Boolean).map(slug => (
+                      <option key={slug} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
+                    ))}
+                  </select>
                 </div>
-              );
-            })}
-          </div>
+                <div style={{ flex: 1 }}>
+                  <select value={ecStarter2} onChange={e => setEcStarter2(e.target.value)} style={inputStyle}>
+                    <option value="">Starter 2</option>
+                    {ecParticipants.filter(Boolean).filter(p => p !== ecStarter1).map(slug => (
+                      <option key={slug} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={{ color: '#fff', fontSize: 12, marginBottom: 8 }}>Pod entry order (remaining 4)</div>
+              {[0, 1, 2, 3].map(idx => {
+                const used = [ecStarter1, ecStarter2, ...(ecPodEntrants || []).slice(0, idx)].filter(Boolean);
+                const available = ecParticipants.filter(Boolean).filter(p => !used.includes(p));
+                return (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span style={{ minWidth: 28, color: gold, fontSize: 12 }}>#{idx + 1}</span>
+                    <select value={ecPodEntrants[idx] || ''} onChange={e => setEcPodEntrants(prev => (prev || []).map((s, j) => j === idx ? e.target.value : s))} style={{ ...inputStyle, flex: 1 }}>
+                      <option value="">Pod entrant</option>
+                      {available.map(slug => (
+                        <option key={slug} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                    <input type="text" value={ecPodEntryTimes[idx] || ''} onChange={e => { const t = [...(ecPodEntryTimes || [])]; t[idx] = e.target.value; setEcPodEntryTimes(t); }} placeholder="Time" style={{ ...inputStyle, width: 70 }} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
           
           {/* Eliminations Section */}
-          {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).length === 6 && (
+          {ecParticipants.filter(Boolean).length === 6 && (
             <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
               <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>
                 Eliminations
@@ -1889,7 +1901,7 @@ export default function MatchEdit({
                       style={inputStyle}
                     >
                       <option value="">Select wrestler...</option>
-                      {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => {
+                      {ecParticipants.filter(Boolean).filter(p => {
                         const alreadyEliminated = ecEliminations
                           .filter((_, i) => i !== index)
                           .map(e => e.eliminated)
@@ -1941,7 +1953,7 @@ export default function MatchEdit({
                       style={inputStyle}
                     >
                       <option value="">Select wrestler...</option>
-                      {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
+                      {ecParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
                         <option key={slug} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
                       ))}
                     </select>
@@ -1986,12 +1998,31 @@ export default function MatchEdit({
                           style={inputStyle}
                         >
                           <option value="">Select second wrestler...</option>
-                          {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
+                          {ecParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
                             <option key={slug} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
                           ))}
                         </select>
                       </div>
                     )}
+                  </div>
+
+                  <div style={{ flex: 0.6 }}>
+                    <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                      How:
+                    </label>
+                    <select
+                      value={elimination.method || ''}
+                      onChange={(e) => {
+                        const newEliminations = [...ecEliminations];
+                        newEliminations[index] = { ...newEliminations[index], method: e.target.value };
+                        setEcEliminations(newEliminations);
+                      }}
+                      style={inputStyle}
+                    >
+                      <option value="">—</option>
+                      <option value="Pinfall">Pinfall</option>
+                      <option value="Submission">Submission</option>
+                    </select>
                   </div>
 
                   <div style={{ flex: 0.8 }}>
@@ -2038,7 +2069,7 @@ export default function MatchEdit({
                 <button
                   type="button"
                   onClick={() => {
-                    setEcEliminations([...ecEliminations, { eliminated: '', eliminatedBy: '', time: '' }]);
+                    setEcEliminations([...ecEliminations, { eliminated: '', eliminatedBy: '', time: '', method: '' }]);
                   }}
                   style={{
                     background: gold,
@@ -2058,7 +2089,7 @@ export default function MatchEdit({
           )}
 
           {/* Winner Selection */}
-          {status === 'completed' && [ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).length === 6 && (
+          {ecParticipants.filter(Boolean).length === 6 && (
             <div style={{ marginTop: 16 }}>
               <label style={{ color: gold, fontWeight: 600 }}>Winner:</label>
               <select 
@@ -2067,12 +2098,27 @@ export default function MatchEdit({
                 style={inputStyle}
               >
                 <option value="">Select winner</option>
-                {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).map((slug, i) => (
+                {ecParticipants.filter(Boolean).map((slug, i) => (
                   <option key={i} value={slug}>
                     {safeWrestlers.find(w => w.id === slug)?.name || slug}
                   </option>
                 ))}
               </select>
+              <div style={{ marginTop: 12 }}>
+                <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                  Iron Man / Iron Woman (optional):
+                </label>
+                <select
+                  value={ecManualIronman || ''}
+                  onChange={e => setEcManualIronman(e.target.value || '')}
+                  style={inputStyle}
+                >
+                  <option value="">Let stats decide (longest in match)</option>
+                  {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).map(slug => (
+                    <option key={slug} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
         </>

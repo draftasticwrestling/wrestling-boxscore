@@ -2015,7 +2015,11 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             return longestLasting;
           };
           
-          const longestLasting = calculateLongestLasting();
+          const computedLongest = calculateLongestLasting();
+          const manualIronman = match.eliminationChamberData?.manualIronman;
+          const longestLasting = manualIronman
+            ? { slug: manualIronman, time: null, timeSeconds: null }
+            : computedLongest;
           
           return (
             <>
@@ -2076,14 +2080,15 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     Elimination Chamber Statistics
                   </div>
                   
-                  {/* Longest Lasting */}
+                  {/* Longest Lasting (Iron Man / Iron Woman) */}
                   {longestLasting && (
                     <div style={{ marginBottom: 12, padding: 12, background: '#333', borderRadius: 6 }}>
                       <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
-                        Longest Lasting
+                        Iron Man / Iron Woman (Longest Lasting)
                       </div>
                       <div style={{ color: '#fff', fontSize: 14 }}>
-                        <strong>{wrestlerMap[longestLasting.slug]?.name || longestLasting.slug}</strong> - {longestLasting.time}
+                        <strong>{wrestlerMap[longestLasting.slug]?.name || longestLasting.slug}</strong>
+                        {longestLasting.time != null ? ` - ${longestLasting.time}` : ''}
                       </div>
                     </div>
                   )}
@@ -2134,8 +2139,11 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                           let elimText = eliminatedByName2 
                             ? `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}`
                             : `${eliminatedByName} eliminated ${eliminatedName}`;
+                          if (elim.method) {
+                            elimText += ` (${elim.method})`;
+                          }
                           if (elim.time) {
-                            elimText += ` (${elim.time})`;
+                            elimText += elim.method ? ` at ${elim.time}` : ` (${elim.time})`;
                           }
                           return (
                             <div key={idx} style={{ marginBottom: 4 }}>

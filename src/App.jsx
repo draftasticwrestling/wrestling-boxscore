@@ -1341,12 +1341,15 @@ function AddEvent({ addEvent, wrestlers }) {
   const [rrWinner, setRrWinner] = useState('');
   const [rrEliminations, setRrEliminations] = useState([]);
   const [rrManualIronman, setRrManualIronman] = useState('');
-  // Elimination Chamber state (2 starters, 4 pod entrants)
+  // Elimination Chamber: 6 participants (required); starters/pod/result optional when posting
+  const [ecParticipants, setEcParticipants] = useState(Array(6).fill(''));
   const [ecStarter1, setEcStarter1] = useState('');
   const [ecStarter2, setEcStarter2] = useState('');
   const [ecPodEntrants, setEcPodEntrants] = useState(Array(4).fill(''));
+  const [ecPodEntryTimes, setEcPodEntryTimes] = useState(Array(4).fill(''));
   const [ecWinner, setEcWinner] = useState('');
   const [ecEliminations, setEcEliminations] = useState([]);
+  const [ecManualIronman, setEcManualIronman] = useState('');
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
   const [showVacancyForm, setShowVacancyForm] = useState(false);
@@ -1464,10 +1467,11 @@ function AddEvent({ addEvent, wrestlers }) {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
@@ -1537,10 +1541,11 @@ function AddEvent({ addEvent, wrestlers }) {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
@@ -1610,12 +1615,18 @@ function AddEvent({ addEvent, wrestlers }) {
     }
     // --- Elimination Chamber branch ---
     if (match.matchType === 'Elimination Chamber' || match.stipulation === 'Elimination Chamber') {
+      const allParticipants = ecParticipants.filter(Boolean);
+      if (allParticipants.length !== 6) {
+        alert('Please add all 6 participants for the Elimination Chamber match.');
+        return;
+      }
       const starters = [ecStarter1, ecStarter2].filter(Boolean);
       const podEntrants = ecPodEntrants.filter(Boolean);
       const ecWin = ecWinner;
       let ecResult = '';
+      const hasFullResult = eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4;
       
-      if (eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4) {
+      if (hasFullResult) {
         const winnerName = wrestlers.find(w => w.id === ecWin)?.name || ecWin;
         
         // Format eliminations if they exist
@@ -1627,10 +1638,11 @@ function AddEvent({ addEvent, wrestlers }) {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
@@ -1639,35 +1651,34 @@ function AddEvent({ addEvent, wrestlers }) {
         ecResult = `${winnerName} won the Elimination Chamber${eliminationsText}`;
       } else if (eventStatus === 'completed') {
         ecResult = 'No winner';
+      } else {
+        ecResult = ''; // Upcoming: no result yet
       }
       
-      // Use manually entered entry times for pod entrants
       const entryOrder = podEntrants.map((slug, index) => ({
         slug,
         entryNumber: index + 1,
-        entryTime: ecPodEntryTimes[index] || '' // Use manually entered time
+        entryTime: ecPodEntryTimes[index] || ''
       }));
-      
-      const allParticipants = [...starters, ...podEntrants];
       
       const newMatch = { 
         ...match, 
         participants: allParticipants, 
-        winner: ecWin, 
-        result: ecResult, 
+        winner: hasFullResult ? ecWin : undefined, 
+        result: ecResult || (eventStatus === 'upcoming' ? '' : ecResult), 
         isLive: match.isLive || false 
       };
       
-      // Store Elimination Chamber data
       const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
       newMatch.eliminationChamberData = {
-        starters: starters,
-        podEntrants: podEntrants,
-        entryOrder: entryOrder,
+        participants: allParticipants,
+        starters: hasFullResult ? starters : [],
+        podEntrants: hasFullResult ? podEntrants : [],
+        entryOrder: hasFullResult ? entryOrder : [],
         eliminations: clonedEliminations,
-        participants: allParticipants
+        manualIronman: ecManualIronman || null
       };
-      
+
       setMatches([...matches, newMatch]);
       setMatch({
         participants: '',
@@ -1686,12 +1697,14 @@ function AddEvent({ addEvent, wrestlers }) {
       setResultType('');
       setWinner('');
       setFormResetKey(prev => prev + 1);
+      setEcParticipants(Array(6).fill(''));
       setEcStarter1('');
       setEcStarter2('');
       setEcPodEntrants(Array(4).fill(''));
       setEcPodEntryTimes(Array(4).fill(''));
       setEcWinner('');
       setEcEliminations([]);
+      setEcManualIronman('');
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -3227,77 +3240,76 @@ function AddEvent({ addEvent, wrestlers }) {
                 Elimination Chamber (6 Participants)
               </div>
               <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
-                2 wrestlers start in the ring. 4 wrestlers start in pods. Enter the time each pod entrant entered.
+                Add the 6 participants so the match can be listed ahead of time. Result details (who started, pod order, winner) can be filled in when posting results.
               </div>
               
-              {/* Starters */}
+              {/* Participants — required for listing match */}
               <div style={{ marginBottom: 16, padding: 12, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
                 <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
-                  Starters (In Ring)
+                  Participants (6)
                 </div>
-                <WrestlerAutocomplete
-                  wrestlers={wrestlers}
-                  value={ecStarter1}
-                  onChange={val => setEcStarter1(val)}
-                  placeholder="Starter 1"
-                />
-                <div style={{ marginTop: 8 }}>
-                  <WrestlerAutocomplete
-                    wrestlers={wrestlers}
-                    value={ecStarter2}
-                    onChange={val => setEcStarter2(val)}
-                    placeholder="Starter 2"
-                  />
-                </div>
+                {ecParticipants.map((slug, i) => (
+                  <div key={i} style={{ marginBottom: 8 }}>
+                    <WrestlerAutocomplete
+                      wrestlers={wrestlers}
+                      value={slug}
+                      onChange={val => setEcParticipants(prev => prev.map((s, idx) => idx === i ? val : s))}
+                      placeholder={`Participant ${i + 1}`}
+                    />
+                  </div>
+                ))}
               </div>
               
-              {/* Pod Entrants */}
-              <div style={{ marginBottom: 16, padding: 12, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
-                <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
-                  Pod Entrants (Entry Order)
+              {/* Result details (optional) — when posting results */}
+              {ecParticipants.filter(Boolean).length === 6 && (
+              <div style={{ marginBottom: 16, padding: 12, background: '#1a2a1a', borderRadius: 8, border: '1px solid #355' }}>
+                <div style={{ color: gold, fontWeight: 600, marginBottom: 4 }}>
+                  Result details (optional)
                 </div>
-                <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>
-                  Enter the wrestler and the time they entered from their pod.
+                <div style={{ color: '#aaa', fontSize: 12, marginBottom: 12 }}>
+                  Fill in when posting results or after the event: who started in the ring, pod entry order and times, winner, eliminations.
                 </div>
-                {ecPodEntrants.map((slug, i) => {
-                  const entryNumber = i + 1;
-                  
+                <div style={{ color: '#fff', fontSize: 12, marginBottom: 8 }}>Starters (In Ring)</div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <select value={ecStarter1} onChange={e => setEcStarter1(e.target.value)} style={inputStyle}>
+                      <option value="">Starter 1</option>
+                      {ecParticipants.filter(Boolean).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <select value={ecStarter2} onChange={e => setEcStarter2(e.target.value)} style={inputStyle}>
+                      <option value="">Starter 2</option>
+                      {ecParticipants.filter(Boolean).filter(p => p !== ecStarter1).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ color: '#fff', fontSize: 12, marginBottom: 8 }}>Pod entry order (remaining 4)</div>
+                {[0, 1, 2, 3].map(i => {
+                  const used = [ecStarter1, ecStarter2, ...ecPodEntrants.slice(0, i)].filter(Boolean);
+                  const available = ecParticipants.filter(Boolean).filter(p => !used.includes(p));
                   return (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                      <div style={{ minWidth: 60, color: gold, fontWeight: 600, fontSize: 12 }}>
-                        #{entryNumber}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <WrestlerAutocomplete
-                          wrestlers={wrestlers}
-                          value={slug}
-                          onChange={val => setEcPodEntrants(prev => prev.map((s, idx) => idx === i ? val : s))}
-                          placeholder={`Pod Entrant #${entryNumber}`}
-                        />
-                      </div>
-                      <div style={{ minWidth: 100 }}>
-                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
-                          Entry Time:
-                        </label>
-                        <input
-                          type="text"
-                          value={ecPodEntryTimes[i] || ''}
-                          onChange={(e) => {
-                            const newTimes = [...ecPodEntryTimes];
-                            newTimes[i] = e.target.value;
-                            setEcPodEntryTimes(newTimes);
-                          }}
-                          placeholder="e.g. 5:00"
-                          style={inputStyle}
-                        />
-                      </div>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span style={{ minWidth: 28, color: gold, fontSize: 12 }}>#{i + 1}</span>
+                      <select value={ecPodEntrants[i] || ''} onChange={e => setEcPodEntrants(prev => prev.map((s, j) => j === i ? e.target.value : s))} style={{ ...inputStyle, flex: 1 }}>
+                        <option value="">Pod entrant</option>
+                        {available.map(slug => (
+                          <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                        ))}
+                      </select>
+                      <input type="text" value={ecPodEntryTimes[i] || ''} onChange={e => { const t = [...ecPodEntryTimes]; t[i] = e.target.value; setEcPodEntryTimes(t); }} placeholder="Time" style={{ ...inputStyle, width: 70 }} />
                     </div>
                   );
                 })}
               </div>
+              )}
               
-              {/* Winner Selection */}
-              {([ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).length === 6) && (
+              {/* Winner Selection (optional result details) */}
+              {ecParticipants.filter(Boolean).length === 6 && (
                 <div style={{ marginTop: 16 }}>
                   <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
                     Winner:
@@ -3308,15 +3320,30 @@ function AddEvent({ addEvent, wrestlers }) {
                     style={inputStyle}
                   >
                     <option value="">Select winner...</option>
-                    {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).map(slug => (
+                    {ecParticipants.filter(Boolean).map(slug => (
                       <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
                     ))}
                   </select>
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+                      Iron Man / Iron Woman (optional):
+                    </label>
+                    <select
+                      value={ecManualIronman || ''}
+                      onChange={e => setEcManualIronman(e.target.value || '')}
+                      style={inputStyle}
+                    >
+                      <option value="">Let stats decide (longest in match)</option>
+                      {ecParticipants.filter(Boolean).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
               
               {/* Eliminations Section */}
-              {([ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).length === 6) && (
+              {ecParticipants.filter(Boolean).length === 6 && (
                 <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
                   <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>
                     Eliminations
@@ -3343,7 +3370,7 @@ function AddEvent({ addEvent, wrestlers }) {
                           style={inputStyle}
                         >
                           <option value="">Select wrestler...</option>
-                          {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => {
+                          {ecParticipants.filter(Boolean).filter(p => {
                             const alreadyEliminated = ecEliminations
                               .filter((_, i) => i !== index)
                               .map(e => e.eliminated)
@@ -3395,7 +3422,7 @@ function AddEvent({ addEvent, wrestlers }) {
                           style={inputStyle}
                         >
                           <option value="">Select wrestler...</option>
-                          {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
+                          {ecParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy2).map(slug => (
                             <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
                           ))}
                         </select>
@@ -3440,12 +3467,31 @@ function AddEvent({ addEvent, wrestlers }) {
                               style={inputStyle}
                             >
                               <option value="">Select second wrestler...</option>
-                              {[ecStarter1, ecStarter2, ...ecPodEntrants].filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
+                              {ecParticipants.filter(Boolean).filter(p => p !== elimination.eliminated && p !== elimination.eliminatedBy).map(slug => (
                                 <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
                               ))}
                             </select>
                           </div>
                         )}
+                      </div>
+
+                      <div style={{ flex: 0.6 }}>
+                        <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>
+                          How:
+                        </label>
+                        <select
+                          value={elimination.method || ''}
+                          onChange={(e) => {
+                            const newEliminations = [...ecEliminations];
+                            newEliminations[index] = { ...newEliminations[index], method: e.target.value };
+                            setEcEliminations(newEliminations);
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">—</option>
+                          <option value="Pinfall">Pinfall</option>
+                          <option value="Submission">Submission</option>
+                        </select>
                       </div>
 
                       <div style={{ flex: 0.8 }}>
@@ -3492,7 +3538,7 @@ function AddEvent({ addEvent, wrestlers }) {
                     <button
                       type="button"
                       onClick={() => {
-                        setEcEliminations([...ecEliminations, { eliminated: '', eliminatedBy: '', time: '' }]);
+                        setEcEliminations([...ecEliminations, { eliminated: '', eliminatedBy: '', time: '', method: '' }]);
                       }}
                       style={{
                         background: gold,
@@ -3847,12 +3893,15 @@ function EditEvent({ events, updateEvent, wrestlers }) {
   const [rrParticipants, setRrParticipants] = useState(Array(30).fill(''));
   const [rrWinner, setRrWinner] = useState('');
   const [rrEliminations, setRrEliminations] = useState([]);
-  // Elimination Chamber state (2 starters, 4 pod entrants)
+  // Elimination Chamber: 6 participants (required); starters/pod/result optional when posting
+  const [ecParticipants, setEcParticipants] = useState(Array(6).fill(''));
   const [ecStarter1, setEcStarter1] = useState('');
   const [ecStarter2, setEcStarter2] = useState('');
   const [ecPodEntrants, setEcPodEntrants] = useState(Array(4).fill(''));
+  const [ecPodEntryTimes, setEcPodEntryTimes] = useState(Array(4).fill(''));
   const [ecWinner, setEcWinner] = useState('');
   const [ecEliminations, setEcEliminations] = useState([]);
+  const [ecManualIronman, setEcManualIronman] = useState('');
   const [useVisualBuilder, setUseVisualBuilder] = useState(true); // Toggle for Visual Match Builder
   const [formResetKey, setFormResetKey] = useState(0); // Key to force VisualMatchBuilder re-render
   const [showVacancyForm, setShowVacancyForm] = useState(false);
@@ -3948,10 +3997,11 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
@@ -4020,10 +4070,11 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
@@ -4092,12 +4143,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     }
     // --- Elimination Chamber branch ---
     if (match.matchType === 'Elimination Chamber' || match.stipulation === 'Elimination Chamber') {
+      const allParticipants = ecParticipants.filter(Boolean);
+      if (allParticipants.length !== 6) {
+        alert('Please add all 6 participants for the Elimination Chamber match.');
+        return;
+      }
       const starters = [ecStarter1, ecStarter2].filter(Boolean);
       const podEntrants = ecPodEntrants.filter(Boolean);
       const ecWin = ecWinner;
       let ecResult = '';
+      const hasFullResult = eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4;
       
-      if (eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4) {
+      if (hasFullResult) {
         const winnerName = wrestlers.find(w => w.id === ecWin)?.name || ecWin;
         
         // Format eliminations if they exist
@@ -4109,10 +4166,11 @@ function EditEvent({ events, updateEvent, wrestlers }) {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
@@ -4121,36 +4179,35 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         ecResult = `${winnerName} won the Elimination Chamber${eliminationsText}`;
       } else if (eventStatus === 'completed') {
         ecResult = 'No winner';
+      } else {
+        ecResult = '';
       }
       
-      // Use manually entered entry times for pod entrants
       const entryOrder = podEntrants.map((slug, index) => ({
         slug,
         entryNumber: index + 1,
-        entryTime: ecPodEntryTimes[index] || '' // Use manually entered time
+        entryTime: ecPodEntryTimes[index] || ''
       }));
-      
-      const allParticipants = [...starters, ...podEntrants];
       
       const newMatch = { 
         ...match, 
         participants: allParticipants, 
-        winner: ecWin, 
-        result: ecResult, 
+        winner: hasFullResult ? ecWin : undefined, 
+        result: ecResult || (eventStatus === 'upcoming' ? '' : ecResult), 
         isLive: match.isLive || false,
         order: matches.length + 1
       };
       
-      // Store Elimination Chamber data
       const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
       newMatch.eliminationChamberData = {
-        starters: starters,
-        podEntrants: podEntrants,
-        entryOrder: entryOrder,
+        participants: allParticipants,
+        starters: hasFullResult ? starters : [],
+        podEntrants: hasFullResult ? podEntrants : [],
+        entryOrder: hasFullResult ? entryOrder : [],
         eliminations: clonedEliminations,
-        participants: allParticipants
+        manualIronman: ecManualIronman || null
       };
-      
+
       setMatches([...matches, newMatch]);
       setMatch({
         participants: '',
@@ -4168,12 +4225,14 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       });
       setResultType('');
       setWinner('');
+      setEcParticipants(Array(6).fill(''));
       setEcStarter1('');
       setEcStarter2('');
       setEcPodEntrants(Array(4).fill(''));
       setEcPodEntryTimes(Array(4).fill(''));
       setEcWinner('');
       setEcEliminations([]);
+      setEcManualIronman('');
       return;
     }
     // --- Default (non-Battle Royal) branch ---
@@ -4365,10 +4424,11 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             const eliminatedName = wrestlersList.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
             const eliminatedByName = wrestlersList.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
             const eliminatedByName2 = elim.eliminatedBy2 ? wrestlersList.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
+            const methodPart = elim.method ? ` (${elim.method})` : '';
             if (eliminatedByName2) {
-              return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}`;
+              return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
             }
-            return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${elim.time ? ` (${elim.time})` : ''}` : eliminatedName;
+            return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
           });
           const eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           return `${winnerName} won the Elimination Chamber${eliminationsText}`;
@@ -5260,6 +5320,130 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                     <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
                       The winner is typically the wrestler who eliminated the last opponent.
                     </div>
+                  </div>
+                )}
+              </>
+            ) : match.matchType === 'Elimination Chamber' ? (
+              <>
+                <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>
+                  Elimination Chamber (6 Participants)
+                </div>
+                <div style={{ color: '#fff', fontSize: 12, marginBottom: 16 }}>
+                  Add the 6 participants so the match can be listed ahead of time. Result details (who started, pod order, winner) can be filled in when posting results.
+                </div>
+                <div style={{ marginBottom: 16, padding: 12, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                  <div style={{ color: gold, fontWeight: 600, marginBottom: 8 }}>Participants (6)</div>
+                  {ecParticipants.map((slug, i) => (
+                    <div key={i} style={{ marginBottom: 8 }}>
+                      <WrestlerAutocomplete wrestlers={wrestlers} value={slug} onChange={val => setEcParticipants(prev => prev.map((s, idx) => idx === i ? val : s))} placeholder={`Participant ${i + 1}`} />
+                    </div>
+                  ))}
+                </div>
+                {ecParticipants.filter(Boolean).length === 6 && (
+                  <div style={{ marginBottom: 16, padding: 12, background: '#1a2a1a', borderRadius: 8, border: '1px solid #355' }}>
+                    <div style={{ color: gold, fontWeight: 600, marginBottom: 4 }}>Result details (optional)</div>
+                    <div style={{ color: '#aaa', fontSize: 12, marginBottom: 12 }}>Fill in when posting results: starters, pod entry order and times, winner, eliminations.</div>
+                    <div style={{ color: '#fff', fontSize: 12, marginBottom: 8 }}>Starters (In Ring)</div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <select value={ecStarter1} onChange={e => setEcStarter1(e.target.value)} style={inputStyle}>
+                          <option value="">Starter 1</option>
+                          {ecParticipants.filter(Boolean).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <select value={ecStarter2} onChange={e => setEcStarter2(e.target.value)} style={inputStyle}>
+                          <option value="">Starter 2</option>
+                          {ecParticipants.filter(Boolean).filter(p => p !== ecStarter1).map(slug => (
+                            <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ color: '#fff', fontSize: 12, marginBottom: 8 }}>Pod entry order (remaining 4)</div>
+                    {[0, 1, 2, 3].map(i => {
+                      const used = [ecStarter1, ecStarter2, ...ecPodEntrants.slice(0, i)].filter(Boolean);
+                      const available = ecParticipants.filter(Boolean).filter(p => !used.includes(p));
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span style={{ minWidth: 28, color: gold, fontSize: 12 }}>#{i + 1}</span>
+                          <select value={ecPodEntrants[i] || ''} onChange={e => setEcPodEntrants(prev => prev.map((s, j) => j === i ? e.target.value : s))} style={{ ...inputStyle, flex: 1 }}>
+                            <option value="">Pod entrant</option>
+                            {available.map(slug => (
+                              <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                            ))}
+                          </select>
+                          <input type="text" value={ecPodEntryTimes[i] || ''} onChange={e => { const t = [...ecPodEntryTimes]; t[i] = e.target.value; setEcPodEntryTimes(t); }} placeholder="Time" style={{ ...inputStyle, width: 70 }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {ecParticipants.filter(Boolean).length === 6 && (
+                  <div style={{ marginTop: 16 }}>
+                    <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>Winner:</label>
+                    <select value={ecWinner} onChange={e => setEcWinner(e.target.value)} style={inputStyle}>
+                      <option value="">Select winner...</option>
+                      {ecParticipants.filter(Boolean).map(slug => (
+                        <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                      ))}
+                    </select>
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ color: gold, fontWeight: 600, marginBottom: 8, display: 'block' }}>Iron Man / Iron Woman (optional):</label>
+                      <select value={ecManualIronman || ''} onChange={e => setEcManualIronman(e.target.value || '')} style={inputStyle}>
+                        <option value="">Let stats decide (longest in match)</option>
+                        {ecParticipants.filter(Boolean).map(slug => (
+                          <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+                {ecParticipants.filter(Boolean).length === 6 && (
+                  <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
+                    <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>Eliminations</div>
+                    <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>Track each elimination in order. Include how (Pinfall/Submission) and time.</div>
+                    {ecEliminations.map((elimination, index) => (
+                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#333', borderRadius: 4, marginBottom: 8, border: '1px solid #555', flexWrap: 'wrap' }}>
+                        <span style={{ color: '#fff', minWidth: '80px', fontSize: 12 }}>#{index + 1}</span>
+                        <div style={{ flex: 1, minWidth: 120 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>Eliminated:</label>
+                          <select value={elimination.eliminated || ''} onChange={(e) => { const n = [...ecEliminations]; n[index] = { ...n[index], eliminated: e.target.value }; setEcEliminations(n); }} style={inputStyle}>
+                            <option value="">Select...</option>
+                            {ecParticipants.filter(Boolean).filter(p => !ecEliminations.filter((_, i) => i !== index).map(e => e.eliminated).includes(p) && p !== ecWinner).map(slug => (
+                              <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 120 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>By:</label>
+                          <select value={elimination.eliminatedBy || ''} onChange={(e) => { const n = [...ecEliminations]; n[index] = { ...n[index], eliminatedBy: e.target.value }; setEcEliminations(n); }} style={inputStyle}>
+                            <option value="">Select...</option>
+                            {ecParticipants.filter(Boolean).filter(p => p !== elimination.eliminated).map(slug => (
+                              <option key={slug} value={slug}>{wrestlers.find(w => w.id === slug)?.name || slug}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ flex: 0.5, minWidth: 90 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>How:</label>
+                          <select value={elimination.method || ''} onChange={(e) => { const n = [...ecEliminations]; n[index] = { ...n[index], method: e.target.value }; setEcEliminations(n); }} style={inputStyle}>
+                            <option value="">—</option>
+                            <option value="Pinfall">Pinfall</option>
+                            <option value="Submission">Submission</option>
+                          </select>
+                        </div>
+                        <div style={{ flex: 0.5, minWidth: 80 }}>
+                          <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>Time:</label>
+                          <input type="text" value={elimination.time || ''} onChange={(e) => { const n = [...ecEliminations]; n[index] = { ...n[index], time: e.target.value }; setEcEliminations(n); }} placeholder="e.g. 12:30" style={inputStyle} />
+                        </div>
+                        <button type="button" onClick={() => setEcEliminations(ecEliminations.filter((_, i) => i !== index))} style={{ background: '#d32f2f', color: 'white', border: 'none', borderRadius: 4, padding: '8px 12px', cursor: 'pointer', fontSize: 12, height: 'fit-content', marginTop: 20 }}>Remove</button>
+                      </div>
+                    ))}
+                    {ecEliminations.length < 5 && (
+                      <button type="button" onClick={() => setEcEliminations([...ecEliminations, { eliminated: '', eliminatedBy: '', time: '', method: '' }])} style={{ background: gold, color: '#232323', border: 'none', borderRadius: 4, padding: '8px 16px', cursor: 'pointer', fontWeight: 'bold', marginTop: 8 }}>+ Add Elimination</button>
+                    )}
                   </div>
                 )}
               </>
