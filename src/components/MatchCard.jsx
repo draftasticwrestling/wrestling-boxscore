@@ -1888,51 +1888,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
       ) : match.matchType === 'Elimination Chamber' && Array.isArray(match.participants) ? (
         match.winner ? (() => {
           const others = match.participants.filter(slug => slug !== match.winner);
-          const half = Math.ceil(others.length / 2);
-          const left = others.slice(0, half);
-          const right = others.slice(half);
-          
-          const renderGrid = (arr) => {
-            const numCols = 2;
-            const numRows = Math.ceil(arr.length / numCols);
-            let grid = [];
-            for (let row = 0; row < numRows; row++) {
-              let rowItems = [];
-              for (let col = 0; col < numCols; col++) {
-                const idx = row + col * numRows;
-                if (arr[idx]) {
-                  const slug = arr[idx];
-                  rowItems.push(
-                    <Link key={slug} to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'block', lineHeight: 0 }}>
-                      <img
-                        src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
-                        alt={wrestlerMap[slug]?.name || slug}
-                        title={wrestlerMap[slug]?.name || slug}
-                        style={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '2px solid #888',
-                          background: '#222',
-                          margin: 6,
-                          boxShadow: '0 0 6px #0008',
-                          transition: 'all 0.2s',
-                          display: 'block',
-                        }}
-                      />
-                    </Link>
-                  );
-                } else {
-                  rowItems.push(<div key={`empty-${col}-${row}`} style={{ width: 38, height: 38, margin: 6 }} />);
-                }
-              }
-              grid.push(
-                <div key={row} style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>{rowItems}</div>
-              );
-            }
-            return grid;
-          };
           
           // Calculate longest lasting participant
           const calculateLongestLasting = () => {
@@ -2025,19 +1980,15 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             <>
               <div style={{
                 display: 'flex',
-                flexDirection: 'row',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 16,
-                gap: 24,
-                flexWrap: 'wrap',
                 width: '100%',
                 overflow: 'hidden',
               }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  {renderGrid(left)}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 120 }}>
+                {/* Winner on top */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
                   <img
                     src={wrestlerMap[match.winner]?.image_url || '/images/placeholder.png'}
                     alt={wrestlerMap[match.winner]?.name || match.winner}
@@ -2059,8 +2010,32 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   </div>
                   <div style={{ color: '#fff', fontSize: 15, textAlign: 'center' }}>Winner</div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  {renderGrid(right)}
+                {/* Other 5 participants in a single row below */}
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {others.map(slug => (
+                    <Link key={slug} to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 0 }}>
+                      <img
+                        src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                        alt={wrestlerMap[slug]?.name || slug}
+                        title={wrestlerMap[slug]?.name || slug}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid #888',
+                          background: '#222',
+                          margin: 4,
+                          boxShadow: '0 0 6px #0008',
+                          transition: 'all 0.2s',
+                          display: 'block',
+                        }}
+                      />
+                      <div style={{ color: '#ccc', fontSize: 11, marginTop: 4, textAlign: 'center', maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {wrestlerMap[slug]?.name || slug}
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
               
@@ -2134,16 +2109,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       <div style={{ color: '#fff', fontSize: 12, lineHeight: 1.6 }}>
                         {match.eliminationChamberData.eliminations.map((elim, idx) => {
                           const eliminatedName = wrestlerMap[elim.eliminated]?.name || elim.eliminated;
-                          const eliminatedByName = wrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
-                          const eliminatedByName2 = elim.eliminatedBy2 ? wrestlerMap[elim.eliminatedBy2]?.name || elim.eliminatedBy2 : null;
-                          let elimText = eliminatedByName2 
-                            ? `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}`
-                            : `${eliminatedByName} eliminated ${eliminatedName}`;
-                          if (elim.method) {
-                            elimText += ` (${elim.method})`;
-                          }
-                          if (elim.time) {
-                            elimText += elim.method ? ` at ${elim.time}` : ` (${elim.time})`;
+                          let elimText;
+                          if (elim.method === 'Referee decision' && !elim.eliminatedBy) {
+                            elimText = `${eliminatedName} eliminated (Referee decision)`;
+                            if (elim.time) elimText += ` at ${elim.time}`;
+                          } else {
+                            const eliminatedByName = wrestlerMap[elim.eliminatedBy]?.name || elim.eliminatedBy;
+                            const eliminatedByName2 = elim.eliminatedBy2 ? wrestlerMap[elim.eliminatedBy2]?.name || elim.eliminatedBy2 : null;
+                            elimText = eliminatedByName2 
+                              ? `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}`
+                              : `${eliminatedByName} eliminated ${eliminatedName}`;
+                            if (elim.method) elimText += ` (${elim.method})`;
+                            if (elim.time) elimText += elim.method ? ` at ${elim.time}` : ` (${elim.time})`;
                           }
                           return (
                             <div key={idx} style={{ marginBottom: 4 }}>
