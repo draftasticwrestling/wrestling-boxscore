@@ -8,6 +8,29 @@ const { createClient } = require('@supabase/supabase-js');
 
 const BASE = 'https://prowrestlingboxscore.com';
 
+function normalizeDateToISO(dateStr) {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr).replace(/[^0-9-]/g, '');
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  } catch (_) {
+    return String(dateStr).replace(/[^0-9-]/g, '');
+  }
+}
+
+function getEventSlug(event) {
+  if (!event) return '';
+  const name = (event.name || '').trim();
+  const slugName = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'event';
+  const datePart = normalizeDateToISO(event.date);
+  return datePart ? `${slugName}-${datePart}` : slugName;
+}
+
 const staticUrls = [
   { loc: '/', changefreq: 'daily', priority: '1.0' },
   { loc: '/raw', changefreq: 'daily', priority: '0.9' },
@@ -51,13 +74,14 @@ exports.handler = async () => {
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
       const { data, error } = await supabase
         .from('events')
-        .select('id, date')
+        .select('id, name, date')
         .order('date', { ascending: false });
 
       if (!error && data && data.length > 0) {
         data.forEach((e) => {
+          const slug = getEventSlug(e);
           urls.push({
-            loc: `/event/${e.id}`,
+            loc: slug ? `/events/${slug}` : `/event/${e.id}`,
             lastmod: e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : today,
             changefreq: 'weekly',
             priority: '0.85',

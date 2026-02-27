@@ -6,6 +6,7 @@ import { useUser } from '../hooks/useUser';
 import MatchEdit from './MatchEdit';
 import MatchCard from './MatchCard';
 import { getRoyalRumbleHighlights } from '../utils/royalRumbleStats';
+import { getEventSlug } from '../utils/eventSlug';
 
 // Short date for title/meta (e.g. "Feb 16, 2026")
 function formatDateShort(dateStr) {
@@ -129,11 +130,11 @@ export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [],
         <meta name="description" content={metaDescription} />
         <link
           rel="canonical"
-          href={`https://prowrestlingboxscore.com/event/${match?.eventId || ''}/match/${match?.order || ''}`}
+          href={`https://prowrestlingboxscore.com/events/${match?.eventSlug || match?.eventId || ''}/match/${match?.order || ''}`}
         />
       </Helmet>
       <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 900, margin: '32px auto', padding: 32 }}>
-        <Link to={`/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
+        <Link to={match.eventSlug ? `/events/${match.eventSlug}` : `/event/${match.eventId || 'unknown'}`} style={{ color: '#C6A04F', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
           ← Back to Event
         </Link>
         {showPreview && (
@@ -384,7 +385,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   if (isEditing) {
     return (
       <div style={{ background: '#181511', minHeight: '100vh', padding: 24 }}>
-        <Link to={`/event/${event.id}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
+        <Link to={`/events/${getEventSlug(event)}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
         <h2 style={{ color: '#C6A04F', marginTop: 24 }}>Edit Match</h2>
         {user && (
           <MatchEdit

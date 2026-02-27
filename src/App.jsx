@@ -31,6 +31,7 @@ import ChampionshipsPage from './components/ChampionshipsPage';
 import ChampionshipDetailPage from './components/ChampionshipDetailPage';
 import AdminLoginPage from './components/AdminLoginPage';
 import { getRoyalRumbleHighlights } from './utils/royalRumbleStats';
+import { getEventSlug } from './utils/eventSlug';
 
 // Place these at the top level, after imports
 
@@ -444,7 +445,7 @@ function EventList({ events, showFilterFromRoute }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {completedEvents.slice(0, 3).map(event => (
               <Link
-                to={`/event/${event.id}`}
+                to={`/events/${getEventSlug(event)}`}
                 key={event.id}
                 onClick={saveListScroll}
                 style={{
@@ -544,7 +545,7 @@ function EventList({ events, showFilterFromRoute }) {
           const isResultsPending = !isUpcoming && event.status === 'upcoming';
           return (
             <Link
-              to={`/event/${event.id}`}
+              to={`/events/${getEventSlug(event)}`}
               key={event.id}
               onClick={saveListScroll}
               style={{
@@ -766,12 +767,24 @@ function formatCommentaryElapsedTime(ts, liveStart, commentary) {
   return `${elapsed}'`;
 }
 
+// Redirect old /event/:id URLs to clean /events/:slug URLs for SEO
+function EventIdRedirect({ events }) {
+  const { eventId } = useParams();
+  const navigate = useNavigate();
+  const event = Array.isArray(events) ? events.find(e => e && e.id === eventId) : null;
+  React.useEffect(() => {
+    if (event) navigate(`/events/${getEventSlug(event)}`, { replace: true });
+    else navigate('/', { replace: true });
+  }, [event, eventId, navigate]);
+  return null;
+}
+
 // Event Box Score Component (with discreet Edit/Delete below the match card)
 function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap, wrestlers }) {
   const user = useUser();
-  const { eventId } = useParams();
+  const { eventSlug } = useParams();
   const eventsList = Array.isArray(events) ? events : [];
-  const event = eventsList.find(e => e && e.id === eventId);
+  const event = eventsList.find(e => e && (getEventSlug(e) === eventSlug || e.id === eventSlug));
   const navigate = useNavigate();
   const [isEditingMatch, setIsEditingMatch] = useState(false);
   const [editingMatchIndex, setEditingMatchIndex] = useState(null);
@@ -806,7 +819,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
       try {
         sessionStorage.setItem(
           'wrestlerProfileReturnContext',
-          JSON.stringify({ fromEvent: event.id, eventName: event.name || 'Event' })
+          JSON.stringify({ fromEvent: event.id, fromEventSlug: getEventSlug(event), eventName: event.name || 'Event' })
         );
       } catch (_) {}
     }
@@ -930,7 +943,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
       <Helmet>
         <title>{eventPageTitle}</title>
         <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={`https://prowrestlingboxscore.com/event/${event.id}`} />
+        <link rel="canonical" href={`https://prowrestlingboxscore.com/events/${getEventSlug(event)}`} />
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
@@ -943,7 +956,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                   name: event.location,
                 }
               : undefined,
-            url: `https://prowrestlingboxscore.com/event/${event.id}`,
+            url: `https://prowrestlingboxscore.com/events/${getEventSlug(event)}`,
           })}
         </script>
       </Helmet>
@@ -1206,7 +1219,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             {canEditMatches && (
               <Link
-                to={`/edit-event/${event.id}`}
+                to={`/edit-event/${getEventSlug(event)}`}
                 style={{
                   fontSize: 14,
                   padding: '4px 12px',
@@ -1632,22 +1645,26 @@ function AddEvent({ addEvent, wrestlers }) {
         // Format eliminations if they exist
         let eliminationsText = '';
         if (ecEliminations && Array.isArray(ecEliminations) && ecEliminations.length > 0) {
-          const validEliminations = ecEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          const validEliminations = ecEliminations.filter(e => e.eliminated && (e.eliminatedBy || e.method === 'Referee decision'));
           if (validEliminations.length > 0) {
             const elimStrings = validEliminations.map(elim => {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
+              const timePart = elim.time ? ` at ${elim.time}` : '';
+              if (elim.method === 'Referee decision' && !elim.eliminatedBy) {
+                return `${eliminatedName} eliminated${methodPart}${timePart}`;
+              }
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
-              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${timePart}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${timePart}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
         }
-        
+
         ecResult = `${winnerName} won the Elimination Chamber${eliminationsText}`;
       } else if (eventStatus === 'completed') {
         ecResult = 'No winner';
@@ -1967,7 +1984,7 @@ function AddEvent({ addEvent, wrestlers }) {
       };
     }
     addEvent(eventData);
-    navigate(`/event/${id}`);
+    navigate(`/events/${getEventSlug({ name: eventType, date })}`);
   };
 
   return (
@@ -3383,6 +3400,10 @@ function AddEvent({ addEvent, wrestlers }) {
                       </div>
 
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {elimination.method === 'Referee decision' ? (
+                          <div style={{ color: '#aaa', fontSize: 12, marginTop: 20 }}>No one (referee decision)</div>
+                        ) : (
+                        <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
                             Eliminated by:
@@ -3473,6 +3494,8 @@ function AddEvent({ addEvent, wrestlers }) {
                             </select>
                           </div>
                         )}
+                        </>
+                        )}
                       </div>
 
                       <div style={{ flex: 0.6 }}>
@@ -3483,7 +3506,9 @@ function AddEvent({ addEvent, wrestlers }) {
                           value={elimination.method || ''}
                           onChange={(e) => {
                             const newEliminations = [...ecEliminations];
-                            newEliminations[index] = { ...newEliminations[index], method: e.target.value };
+                            const method = e.target.value;
+                            newEliminations[index] = { ...newEliminations[index], method };
+                            if (method === 'Referee decision') newEliminations[index].eliminatedBy = '';
                             setEcEliminations(newEliminations);
                           }}
                           style={inputStyle}
@@ -3491,6 +3516,7 @@ function AddEvent({ addEvent, wrestlers }) {
                           <option value="">—</option>
                           <option value="Pinfall">Pinfall</option>
                           <option value="Submission">Submission</option>
+                          <option value="Referee decision">Referee decision (injury/knockout)</option>
                         </select>
                       </div>
 
@@ -3846,8 +3872,8 @@ function AddEvent({ addEvent, wrestlers }) {
 // Edit Event Form Component
 function EditEvent({ events, updateEvent, wrestlers }) {
   const user = useUser();
-  const { eventId } = useParams();
-  const event = events.find(e => e.id === eventId);
+  const { eventSlug } = useParams();
+  const event = events.find(e => e && (getEventSlug(e) === eventSlug || e.id === eventSlug));
   const navigate = useNavigate();
   const canEdit = !!user;
 
@@ -4160,22 +4186,26 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         // Format eliminations if they exist
         let eliminationsText = '';
         if (ecEliminations && Array.isArray(ecEliminations) && ecEliminations.length > 0) {
-          const validEliminations = ecEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          const validEliminations = ecEliminations.filter(e => e.eliminated && (e.eliminatedBy || e.method === 'Referee decision'));
           if (validEliminations.length > 0) {
             const elimStrings = validEliminations.map(elim => {
               const eliminatedName = wrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
+              const timePart = elim.time ? ` at ${elim.time}` : '';
+              if (elim.method === 'Referee decision' && !elim.eliminatedBy) {
+                return `${eliminatedName} eliminated${methodPart}${timePart}`;
+              }
               const eliminatedByName = wrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? wrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
-              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${timePart}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${timePart}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
         }
-        
+
         ecResult = `${winnerName} won the Elimination Chamber${eliminationsText}`;
       } else if (eventStatus === 'completed') {
         ecResult = 'No winner';
@@ -4417,18 +4447,22 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       // Check if there are eliminations to format
       if (match.eliminationChamberData && match.eliminationChamberData.eliminations && 
           Array.isArray(match.eliminationChamberData.eliminations)) {
-        const validEliminations = match.eliminationChamberData.eliminations.filter(e => e.eliminated && e.eliminatedBy);
+        const validEliminations = match.eliminationChamberData.eliminations.filter(e => e.eliminated && (e.eliminatedBy || e.method === 'Referee decision'));
         
         if (validEliminations.length > 0) {
           const elimStrings = validEliminations.map(elim => {
             const eliminatedName = wrestlersList.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+            const methodPart = elim.method ? ` (${elim.method})` : '';
+            const timePart = elim.time ? ` at ${elim.time}` : '';
+            if (elim.method === 'Referee decision' && !elim.eliminatedBy) {
+              return `${eliminatedName} eliminated${methodPart}${timePart}`;
+            }
             const eliminatedByName = wrestlersList.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
             const eliminatedByName2 = elim.eliminatedBy2 ? wrestlersList.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
-            const methodPart = elim.method ? ` (${elim.method})` : '';
             if (eliminatedByName2) {
-              return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
+              return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${timePart}`;
             }
-            return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
+            return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${timePart}` : eliminatedName;
           });
           const eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           return `${winnerName} won the Elimination Chamber${eliminationsText}`;
@@ -4536,7 +4570,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       setTimeout(() => setSaveMessage(''), 3000);
     }
     if (navigateBack) {
-      navigate(`/event/${event.id}`);
+      navigate(`/events/${getEventSlug(event)}`);
     }
   };
 
@@ -5404,7 +5438,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                 {ecParticipants.filter(Boolean).length === 6 && (
                   <div style={{ marginTop: 16, padding: 16, background: '#2a2a2a', borderRadius: 8, border: '1px solid #444' }}>
                     <div style={{ color: gold, fontWeight: 'bold', marginBottom: 12 }}>Eliminations</div>
-                    <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>Track each elimination in order. Include how (Pinfall/Submission) and time.</div>
+                    <div style={{ color: '#fff', fontSize: 12, marginBottom: 12 }}>Track each elimination in order. Include how (Pinfall, Submission, or Referee decision) and time.</div>
                     {ecEliminations.map((elimination, index) => (
                       <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#333', borderRadius: 4, marginBottom: 8, border: '1px solid #555', flexWrap: 'wrap' }}>
                         <span style={{ color: '#fff', minWidth: '80px', fontSize: 12 }}>#{index + 1}</span>
@@ -5417,6 +5451,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                             ))}
                           </select>
                         </div>
+                        {elimination.method === 'Referee decision' ? (
+                          <div style={{ flex: 1, minWidth: 120, color: '#aaa', fontSize: 12, marginTop: 20 }}>No one (referee decision)</div>
+                        ) : (
                         <div style={{ flex: 1, minWidth: 120 }}>
                           <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>By:</label>
                           <select value={elimination.eliminatedBy || ''} onChange={(e) => { const n = [...ecEliminations]; n[index] = { ...n[index], eliminatedBy: e.target.value }; setEcEliminations(n); }} style={inputStyle}>
@@ -5426,12 +5463,14 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                             ))}
                           </select>
                         </div>
+                        )}
                         <div style={{ flex: 0.5, minWidth: 90 }}>
                           <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block' }}>How:</label>
-                          <select value={elimination.method || ''} onChange={(e) => { const n = [...ecEliminations]; n[index] = { ...n[index], method: e.target.value }; setEcEliminations(n); }} style={inputStyle}>
+                          <select value={elimination.method || ''} onChange={(e) => { const n = [...ecEliminations]; const method = e.target.value; n[index] = { ...n[index], method }; if (method === 'Referee decision') n[index].eliminatedBy = ''; setEcEliminations(n); }} style={inputStyle}>
                             <option value="">—</option>
                             <option value="Pinfall">Pinfall</option>
                             <option value="Submission">Submission</option>
+                            <option value="Referee decision">Referee decision (injury/knockout)</option>
                           </select>
                         </div>
                         <div style={{ flex: 0.5, minWidth: 80 }}>
@@ -6830,7 +6869,7 @@ function App() {
           name="keywords"
           content="WWE results, WWE results tonight, WWE results last night, Raw results, SmackDown results, Raw results tonight, SmackDown results last night, PLE results, WWE, wrestling, event results, match cards, wrestlers, pay-per-view, championship, wrestling stats"
         />
-        {/* Canonical is set per-route (EventList for /, EventBoxScore for /event/:id, etc.) so event pages are not declared as alternates of the homepage */}
+        {/* Canonical is set per-route (EventList for /, EventBoxScore for /events/:slug, etc.) so event pages are not declared as alternates of the homepage */}
         {/* Open Graph and Twitter tags as above */}
       </Helmet>
       <Router>
@@ -6840,8 +6879,9 @@ function App() {
             <Route path="/raw" element={<EventList events={events} showFilterFromRoute="raw" />} />
             <Route path="/smackdown" element={<EventList events={events} showFilterFromRoute="smackdown" />} />
             <Route path="/ple" element={<EventList events={events} showFilterFromRoute="ple" />} />
+            <Route path="/event/:eventId" element={<EventIdRedirect events={events} />} />
             <Route
-              path="/event/:eventId"
+              path="/events/:eventSlug"
               element={
                 <EventPageErrorBoundary>
                   <EventBoxScore
@@ -6856,7 +6896,7 @@ function App() {
               }
             />
             <Route
-              path="/event/:eventId/match/:matchOrder"
+              path="/events/:eventSlug/match/:matchOrder"
               element={
                 <MatchPageNewWrapper
                   events={events}
@@ -6869,7 +6909,7 @@ function App() {
             />
             <Route path="/add-event" element={<AddEvent addEvent={addEvent} wrestlers={wrestlers} />} />
             <Route
-              path="/edit-event/:eventId"
+              path="/edit-event/:eventSlug"
               element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />}
             />
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
@@ -6956,8 +6996,8 @@ function parseTeamString(teamStr) {
 // Wrapper component for the new match page design
 function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap, wrestlers }) {
   const user = useUser();
-  const { eventId, matchOrder } = useParams();
-  const event = events.find(e => e.id === eventId);
+  const { eventSlug, matchOrder } = useParams();
+  const event = events.find(e => e && (getEventSlug(e) === eventSlug || e.id === eventSlug));
   
   if (!event) {
     return <div style={{ padding: 24, color: '#fff' }}>Event not found.</div>;
@@ -7005,7 +7045,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   if (isEditing) {
     return (
       <div style={{ background: '#181511', minHeight: '100vh', padding: 24 }}>
-        <Link to={`/event/${event.id}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
+        <Link to={`/events/${getEventSlug(event)}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
         <h2 style={{ color: '#C6A04F', marginTop: 24 }}>Edit Match</h2>
         {canEdit && (
           <MatchEdit
@@ -7029,6 +7069,7 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
       match={{ 
         ...match, 
         eventId: event.id,
+        eventSlug: getEventSlug(event),
         eventName: event.name,
         date: event.date,
         eventStatus: event.status,

@@ -14,6 +14,7 @@ import {
   getLastMatchesForWrestler,
   shouldShowLastFiveStats,
 } from '../utils/matchOutcomes';
+import { getEventSlug } from '../utils/eventSlug';
 
 // Helper functions
 function getSpecialWinnerIcon(specialWinnerType) {
@@ -299,13 +300,14 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   // Create handler inline to ensure correct closure capture
   // Use matchIndex (array index) for navigation - it's more reliable than order
   const eventId = event?.id;
+  const eventSlug = event ? getEventSlug(event) : '';
   // matchIndex is 0-based, but we'll use 1-based for URL (1, 2, 3...)
   const navigationIndex = matchIndex !== undefined ? matchIndex + 1 : (match?.order || 1);
 
   // Pass event/match context when linking to wrestler profile so profile can show "Back to event" / "Back to match"
   const wrestlerLinkState = React.useMemo(
-    () => (eventId ? { fromEvent: eventId, eventName: event?.name || 'Event', matchOrder: navigationIndex } : null),
-    [eventId, event?.name, navigationIndex]
+    () => (eventId ? { fromEvent: eventId, fromEventSlug: eventSlug, eventName: event?.name || 'Event', matchOrder: navigationIndex } : null),
+    [eventId, eventSlug, event?.name, navigationIndex]
   );
   const wrestlerTo = React.useCallback(
     (slugOrId) => (slugOrId ? { pathname: `/wrestler/${slugOrId}`, state: wrestlerLinkState || {} } : '/wrestlers'),
@@ -313,7 +315,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   );
 
   const handleClick = React.useCallback((e) => {
-    if (!isClickable || !eventId || navigationIndex == null) {
+    if (!isClickable || !eventSlug || navigationIndex == null) {
       return;
     }
     
@@ -323,8 +325,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
       e.preventDefault();
     }
     
-    navigate(`/event/${eventId}/match/${navigationIndex}`);
-  }, [isClickable, eventId, navigationIndex, navigate]);
+    navigate(`/events/${eventSlug}/match/${navigationIndex}`);
+  }, [isClickable, eventSlug, navigationIndex, navigate]);
 
   const isMatchInProgress = event?.status === 'live' && match?.isLive;
 
@@ -365,10 +367,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     return (
       <div
         onClick={(e) => {
-          if (isClickable && eventId && navigationIndex != null) {
+          if (isClickable && eventSlug && navigationIndex != null) {
             e.preventDefault();
             e.stopPropagation();
-            navigate(`/event/${eventId}/match/${navigationIndex}`);
+            navigate(`/events/${eventSlug}/match/${navigationIndex}`);
           }
         }}
         style={{
@@ -681,10 +683,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     return (
       <div
         onClick={(e) => {
-          if (isClickable && eventId && navigationIndex != null) {
+          if (isClickable && eventSlug && navigationIndex != null) {
             e.preventDefault();
             e.stopPropagation();
-            navigate(`/event/${eventId}/match/${navigationIndex}`);
+            navigate(`/events/${eventSlug}/match/${navigationIndex}`);
           }
         }}
         style={{
@@ -1098,10 +1100,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   return (
     <div
       onClick={(e) => {
-        if (isClickable && eventId && navigationIndex != null) {
+        if (isClickable && eventSlug && navigationIndex != null) {
           e.preventDefault();
           e.stopPropagation();
-          navigate(`/event/${eventId}/match/${navigationIndex}`);
+          navigate(`/events/${eventSlug}/match/${navigationIndex}`);
         }
       }}
       style={{

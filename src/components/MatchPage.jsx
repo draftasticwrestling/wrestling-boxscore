@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MatchEdit from './MatchEdit';
 import { useUser } from '../hooks/useUser';
+import { getEventSlug } from '../utils/eventSlug';
 
 const gold = '#C6A04F';
 const sectionStyle = {
@@ -79,7 +80,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
   if (isEditing && canEdit) {
     return (
       <div style={sectionStyle}>
-        <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
+        <Link to={`/events/${getEventSlug(event)}`} style={{ color: gold }}>← Back to Event</Link>
         <h2 style={{ color: gold, marginTop: 24 }}>Edit Match</h2>
         <MatchEdit
           initialMatch={match}
@@ -103,7 +104,7 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
 
   return (
     <div style={sectionStyle}>
-      <Link to={`/event/${event.id}`} style={{ color: gold }}>← Back to Event</Link>
+      <Link to={`/events/${getEventSlug(event)}`} style={{ color: gold }}>← Back to Event</Link>
       <h2 style={{ color: gold, marginTop: 24 }}>Match Details</h2>
       {event.status !== 'upcoming' && event.recap && (
         <div style={{ marginTop: 12, marginBottom: 16, padding: 12, background: '#232323', borderRadius: 8, border: '1px solid #C6A04F44' }}>

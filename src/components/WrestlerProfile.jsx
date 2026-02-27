@@ -10,6 +10,7 @@ import {
   getMatchOutcome,
   getLastMatchesForWrestler,
 } from '../utils/matchOutcomes';
+import { getEventSlug } from '../utils/eventSlug';
 
 function formatReignDate(dateStr) {
   if (!dateStr) return '—';
@@ -47,12 +48,13 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
       const raw = sessionStorage.getItem('wrestlerProfileReturnContext');
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      return parsed && typeof parsed.fromEvent === 'string' ? parsed : null;
+      return parsed && (typeof parsed.fromEvent === 'string' || typeof parsed.fromEventSlug === 'string') ? parsed : null;
     } catch {
       return null;
     }
   }, []);
   const fromEvent = fromState?.fromEvent ?? storedContext?.fromEvent ?? null;
+  const fromEventSlug = fromState?.fromEventSlug ?? storedContext?.fromEventSlug ?? null;
   const eventName = fromState?.eventName ?? storedContext?.eventName ?? null;
   const matchOrder = fromState?.matchOrder;
   const user = useUser();
@@ -162,13 +164,13 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-              {matchOrder != null && fromEvent && (
-                <Link to={`/event/${fromEvent}/match/${matchOrder}`} style={{ color: gold, textDecoration: 'none' }}>
+              {matchOrder != null && (fromEventSlug || fromEvent) && (
+                <Link to={fromEventSlug ? `/events/${fromEventSlug}/match/${matchOrder}` : `/event/${fromEvent}/match/${matchOrder}`} style={{ color: gold, textDecoration: 'none' }}>
                   ← Back to match
                 </Link>
               )}
-              {fromEvent && (
-                <Link to={`/event/${fromEvent}`} style={{ color: gold, textDecoration: 'none' }}>
+              {(fromEventSlug || fromEvent) && (
+                <Link to={fromEventSlug ? `/events/${fromEventSlug}` : `/event/${fromEvent}`} style={{ color: gold, textDecoration: 'none' }}>
                   ← Back to event{eventName ? `: ${eventName}` : ''}
                 </Link>
               )}
@@ -368,19 +370,19 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
                 {lastFiveMatches.map(({ event, match, matchIndex }) => (
                   <div key={`${event.id}-${match.order ?? matchIndex}`}>
                     <div style={{ color: '#aaa', fontSize: 13, marginBottom: 8 }}>
-                      <Link to={`/event/${event.id}`} style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>
+                      <Link to={`/events/${getEventSlug(event)}`} style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>
                         {event.name}
                       </Link>
                       {event.date && ` — ${event.date}`}
                       {event.location && ` — ${event.location}`}
                     </div>
                     <Link
-                      to={`/event/${event.id}/match/${matchIndex + 1}`}
+                      to={`/events/${getEventSlug(event)}/match/${matchIndex + 1}`}
                       style={{ textDecoration: 'none', display: 'block' }}
                     >
                       <MatchCard
                         match={match}
-                        event={{ id: event.id }}
+                        event={event}
                         wrestlerMap={wrestlerMap}
                         isClickable={true}
                         matchIndex={matchIndex}
