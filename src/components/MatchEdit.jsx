@@ -634,17 +634,21 @@ export default function MatchEdit({
         // Format eliminations if they exist
         let eliminationsText = '';
         if (ecEliminations && Array.isArray(ecEliminations) && ecEliminations.length > 0) {
-          const validEliminations = ecEliminations.filter(e => e.eliminated && e.eliminatedBy);
+          const validEliminations = ecEliminations.filter(e => e.eliminated && (e.eliminatedBy || e.method === 'Referee decision'));
           if (validEliminations.length > 0) {
             const elimStrings = validEliminations.map(elim => {
               const eliminatedName = safeWrestlers.find(w => w.id === elim.eliminated)?.name || elim.eliminated;
+              const methodPart = elim.method ? ` (${elim.method})` : '';
+              const timePart = elim.time ? ` at ${elim.time}` : '';
+              if (elim.method === 'Referee decision' && !elim.eliminatedBy) {
+                return `${eliminatedName} eliminated${methodPart}${timePart}`;
+              }
               const eliminatedByName = safeWrestlers.find(w => w.id === elim.eliminatedBy)?.name || elim.eliminatedBy;
               const eliminatedByName2 = elim.eliminatedBy2 ? safeWrestlers.find(w => w.id === elim.eliminatedBy2)?.name || elim.eliminatedBy2 : null;
-              const methodPart = elim.method ? ` (${elim.method})` : '';
               if (eliminatedByName2) {
-                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}`;
+                return `${eliminatedByName} & ${eliminatedByName2} eliminated ${eliminatedName}${methodPart}${timePart}`;
               }
-              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${elim.time ? ` at ${elim.time}` : ''}` : eliminatedName;
+              return eliminatedByName ? `${eliminatedByName} eliminated ${eliminatedName}${methodPart}${timePart}` : eliminatedName;
             });
             eliminationsText = ` [Eliminations: ${elimStrings.join(' → ')}]`;
           }
@@ -809,24 +813,23 @@ export default function MatchEdit({
       const allParticipants = Array.isArray(ecParticipants) ? ecParticipants.filter(Boolean) : [];
       const starters = [ecStarter1, ecStarter2].filter(Boolean);
       const podEntrants = Array.isArray(ecPodEntrants) ? ecPodEntrants.filter(Boolean) : [];
-      const hasFullResult = allParticipants.length === 6 && starters.length === 2 && podEntrants.length === 4;
       
       const entryOrder = podEntrants.map((slug, index) => ({
         slug,
         entryNumber: index + 1,
-        entryTime: ecPodEntryTimes[index] || ''
+        entryTime: (Array.isArray(ecPodEntryTimes) ? ecPodEntryTimes[index] : '') || ''
       }));
       
       updatedMatch.participants = allParticipants.length === 6 ? allParticipants : (updatedMatch.participants || []);
-      updatedMatch.winner = hasFullResult ? ecWinner : updatedMatch.winner;
+      updatedMatch.winner = ecWinner || updatedMatch.winner;
       
       const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
       
       updatedMatch.eliminationChamberData = {
         participants: allParticipants.length === 6 ? allParticipants : (initialMatch.eliminationChamberData?.participants || []),
-        starters: hasFullResult ? starters : [],
-        podEntrants: hasFullResult ? podEntrants : [],
-        entryOrder: hasFullResult ? entryOrder : [],
+        starters,
+        podEntrants,
+        entryOrder,
         eliminations: clonedEliminations,
         manualIronman: ecManualIronman || null
       };
@@ -1914,6 +1917,10 @@ export default function MatchEdit({
                   </div>
 
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {elimination.method === 'Referee decision' ? (
+                      <div style={{ color: '#aaa', fontSize: 12, marginTop: 20 }}>No one (referee decision)</div>
+                    ) : (
+                    <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <label style={{ color: '#fff', fontSize: 11, marginBottom: 4, display: 'block', flex: 1 }}>
                         Eliminated by:
@@ -2004,6 +2011,8 @@ export default function MatchEdit({
                         </select>
                       </div>
                     )}
+                    </>
+                    )}
                   </div>
 
                   <div style={{ flex: 0.6 }}>
@@ -2014,7 +2023,9 @@ export default function MatchEdit({
                       value={elimination.method || ''}
                       onChange={(e) => {
                         const newEliminations = [...ecEliminations];
-                        newEliminations[index] = { ...newEliminations[index], method: e.target.value };
+                        const method = e.target.value;
+                        newEliminations[index] = { ...newEliminations[index], method };
+                        if (method === 'Referee decision') newEliminations[index].eliminatedBy = '';
                         setEcEliminations(newEliminations);
                       }}
                       style={inputStyle}
@@ -2022,6 +2033,7 @@ export default function MatchEdit({
                       <option value="">—</option>
                       <option value="Pinfall">Pinfall</option>
                       <option value="Submission">Submission</option>
+                      <option value="Referee decision">Referee decision (injury/knockout)</option>
                     </select>
                   </div>
 

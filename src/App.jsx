@@ -1637,9 +1637,9 @@ function AddEvent({ addEvent, wrestlers }) {
       const podEntrants = ecPodEntrants.filter(Boolean);
       const ecWin = ecWinner;
       let ecResult = '';
-      const hasFullResult = eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4;
+      const hasFullResultForDisplay = ecWin && starters.length === 2 && podEntrants.length === 4;
       
-      if (hasFullResult) {
+      if (hasFullResultForDisplay) {
         const winnerName = wrestlers.find(w => w.id === ecWin)?.name || ecWin;
         
         // Format eliminations if they exist
@@ -1681,7 +1681,7 @@ function AddEvent({ addEvent, wrestlers }) {
       const newMatch = { 
         ...match, 
         participants: allParticipants, 
-        winner: hasFullResult ? ecWin : undefined, 
+        winner: ecWin || undefined, 
         result: ecResult || (eventStatus === 'upcoming' ? '' : ecResult), 
         isLive: match.isLive || false 
       };
@@ -1689,9 +1689,9 @@ function AddEvent({ addEvent, wrestlers }) {
       const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
       newMatch.eliminationChamberData = {
         participants: allParticipants,
-        starters: hasFullResult ? starters : [],
-        podEntrants: hasFullResult ? podEntrants : [],
-        entryOrder: hasFullResult ? entryOrder : [],
+        starters,
+        podEntrants,
+        entryOrder,
         eliminations: clonedEliminations,
         manualIronman: ecManualIronman || null
       };
@@ -4178,9 +4178,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       const podEntrants = ecPodEntrants.filter(Boolean);
       const ecWin = ecWinner;
       let ecResult = '';
-      const hasFullResult = eventStatus === 'completed' && ecWin && starters.length === 2 && podEntrants.length === 4;
+      const hasFullResultForDisplay = ecWin && starters.length === 2 && podEntrants.length === 4;
       
-      if (hasFullResult) {
+      if (hasFullResultForDisplay) {
         const winnerName = wrestlers.find(w => w.id === ecWin)?.name || ecWin;
         
         // Format eliminations if they exist
@@ -4222,7 +4222,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       const newMatch = { 
         ...match, 
         participants: allParticipants, 
-        winner: hasFullResult ? ecWin : undefined, 
+        winner: ecWin || undefined, 
         result: ecResult || (eventStatus === 'upcoming' ? '' : ecResult), 
         isLive: match.isLive || false,
         order: matches.length + 1
@@ -4231,9 +4231,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       const clonedEliminations = (ecEliminations || []).map(elim => ({ ...elim }));
       newMatch.eliminationChamberData = {
         participants: allParticipants,
-        starters: hasFullResult ? starters : [],
-        podEntrants: hasFullResult ? podEntrants : [],
-        entryOrder: hasFullResult ? entryOrder : [],
+        starters,
+        podEntrants,
+        entryOrder,
         eliminations: clonedEliminations,
         manualIronman: ecManualIronman || null
       };
