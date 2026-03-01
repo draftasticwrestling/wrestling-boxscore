@@ -173,15 +173,24 @@ export default function MatchEdit({
     return '';
   });
   const [ecPodEntrants, setEcPodEntrants] = useState(() => {
-    if (initialMatch.eliminationChamberData && Array.isArray(initialMatch.eliminationChamberData.podEntrants)) {
-      return [...initialMatch.eliminationChamberData.podEntrants];
+    const ec = initialMatch.eliminationChamberData;
+    if (ec && Array.isArray(ec.podEntrants) && ec.podEntrants.length > 0) {
+      const arr = [...ec.podEntrants];
+      while (arr.length < 4) arr.push('');
+      return arr.slice(0, 4);
+    }
+    if (ec && Array.isArray(ec.entryOrder) && ec.entryOrder.length > 0) {
+      const arr = ec.entryOrder.map(entry => entry.slug || '').filter(Boolean);
+      while (arr.length < 4) arr.push('');
+      return arr.slice(0, 4);
     }
     return Array(4).fill('');
   });
   const [ecPodEntryTimes, setEcPodEntryTimes] = useState(() => {
     if (initialMatch.eliminationChamberData && Array.isArray(initialMatch.eliminationChamberData.entryOrder)) {
-      // Extract entry times from entryOrder
-      return initialMatch.eliminationChamberData.entryOrder.map(entry => entry.entryTime || '');
+      const times = initialMatch.eliminationChamberData.entryOrder.map(entry => entry.entryTime || '');
+      while (times.length < 4) times.push('');
+      return times.slice(0, 4);
     }
     return Array(4).fill('');
   });
@@ -1863,13 +1872,24 @@ export default function MatchEdit({
                 return (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <span style={{ minWidth: 28, color: gold, fontSize: 12 }}>#{idx + 1}</span>
-                    <select value={ecPodEntrants[idx] || ''} onChange={e => setEcPodEntrants(prev => (prev || []).map((s, j) => j === idx ? e.target.value : s))} style={{ ...inputStyle, flex: 1 }}>
+                    <select value={(ecPodEntrants || [])[idx] || ''} onChange={e => {
+                      const prev = (ecPodEntrants || []).slice(0, 4);
+                      while (prev.length < 4) prev.push('');
+                      const next = prev.map((s, j) => j === idx ? e.target.value : s);
+                      setEcPodEntrants(next);
+                    }} style={{ ...inputStyle, flex: 1 }}>
                       <option value="">Pod entrant</option>
                       {available.map(slug => (
                         <option key={slug} value={slug}>{safeWrestlers.find(w => w.id === slug)?.name || slug}</option>
                       ))}
                     </select>
-                    <input type="text" value={ecPodEntryTimes[idx] || ''} onChange={e => { const t = [...(ecPodEntryTimes || [])]; t[idx] = e.target.value; setEcPodEntryTimes(t); }} placeholder="Time" style={{ ...inputStyle, width: 70 }} />
+                    <input type="text" value={(ecPodEntryTimes || [])[idx] || ''} onChange={e => {
+                      const prev = (ecPodEntryTimes || []).slice(0, 4);
+                      while (prev.length < 4) prev.push('');
+                      const t = [...prev];
+                      t[idx] = e.target.value;
+                      setEcPodEntryTimes(t);
+                    }} placeholder="Time" style={{ ...inputStyle, width: 70 }} />
                   </div>
                 );
               })}
