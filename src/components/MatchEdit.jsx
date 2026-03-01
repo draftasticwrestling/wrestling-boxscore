@@ -449,7 +449,27 @@ export default function MatchEdit({
     if (!isBattleRoyal && initialMatch && initialMatch.result) {
       setResultType(initialMatch.result.includes('def.') ? 'Winner' : 'No Winner');
       if (winnerOptions.length && initialMatch.result && typeof match.participants === 'string') {
-        // Prefer stored winner if it matches an option (handles both slug and display name)
+        // Prefer winner parsed from result string (same as Match Details display) so edit form matches what user sees
+        const resultHasDef = initialMatch.result.includes(' def. ');
+        const winnerFromResult = resultHasDef ? initialMatch.result.split(' def. ')[0].trim() : null;
+        if (winnerFromResult && winnerOptions.length > 0) {
+          if (winnerOptions.includes(winnerFromResult)) {
+            setWinner(winnerFromResult);
+            return;
+          }
+          const byName = safeWrestlers?.find(w => (w.name || '').trim() === winnerFromResult);
+          if (byName?.id && winnerOptions.includes(byName.id)) {
+            setWinner(byName.id);
+            return;
+          }
+          const normalize = (s) => (s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+          const matchOpt = winnerOptions.find(opt => normalize(opt) === normalize(winnerFromResult));
+          if (matchOpt) {
+            setWinner(matchOpt);
+            return;
+          }
+        }
+        // Fallback: use stored winner if it matches an option
         const storedWinner = initialMatch.winner;
         if (storedWinner && winnerOptions.length > 0) {
           if (winnerOptions.includes(storedWinner)) {
@@ -462,11 +482,9 @@ export default function MatchEdit({
             return;
           }
         }
-        // Fallback: try to find the winner by matching against tag team names first, then individual names
+        // Last resort: infer from result by matching participant strings
         const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
         let found = null;
-        
-        // First try to match against tag team names
         for (let i = 0; i < participants.length; i++) {
           const tagTeamName = tagTeams[i];
           if (tagTeamName && initialMatch.result.includes(tagTeamName)) {
@@ -474,8 +492,6 @@ export default function MatchEdit({
             break;
           }
         }
-        
-        // If no tag team match, try individual names
         if (!found) {
           for (let i = 0; i < participants.length; i++) {
             const team = participants[i];
@@ -488,8 +504,7 @@ export default function MatchEdit({
             if (found) break;
           }
         }
-        
-        if (found) {
+        if (found && winnerOptions.includes(found)) {
           setWinner(found);
         }
       }
