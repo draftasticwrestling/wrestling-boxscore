@@ -449,7 +449,20 @@ export default function MatchEdit({
     if (!isBattleRoyal && initialMatch && initialMatch.result) {
       setResultType(initialMatch.result.includes('def.') ? 'Winner' : 'No Winner');
       if (winnerOptions.length && initialMatch.result && typeof match.participants === 'string') {
-        // Try to find the winner by matching against tag team names first, then individual names
+        // Prefer stored winner if it matches an option (handles both slug and display name)
+        const storedWinner = initialMatch.winner;
+        if (storedWinner && winnerOptions.length > 0) {
+          if (winnerOptions.includes(storedWinner)) {
+            setWinner(storedWinner);
+            return;
+          }
+          const bySlug = safeWrestlers?.find(w => w.id === storedWinner);
+          if (bySlug?.name && winnerOptions.includes(bySlug.name)) {
+            setWinner(bySlug.name);
+            return;
+          }
+        }
+        // Fallback: try to find the winner by matching against tag team names first, then individual names
         const { participants, tagTeams } = parseParticipantsWithTagTeams(match.participants);
         let found = null;
         
@@ -760,6 +773,9 @@ export default function MatchEdit({
       if (initialMatch.winner != null) updatedMatch.winner = initialMatch.winner;
       if (initialMatch.method && !updatedMatch.method) updatedMatch.method = initialMatch.method;
       if (initialMatch.time != null && updatedMatch.time == null) updatedMatch.time = initialMatch.time;
+    } else if (isStandardMatch) {
+      // Persist the winner selected in the form (otherwise it's never saved and reverts to old value)
+      updatedMatch.winner = winner || updatedMatch.winner;
     }
 
     // Store Battle Royal data (participants and eliminations)
