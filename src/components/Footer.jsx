@@ -21,6 +21,8 @@ export default function Footer() {
           WWE, Raw, SmackDown, and all related logos and trademarks are the property of World Wrestling Entertainment, Inc. This site is not affiliated with or endorsed by WWE.
         </div>
         <div style={{ marginTop: 12 }}>
+          <Link to="/faq" style={{ color: '#C6A04F', textDecoration: 'none', marginRight: 18 }}>FAQ</Link>
+          <span style={{ color: '#444' }}>|</span>
           <Link to="/contact" style={{ color: '#C6A04F', textDecoration: 'none', marginRight: 18 }}>Contact</Link>
           <span style={{ color: '#444' }}>|</span>
           <Link to="/privacy" style={{ color: '#C6A04F', textDecoration: 'none', marginLeft: 18 }}>Privacy Policy</Link>

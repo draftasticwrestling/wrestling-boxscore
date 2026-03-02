@@ -228,6 +228,9 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
   const accomplishmentsText = (wrestler.accomplishments || '').trim();
   const accomplishmentsList = accomplishmentsText ? accomplishmentsText.split(/\n/).filter(Boolean) : [];
   const isWrestler = (wrestler.person_type || 'Wrestler') === 'Wrestler';
+  const r26 = wrestler.rating_2k26 ?? wrestler['2K26 rating'];
+  const r25 = wrestler.rating_2k25 ?? wrestler['2K25 rating'];
+  const rating2KDisplay = (r26 != null && r26 !== '') ? String(r26) : (r25 != null && r25 !== '') ? String(r25) : 'TBD';
 
   const metaTitle = `${wrestler.name} — Stats, Results & Profile | Pro Wrestling Boxscore`;
   const metaDescription = [
@@ -347,6 +350,7 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
               )}
               {/* Stacked profile information (simplified for non-wrestlers) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14, color: '#ccc' }}>
+                <div><span style={{ color: '#888', marginRight: 8 }}>2K Rating:</span>{rating2KDisplay}</div>
                 {wrestler.dob && (
                   <div><span style={{ color: '#888', marginRight: 8 }}>Born:</span>{new Date(wrestler.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
                 )}

@@ -465,7 +465,7 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
         <link rel="canonical" href="https://prowrestlingboxscore.com/wrestlers" />
       </Helmet>
       <div style={{ color: '#fff', padding: 40, maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ textAlign: 'center', margin: 0, flex: 1 }}>Wrestlers</h2>
           {isAuthorized && activeTab === 'roster' && (
             <button
@@ -486,6 +486,9 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
             </button>
           )}
         </div>
+        <p style={{ color: '#bbb', fontSize: 15, lineHeight: 1.6, maxWidth: 720, margin: '0 auto 32px', textAlign: 'center' }}>
+          Browse the full WWE roster by brand—RAW, SmackDown, NXT, and more. Click any wrestler for their profile: match history, title reigns, and last five matches with links back to event and match pages. Use the tabs below for the main roster, stables, and tag teams.
+        </p>
 
         {/* Tabs */}
         <div style={{ 

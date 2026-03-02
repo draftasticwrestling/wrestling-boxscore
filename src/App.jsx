@@ -29,6 +29,7 @@ import WarGamesMatchBuilder from './components/WarGamesMatchBuilder';
 import SurvivorSeriesMatchBuilder from './components/SurvivorSeriesMatchBuilder';
 import ChampionshipsPage from './components/ChampionshipsPage';
 import ChampionshipDetailPage from './components/ChampionshipDetailPage';
+import FAQPage from './components/FAQPage';
 import AdminLoginPage from './components/AdminLoginPage';
 import { getRoyalRumbleHighlights } from './utils/royalRumbleStats';
 import { getEventSlug } from './utils/eventSlug';
@@ -409,23 +410,55 @@ function EventList({ events, showFilterFromRoute }) {
         marginTop: 0
       }}>WWE Event Results</h1>
 
-      <p style={{
-        textAlign: 'center',
-        color: '#ddd',
-        maxWidth: 700,
-        margin: '0 auto 16px',
-        fontSize: 16,
-      }}>
-        Looking for RAW results tonight, SmackDown results tonight, or full WWE results tonight? Pro Wrestling Boxscore
-        tracks every show with box score-style match details and championship updates.
-      </p>
-      <p style={{ textAlign: 'center', margin: '0 0 20px', fontSize: 15 }}>
-        <Link to="/raw" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
-        {' · '}
-        <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
-        {' · '}
-        <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
-      </p>
+      <div style={{ maxWidth: 720, margin: '0 auto 20px', textAlign: 'center' }}>
+        {showFilterFromRoute === 'raw' && (
+          <>
+            <p style={{ color: '#ddd', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
+              Monday Night Raw results in one place: match cards, winners, and championship changes from the latest episodes. Whether you missed last night&apos;s Raw or want to double-check a finish, we give you at-a-glance results without long recaps.
+            </p>
+            <p style={{ color: '#bbb', fontSize: 15, lineHeight: 1.5, marginBottom: 0 }}>
+              Browse completed Raw events below or use the tabs to see upcoming shows. Each event links to full match details, including stipulations and title implications.
+            </p>
+          </>
+        )}
+        {showFilterFromRoute === 'smackdown' && (
+          <>
+            <p style={{ color: '#ddd', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
+              Friday Night SmackDown results from the latest episodes: full match cards, winners, and title updates. Catch up quickly with our visual, box score–style layout instead of scrolling through long articles.
+            </p>
+            <p style={{ color: '#bbb', fontSize: 15, lineHeight: 1.5, marginBottom: 0 }}>
+              Completed and upcoming SmackDown events are listed below. Open any show to see every match and click through to detailed results and championship changes.
+            </p>
+          </>
+        )}
+        {showFilterFromRoute === 'ple' && (
+          <>
+            <p style={{ color: '#ddd', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
+              WWE Premium Live Event results for WrestleMania, SummerSlam, Royal Rumble, Elimination Chamber, Money in the Bank, and more. We cover every PLE with full match cards, winners, and championship updates as they happen.
+            </p>
+            <p style={{ color: '#bbb', fontSize: 15, lineHeight: 1.5, marginBottom: 0 }}>
+              Find past and upcoming PLEs below. Each event page includes the full card, live results when the show is in progress, and links to wrestler profiles and title histories.
+            </p>
+          </>
+        )}
+        {!showFilterFromRoute && (
+          <>
+            <p style={{ color: '#ddd', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
+              Looking for Raw results tonight, SmackDown results tonight, or full WWE results? Pro Wrestling Boxscore tracks every Raw, SmackDown, and premium live event with box score–style match details and championship updates—no long recaps, just clear, scannable results.
+            </p>
+            <p style={{ color: '#bbb', fontSize: 15, lineHeight: 1.5, marginBottom: 12 }}>
+              Use the links below to jump to Raw, SmackDown, or PLE-only results, or browse the full list. Each event opens to a full match card; click any match for detailed results and links to wrestler profiles and title histories.
+            </p>
+            <p style={{ marginBottom: 0, fontSize: 15 }}>
+              <Link to="/raw" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
+              {' · '}
+              <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+              {' · '}
+              <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
+            </p>
+          </>
+        )}
+      </div>
 
       {/* Latest WWE results */}
       {completedEvents.length > 0 && (
@@ -6917,6 +6950,7 @@ function App() {
             <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
             <Route path="/championship/:id" element={<ChampionshipDetailPage wrestlers={wrestlers} />} />
             <Route path="/participant-demo" element={<ParticipantSelectionDemo wrestlers={wrestlers} />} />
+            <Route path="/faq" element={<FAQPage />} />
             <Route
               path="/about"
               element={
@@ -6935,6 +6969,15 @@ function App() {
                       Pro Wrestling Boxscore delivers fast, match-by-match WWE results for fans on the move. Can&apos;t
                       watch Raw, SmackDown, or a premium live event in real time? We break down every match, winner, and
                       key moment—so you&apos;re always in the know, no matter where you are.
+                    </p>
+                    <p>
+                      We&apos;re an alternative to the usual blog-style results: no long recaps or walls of text. Instead,
+                      we give you a visual, at-a-glance view of the card—who won, how, and when. You get brief summaries
+                      and live results as they happen, so you can catch up quickly or follow along in real time without
+                      wading through lengthy write-ups.
+                    </p>
+                    <p>
+                      We cover Raw, SmackDown, and every WWE Premium Live Event—WrestleMania, SummerSlam, Royal Rumble, Elimination Chamber, and more. Our roster and championship pages link every wrestler and title reign to full match history and event results, so you can go from &quot;who won?&quot; to full context in a few clicks.
                     </p>
                   </div>
                 </>

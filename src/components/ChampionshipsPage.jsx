@@ -399,6 +399,9 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         <h1 style={{ textAlign: 'center', marginBottom: 12, color: '#C6A04F', fontSize: 36, fontWeight: 800 }}>
           Current Champions
         </h1>
+        <p style={{ color: '#bbb', fontSize: 15, lineHeight: 1.6, maxWidth: 720, margin: '0 auto 16px', textAlign: 'center' }}>
+          Every WWE championship across Raw, SmackDown, and premium live events: current titleholders and full reign history. Click a title to see its complete history; champion names link to wrestler profiles for match history and more.
+        </p>
         <p style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 16px', fontSize: 14, marginBottom: 32 }}>
           <Link to="/raw" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
           <Link to="/smackdown" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
