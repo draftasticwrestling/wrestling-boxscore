@@ -128,7 +128,9 @@ function groupWrestlersByClassification(wrestlers) {
     'Part-timer': [],
     'Not Assigned': [],
     Alumni: [],
-    'Celebrity Guests': []
+    'Celebrity Guests': [],
+    'Non-wrestlers': [],
+    Inactive: []
   };
 
   wrestlers.forEach(w => {
@@ -159,6 +161,10 @@ function groupWrestlersByClassification(wrestlers) {
       grouped.Alumni.push(w);
     } else if (classification === 'Celebrity Guests') {
       grouped['Celebrity Guests'].push(w);
+    } else if (classification === 'Non-wrestlers') {
+      grouped['Non-wrestlers'].push(w);
+    } else if (classification === 'Inactive') {
+      grouped.Inactive.push(w);
     } else {
       // Fallback: if no classification, treat as Active
       let brand = (w.brand || '').trim();
@@ -181,6 +187,8 @@ function groupWrestlersByClassification(wrestlers) {
   grouped['Not Assigned'].sort((a, b) => a.name.localeCompare(b.name));
   grouped.Alumni.sort((a, b) => a.name.localeCompare(b.name));
   grouped['Celebrity Guests'].sort((a, b) => a.name.localeCompare(b.name));
+  grouped['Non-wrestlers'].sort((a, b) => a.name.localeCompare(b.name));
+  grouped.Inactive.sort((a, b) => a.name.localeCompare(b.name));
 
   return grouped;
 }
@@ -276,8 +284,8 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
                   <MedicalCrossIcon size={28} />
                 </div>
               )}
-              {/* Inactive TV icon if status is On Hiatus or Inactive */}
-              {(status === 'On Hiatus' || status === 'Inactive') && (
+              {/* Inactive TV icon if status is On Hiatus, Inactive, or Non-wrestler */}
+              {(status === 'On Hiatus' || status === 'Inactive' || status === 'Non-wrestler') && (
                 <div style={{ position: 'absolute', bottom: -10, right: -10 }}>
                   <InactiveIcon size={28} />
                 </div>
@@ -307,7 +315,7 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
                 INJ
               </div>
             )}
-            {(status === 'On Hiatus' || status === 'Inactive') && (
+            {status === 'On Hiatus' && (
               <div style={{
                 marginTop: 4,
                 fontSize: 11,
@@ -317,6 +325,30 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
                 letterSpacing: 0.5,
               }}>
                 HIATUS
+              </div>
+            )}
+            {status === 'Inactive' && (
+              <div style={{
+                marginTop: 4,
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#757575',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                INACTIVE
+              </div>
+            )}
+            {status === 'Non-wrestler' && (
+              <div style={{
+                marginTop: 4,
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#9e9e9e',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                NON-WRESTLER
               </div>
             )}
           </>
@@ -390,7 +422,7 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
     const classification = w.classification || '';
     const isUncategorized =
       (!normalizedBrand || !BRAND_ORDER.includes(normalizedBrand)) &&
-      (!classification || (classification !== 'Alumni' && classification !== 'Celebrity Guests'));
+      (!classification || (classification !== 'Alumni' && classification !== 'Celebrity Guests' && classification !== 'Non-wrestlers' && classification !== 'Inactive'));
     
     // Always show RAW, SmackDown, and NXT wrestlers
     if (normalizedBrand === 'RAW' || normalizedBrand === 'SmackDown' || normalizedBrand === 'NXT') {
@@ -748,6 +780,56 @@ export default function WrestlersPage({ wrestlers = [], onWrestlerUpdate }) {
             <h3 style={{ color: '#C6A04F', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Celebrity Guests</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
               {grouped['Celebrity Guests'].map(w => (
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Non-wrestlers - visible only to authorized users */}
+        {isAuthorized && grouped['Non-wrestlers'].length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#9e9e9e', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Non-wrestlers</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {grouped['Non-wrestlers'].map(w => (
+                <WrestlerCard 
+                  key={w.id} 
+                  w={w} 
+                  onEdit={setEditingWrestler}
+                  isAuthorized={isAuthorized}
+                  isExpanded={expandedWrestlerId === w.id}
+                  onToggleExpand={() => setExpandedWrestlerId(expandedWrestlerId === w.id ? null : w.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Inactive - visible only to authorized users */}
+        {isAuthorized && grouped.Inactive.length > 0 && (
+          <div style={{
+            background: '#181818',
+            borderRadius: 14,
+            boxShadow: '0 0 16px #C6A04F22',
+            marginBottom: 36,
+            padding: '24px 20px',
+          }}>
+            <h3 style={{ color: '#757575', fontWeight: 800, fontSize: 26, marginBottom: 18, textAlign: 'left', letterSpacing: 1 }}>Inactive</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              {grouped.Inactive.map(w => (
                 <WrestlerCard 
                   key={w.id} 
                   w={w} 

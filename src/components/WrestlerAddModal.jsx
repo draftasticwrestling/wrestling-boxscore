@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, uploadWrestlerImage, uploadWrestlerFullBodyImage } from '../supabaseClient';
 import CountrySelect from './CountrySelect';
 
-const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned'];
-const CLASSIFICATION_OPTIONS = ['Active', 'Part-timer', 'Celebrity Guests', 'Alumni'];
+const BRAND_OPTIONS = ['RAW', 'SmackDown', 'NXT', 'AAA', 'Unassigned', 'N/A'];
+const CLASSIFICATION_OPTIONS = ['Active', 'Part-timer', 'Celebrity Guests', 'Alumni', 'Non-wrestlers', 'Inactive'];
 const PERSON_TYPE_OPTIONS = ['Wrestler', 'Head of Creative', 'GM', 'Manager', 'Announcer'];
-const STATUS_OPTIONS = ['', 'Injured', 'On Hiatus'];
+const STATUS_OPTIONS = ['', 'Injured', 'On Hiatus', 'Inactive', 'Non-wrestler'];
 
 // Helper function to generate slug from name
 function slugify(name) {
@@ -133,8 +133,8 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
       
       // If classification changes, update brand and status accordingly
       if (field === 'classification') {
-        if (value === 'Alumni' || value === 'Celebrity Guests') {
-          // Alumni and Celebrity Guests shouldn't have brand or status
+        if (value === 'Alumni' || value === 'Celebrity Guests' || value === 'Non-wrestlers' || value === 'Inactive') {
+          // Alumni, Celebrity Guests, Non-wrestlers, and Inactive shouldn't have brand or status
           updated.brand = '';
           updated.status = '';
         } else if (value === 'Part-timer') {
@@ -234,7 +234,7 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
         name: formData.name.trim(),
         dob: formData.dob && formData.dob.trim() ? formData.dob.trim() : null,
         nationality: formData.nationality && formData.nationality.trim() ? formData.nationality.trim() : null,
-        brand: formData.brand && formData.brand.trim() && formData.brand !== 'Unassigned' ? formData.brand.trim() : null,
+        brand: formData.brand && formData.brand.trim() && formData.brand !== 'Unassigned' && formData.brand !== 'N/A' ? formData.brand.trim() : null,
         classification: formData.classification || null,
         "Status": formData.status && formData.status.trim() ? formData.status.trim() : null,
         tag_team_name: formData.tag_team_name && formData.tag_team_name.trim() ? formData.tag_team_name.trim() : null,
@@ -251,7 +251,7 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
       };
 
       // Clean up data based on classification
-      if (formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests') {
+      if (formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests' || formData.classification === 'Non-wrestlers' || formData.classification === 'Inactive') {
         insertData.brand = null;
         insertData["Status"] = null;
       }
@@ -657,6 +657,8 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
                 let color = '#C6A04F';
                 if (opt === 'Alumni') color = '#8e44ad';
                 if (opt === 'Celebrity Guests') color = '#e67e22';
+                if (opt === 'Non-wrestlers') color = '#9e9e9e';
+                if (opt === 'Inactive') color = '#757575';
                 return (
                   <button
                     key={opt}
@@ -670,7 +672,7 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
               })}
             </div>
             <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
-              Active / Part-timer = on a roster (RAW, SmackDown, NXT, AAA), Alumni / Celebrity Guests = no brand or status.
+              Active / Part-timer = on a roster (RAW, SmackDown, NXT, AAA), Alumni / Celebrity Guests / Non-wrestlers / Inactive = no brand or status.
             </div>
           </div>
 
@@ -697,6 +699,13 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
                   style={getToggleStyle(formData.brand === '' || formData.brand === 'Unassigned')}
                 >
                   Unassigned
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('brand', 'N/A')}
+                  style={getToggleStyle(formData.brand === 'N/A')}
+                >
+                  N/A
                 </button>
               </div>
               <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
@@ -733,6 +742,20 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
                 >
                   On Hiatus
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('status', 'Inactive')}
+                  style={getToggleStyle(formData.status === 'Inactive', '#757575')}
+                >
+                  Inactive
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('status', 'Non-wrestler')}
+                  style={getToggleStyle(formData.status === 'Non-wrestler', '#9e9e9e')}
+                >
+                  Non-wrestler
+                </button>
               </div>
               <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
                 Only Active and Part-timer wrestlers can have a status.
@@ -740,7 +763,7 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
             </div>
           )}
 
-          {(formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests') && (
+          {(formData.classification === 'Alumni' || formData.classification === 'Celebrity Guests' || formData.classification === 'Non-wrestlers' || formData.classification === 'Inactive') && (
             <div style={{
               background: '#2a2a2a',
               padding: 12,
@@ -751,7 +774,11 @@ export default function WrestlerAddModal({ onClose, onSave, allWrestlers = [] })
             }}>
               {formData.classification === 'Alumni' 
                 ? 'Alumni wrestlers do not have brand assignments or status.'
-                : 'Celebrity Guests do not have brand assignments or status.'}
+                : formData.classification === 'Celebrity Guests'
+                ? 'Celebrity Guests do not have brand assignments or status.'
+                : formData.classification === 'Non-wrestlers'
+                ? 'Non-wrestlers do not have brand assignments or status.'
+                : 'Inactive wrestlers do not have brand assignments or status.'}
             </div>
           )}
 
