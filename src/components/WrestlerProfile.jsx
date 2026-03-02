@@ -86,7 +86,8 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
     setTitleHistoryLoading(true);
     (async () => {
       try {
-        const { data: historyData, error: historyError } = await supabase
+        // 1) Fetch by champion_slug (primary link from championship title history)
+        const { data: bySlugData, error: historyError } = await supabase
           .from('championship_history')
           .select('*')
           .eq('champion_slug', slug)
@@ -98,7 +99,36 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
           setTitleHistoryLoading(false);
           return;
         }
-        const reigns = historyData || [];
+        let reigns = bySlugData || [];
+        const seenIds = new Set((reigns || []).map((r) => r.id).filter(Boolean));
+
+        // 2) If we have a wrestler name, also fetch reigns where champion_slug is null/empty but champion name matches (case-insensitive)
+        const wrestlerName = wrestler?.name || (wrestlers || []).find((w) => w.id === slug)?.name;
+        if (wrestlerName && typeof wrestlerName === 'string' && wrestlerName.trim()) {
+          const { data: byNameData } = await supabase
+            .from('championship_history')
+            .select('*')
+            .ilike('champion', wrestlerName.trim())
+            .order('date_won', { ascending: false });
+
+          if (!cancelled && byNameData?.length) {
+            const slugLower = slug.toLowerCase();
+            for (const r of byNameData) {
+              const slugEmpty = r.champion_slug == null || String(r.champion_slug).trim() === '';
+              const slugMatchesCaseInsensitive = r.champion_slug && String(r.champion_slug).toLowerCase() === slugLower;
+              if (r.id && !seenIds.has(r.id) && (slugEmpty || slugMatchesCaseInsensitive)) {
+                seenIds.add(r.id);
+                reigns.push(r);
+              }
+            }
+            reigns = reigns.sort((a, b) => {
+              const da = a.date_won ? new Date(a.date_won).getTime() : 0;
+              const db = b.date_won ? new Date(b.date_won).getTime() : 0;
+              return db - da;
+            });
+          }
+        }
+
         if (reigns.length === 0) {
           setTitleHistory([]);
           setTitleHistoryLoading(false);
@@ -129,7 +159,7 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
       }
     })();
     return () => { cancelled = true; };
-  }, [slug]);
+  }, [slug, wrestler?.name, wrestlers]);
 
   if (!wrestler) {
     return (
