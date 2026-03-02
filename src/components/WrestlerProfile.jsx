@@ -102,21 +102,74 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
         let reigns = bySlugData || [];
         const seenIds = new Set((reigns || []).map((r) => r.id).filter(Boolean));
 
-        // 2) If we have a wrestler name, also fetch reigns where champion_slug is null/empty but champion name matches (case-insensitive)
+        // 2) Tag team titles: fetch reigns where champion_slug is a tag team this wrestler belongs to
+        const { data: teamMembers } = await supabase
+          .from('tag_team_members')
+          .select('tag_team_id')
+          .eq('wrestler_slug', slug);
+
+        if (!cancelled && teamMembers?.length) {
+          const teamIds = [...new Set(teamMembers.map((m) => m.tag_team_id).filter(Boolean))];
+          if (teamIds.length > 0) {
+            const { data: byTagTeamData } = await supabase
+              .from('championship_history')
+              .select('*')
+              .in('champion_slug', teamIds)
+              .order('date_won', { ascending: false });
+
+            if (byTagTeamData?.length) {
+              for (const r of byTagTeamData) {
+                if (r.id && !seenIds.has(r.id)) {
+                  seenIds.add(r.id);
+                  reigns.push(r);
+                }
+              }
+              reigns = reigns.sort((a, b) => {
+                const da = a.date_won ? new Date(a.date_won).getTime() : 0;
+                const db = b.date_won ? new Date(b.date_won).getTime() : 0;
+                return db - da;
+              });
+            }
+          }
+        }
+
+        // 3) If we have a wrestler name, match reigns where champion equals name or champion text contains name (tag teams, etc.)
         const wrestlerName = wrestler?.name || (wrestlers || []).find((w) => w.id === slug)?.name;
         if (wrestlerName && typeof wrestlerName === 'string' && wrestlerName.trim()) {
+          const nameTrimmed = wrestlerName.trim();
+          const slugLower = slug.toLowerCase();
+          // 3a) Exact/ilike match (champion = name, or champion_slug null with name match)
           const { data: byNameData } = await supabase
             .from('championship_history')
             .select('*')
-            .ilike('champion', wrestlerName.trim())
+            .ilike('champion', nameTrimmed)
             .order('date_won', { ascending: false });
 
           if (!cancelled && byNameData?.length) {
-            const slugLower = slug.toLowerCase();
             for (const r of byNameData) {
               const slugEmpty = r.champion_slug == null || String(r.champion_slug).trim() === '';
               const slugMatchesCaseInsensitive = r.champion_slug && String(r.champion_slug).toLowerCase() === slugLower;
               if (r.id && !seenIds.has(r.id) && (slugEmpty || slugMatchesCaseInsensitive)) {
+                seenIds.add(r.id);
+                reigns.push(r);
+              }
+            }
+          }
+
+          // 3b) Champion string contains wrestler name (e.g. "Team (Lash Legend & Nia Jax)" or "A & B" without tag_team_members)
+          const escapedName = nameTrimmed.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+          const { data: byNameContainsData } = await supabase
+            .from('championship_history')
+            .select('*')
+            .ilike('champion', `%${escapedName}%`)
+            .order('date_won', { ascending: false });
+
+          if (!cancelled && byNameContainsData?.length) {
+            const nameLower = nameTrimmed.toLowerCase();
+            for (const r of byNameContainsData) {
+              const championStr = String(r.champion || '').toLowerCase();
+              const containsName = championStr.includes(nameLower);
+              if (r.id && !seenIds.has(r.id) && containsName) {
                 seenIds.add(r.id);
                 reigns.push(r);
               }
