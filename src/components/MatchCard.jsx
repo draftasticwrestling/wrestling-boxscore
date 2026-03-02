@@ -209,9 +209,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   const navigate = useNavigate();
   const [expandedSlug, setExpandedSlug] = React.useState(null);
   const [showRumbleDetails, setShowRumbleDetails] = React.useState(false);
-  const [cardView, setCardView] = React.useState(null);
-  const hasCommentary = Array.isArray(match?.commentary) && match.commentary.length > 0;
   const hasSummary = !!(match?.summary || (match?.matchType === 'Promo' && match?.notes));
+  const [cardView, setCardView] = React.useState(() => (hasSummary ? 'summary' : null));
+  const hasCommentary = Array.isArray(match?.commentary) && match.commentary.length > 0;
   const summaryContent = match?.matchType === 'Promo' ? (match?.notes || '') : (match?.summary || '');
 
   const showStatsLastFive = useMemo(
