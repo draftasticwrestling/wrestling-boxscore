@@ -24,6 +24,7 @@ import WrestlerAutocomplete from './components/WrestlerAutocomplete';
 import ParticipantSelectionDemo from './components/ParticipantSelectionDemo';
 import VisualMatchBuilder from './components/VisualMatchBuilder';
 import GauntletMatchBuilder from './components/GauntletMatchBuilder';
+import TagTeamGauntletMatchBuilder from './components/TagTeamGauntletMatchBuilder';
 import TwoOutOfThreeFallsBuilder from './components/TwoOutOfThreeFallsBuilder';
 import WarGamesMatchBuilder from './components/WarGamesMatchBuilder';
 import SurvivorSeriesMatchBuilder from './components/SurvivorSeriesMatchBuilder';
@@ -695,33 +696,39 @@ function formatGauntletResult(participants, winner, wrestlerMap) {
     return winner ? `${winner} won the Gauntlet Match` : 'No winner';
   }
   
-  // Parse participants if they're in string format
+  // Parse participants: string "a → b → c" or "a & b → c & d" (tag team gauntlet)
   let participantList = participants;
   if (typeof participants === 'string') {
     participantList = participants.split(' → ').map(p => p.trim());
   }
   
-  // Convert slugs to names
-  const participantNames = participantList.map(slug => {
-    const wrestler = wrestlerMap[slug];
-    return wrestler ? wrestler.name : slug;
+  // Convert each part to names (part may be single slug or "slug1 & slug2")
+  const participantNames = participantList.map(part => {
+    if (part.includes(' & ')) {
+      const slugs = part.split('&').map(s => s.trim()).filter(Boolean);
+      return slugs.map(slug => (wrestlerMap[slug] ? wrestlerMap[slug].name : slug)).join(' & ');
+    }
+    return wrestlerMap[part] ? wrestlerMap[part].name : part;
   });
   
-  const winnerName = wrestlerMap[winner] ? wrestlerMap[winner].name : winner;
+  // Winner may be a single slug (singles gauntlet) or "slug1 & slug2" (tag team gauntlet)
+  let winnerName = wrestlerMap[winner] ? wrestlerMap[winner].name : winner;
+  if (winner && winner.includes(' & ')) {
+    const teamSlugs = winner.split('&').map(s => s.trim()).filter(Boolean);
+    winnerName = teamSlugs.map(slug => (wrestlerMap[slug] ? wrestlerMap[slug].name : slug)).join(' & ');
+  }
   
-  // Build the progression
+  // Build the progression (participantNames for tag gauntlet are "Name1 & Name2" per team)
   const progression = [];
-  let currentWinner = participantNames[0]; // First participant starts
+  let currentWinner = participantNames[0];
   
   for (let i = 1; i < participantNames.length; i++) {
     const nextParticipant = participantNames[i];
     
     if (nextParticipant === winnerName) {
-      // This participant won against the current winner
       progression.push(`${nextParticipant} def. ${currentWinner}`);
       currentWinner = nextParticipant;
     } else {
-      // Current winner defeated this participant
       progression.push(`${currentWinner} def. ${nextParticipant}`);
     }
   }
@@ -757,7 +764,17 @@ const getParticipantsDisplay = (participants, wrestlerMap, stipulation, matchTyp
     return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
-    // Split by vs, then by &
+    // Gauntlet or Tag Team Gauntlet: "a → b → c" or "a & b → c & d"
+    if (participants.includes(' → ') && !participants.includes(' vs ')) {
+      return participants.split(' → ').map(part => {
+        const p = part.trim();
+        if (p.includes('&')) {
+          return p.split('&').map(s => wrestlerMap[s.trim()]?.name || s.trim()).join(' & ');
+        }
+        return wrestlerMap[p]?.name || p;
+      }).join(' → ');
+    }
+    // Regular: "A vs B" or "A & B vs C & D"
     return participants.split(' vs ').map(side =>
       side.split('&').map(slug => {
         const s = slug.trim();
@@ -1763,6 +1780,22 @@ function AddEvent({ addEvent, wrestlers }) {
         alert('Please enter participants.');
         return;
       }
+      // Gauntlet (singles): require 5–10 participants
+      if (match.matchType === 'Gauntlet Match') {
+        const gauntletParts = match.participants.split(' → ').map(p => p.trim()).filter(Boolean);
+        if (gauntletParts.length < 5 || gauntletParts.length > 10) {
+          alert('Gauntlet Match requires 5–10 participants.');
+          return;
+        }
+      }
+      // Tag Team Gauntlet: require 4–10 teams (each part is "a & b")
+      if (match.matchType === 'Tag Team Gauntlet Match') {
+        const teamParts = match.participants.split(' → ').map(p => p.trim()).filter(Boolean);
+        if (teamParts.length < 4 || teamParts.length > 10) {
+          alert('Tag Team Gauntlet Match requires 4–10 teams.');
+          return;
+        }
+      }
     } else if (eventStatus === 'live' || match.isLive) {
       if (!match.participants) {
         alert('Please enter participants.');
@@ -1774,21 +1807,18 @@ function AddEvent({ addEvent, wrestlers }) {
         return;
       }
       
-      // For Gauntlet Matches, 2 out of 3 Falls, and War Games, validate special data instead of traditional fields
-      if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
-        if (!match.gauntletProgression || match.gauntletProgression.length === 0) {
-          const matchTypeText = match.matchType === 'Gauntlet Match' ? 'Gauntlet Match' : '2 out of 3 Falls';
-          alert(`Please complete the ${matchTypeText} progression by selecting winners for each match`);
-          return;
+      // For Gauntlet / Tag Team Gauntlet / 2 out of 3 Falls: allow adding with participants only (fill progression later)
+      // Only validate progression when it has been started (at least one step)
+      if (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
+        if (match.gauntletProgression && match.gauntletProgression.length > 0) {
+          const incompleteMatches = match.gauntletProgression.filter(prog => !prog.winner || !prog.method);
+          if (incompleteMatches.length > 0) {
+            const matchTypeText = match.matchType === 'Tag Team Gauntlet Match' ? 'Tag Team Gauntlet' : match.matchType === 'Gauntlet Match' ? 'Gauntlet' : '2 out of 3 Falls';
+            alert(`Please select a winner and method for each match in the ${matchTypeText}, or leave progression empty to save as upcoming.`);
+            return;
+          }
         }
-        
-        // Check that all matches have winners and methods
-        const incompleteMatches = match.gauntletProgression.filter(prog => !prog.winner || !prog.method);
-        if (incompleteMatches.length > 0) {
-          const matchTypeText = match.matchType === 'Gauntlet Match' ? 'Gauntlet' : '2 out of 3 Falls';
-          alert(`Please select a winner and method for each match in the ${matchTypeText}`);
-          return;
-        }
+        // No progression or progression complete — allow add
       } else if (match.matchType === '5-on-5 War Games Match') {
         // Validate War Games match data
         if (!match.warGamesData || !match.warGamesData.winningTeam || !match.warGamesData.pinSubmissionWinner || !match.warGamesData.method) {
@@ -1861,8 +1891,8 @@ function AddEvent({ addEvent, wrestlers }) {
         }
         
         result = `${winningTeamNames} def. ${losingTeamNames} (Survivor: ${survivorName}${eliminationsText}${match.survivorSeriesData.time ? `, ${match.survivorSeriesData.time}` : ''})`;
-      } else if ((match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') && match.gauntletProgression) {
-        // For Gauntlet Matches and 2 out of 3 Falls with progression data, format each match result
+      } else if ((match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match' || match.matchType === '2 out of 3 Falls') && match.gauntletProgression) {
+        // For Gauntlet, Tag Team Gauntlet, and 2 out of 3 Falls with progression data, format each match result
         const progressionResults = match.gauntletProgression
           .filter(prog => prog.winner && prog.method)
           .map(prog => {
@@ -1873,8 +1903,8 @@ function AddEvent({ addEvent, wrestlers }) {
           });
         result = progressionResults.join(' → ');
       } else if (resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-        if (match.matchType === 'Gauntlet Match') {
-          // Fallback for Gauntlet Matches without progression data
+        if (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match') {
+          // Fallback for Gauntlet/Tag Team Gauntlet without progression data
           result = formatGauntletResult(match.participants, winner, wrestlers.reduce((map, w) => {
             map[w.id] = w;
             return map;
@@ -1888,9 +1918,19 @@ function AddEvent({ addEvent, wrestlers }) {
         result = match.method === 'No Contest' ? 'No Contest' : 'No winner';
       }
     }
+    let matchToAdd = { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation };
+    // Gauntlet with no (or incomplete) progression: don't store winner/progression so they can be filled later
+    const isGauntletType = match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match';
+    const hasNoProgression = !match.gauntletProgression || match.gauntletProgression.length === 0;
+    const hasIncompleteProgression = match.gauntletProgression && match.gauntletProgression.some(p => !p.winner || !p.method);
+    if (isGauntletType && (hasNoProgression || hasIncompleteProgression)) {
+      matchToAdd.gauntletProgression = [];
+      matchToAdd.winner = '';
+      matchToAdd.result = '';
+    }
     setMatches([
       ...matches,
-      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation }
+      matchToAdd
     ]);
     setMatch({
       participants: '',
@@ -1989,10 +2029,16 @@ function AddEvent({ addEvent, wrestlers }) {
         alert('Completed or live events must have at least one match.');
         return;
       }
-      // Promos are allowed to omit method/result; validation applies only to real matches
-      const invalidMatch = matches.some(m =>
-        m.matchType !== 'Promo' && (!m.participants || !m.method || !m.result)
-      );
+      // Promos and gauntlets (without progression) can omit method/result
+      const invalidMatch = matches.some(m => {
+        if (m.matchType === 'Promo') return false;
+        if (!m.participants) return true;
+        if (m.matchType === 'Gauntlet Match' || m.matchType === 'Tag Team Gauntlet Match' || m.matchType === '2 out of 3 Falls') {
+          if (!m.gauntletProgression || m.gauntletProgression.length === 0) return false;
+          return !m.result;
+        }
+        return !m.method || !m.result;
+      });
       if (invalidMatch) {
         alert('Please fill out all required match fields for completed events.');
         return;
@@ -3714,13 +3760,29 @@ function AddEvent({ addEvent, wrestlers }) {
                       }}
                       onResultChange={gauntletResult => {
                         console.log('Gauntlet result:', gauntletResult);
-                        // Store the gauntlet progression data
                         setMatch(prev => ({
                           ...prev,
                           gauntletProgression: gauntletResult.progression,
                           winner: gauntletResult.winner
                         }));
                       }}
+                    />
+                  ) : match.matchType === 'Tag Team Gauntlet Match' ? (
+                    <TagTeamGauntletMatchBuilder
+                      wrestlers={wrestlers}
+                      value={match.participants}
+                      onChange={value => {
+                        const newMatch = { ...match, participants: value };
+                        setMatch(newMatch);
+                      }}
+                      onResultChange={gauntletResult => {
+                        setMatch(prev => ({
+                          ...prev,
+                          gauntletProgression: gauntletResult.progression,
+                          winner: gauntletResult.winner
+                        }));
+                      }}
+                      initialProgression={match.gauntletProgression}
                     />
                   ) : match.matchType === '2 out of 3 Falls' ? (
                     <TwoOutOfThreeFallsBuilder
@@ -3798,7 +3860,7 @@ function AddEvent({ addEvent, wrestlers }) {
                   </select>
                 </label>
               </div>
-              {resultType === 'Winner' && winnerOptions.length >= 2 && match.matchType !== 'Gauntlet Match' && match.matchType !== '2 out of 3 Falls' && (
+              {resultType === 'Winner' && winnerOptions.length >= 2 && match.matchType !== 'Gauntlet Match' && match.matchType !== 'Tag Team Gauntlet Match' && match.matchType !== '2 out of 3 Falls' && (
                 <div>
                   <label>
                     Winner:<br />
@@ -3891,7 +3953,15 @@ function AddEvent({ addEvent, wrestlers }) {
             !eventType || !date || !location ||
             ((eventStatus === 'completed' || eventStatus === 'live') &&
               (!Array.isArray(matches) || matches.length === 0 ||
-               matches.some(m => !m.participants || !m.method || !m.result)))
+               matches.some(m => {
+                 if (m.matchType === 'Promo') return false;
+                 if (!m.participants) return true;
+                 if (m.matchType === 'Gauntlet Match' || m.matchType === 'Tag Team Gauntlet Match' || m.matchType === '2 out of 3 Falls') {
+                   if (!m.gauntletProgression || m.gauntletProgression.length === 0) return false;
+                   return !m.result;
+                 }
+                 return !m.method || !m.result;
+               })))
           }
           onClick={handleSaveEvent}
         >
@@ -4299,14 +4369,45 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       return;
     }
     // --- Default (non-Battle Royal) branch ---
+    if (eventStatus === 'upcoming') {
+      if (!match.participants) {
+        alert('Please enter participants.');
+        return;
+      }
+      if (match.matchType === 'Gauntlet Match') {
+        const gauntletParts = match.participants.split(' → ').map(p => p.trim()).filter(Boolean);
+        if (gauntletParts.length < 5 || gauntletParts.length > 10) {
+          alert('Gauntlet Match requires 5–10 participants.');
+          return;
+        }
+      }
+      if (match.matchType === 'Tag Team Gauntlet Match') {
+        const teamParts = match.participants.split(' → ').map(p => p.trim()).filter(Boolean);
+        if (teamParts.length < 4 || teamParts.length > 10) {
+          alert('Tag Team Gauntlet Match requires 4–10 teams.');
+          return;
+        }
+      }
+    } else {
+      // Gauntlet / Tag Team Gauntlet / 2 out of 3 Falls: allow adding with participants only; validate only if progression started
+      if (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
+        if (match.gauntletProgression && match.gauntletProgression.length > 0) {
+          const incompleteMatches = match.gauntletProgression.filter(prog => !prog.winner || !prog.method);
+          if (incompleteMatches.length > 0) {
+            const matchTypeText = match.matchType === 'Tag Team Gauntlet Match' ? 'Tag Team Gauntlet' : match.matchType === 'Gauntlet Match' ? 'Gauntlet' : '2 out of 3 Falls';
+            alert(`Please select a winner and method for each match in the ${matchTypeText}, or leave progression empty to save as upcoming.`);
+            return;
+          }
+        }
+      }
+    }
     let finalStipulation = match.stipulation === "Custom/Other"
       ? match.customStipulation
       : match.stipulation === "None" ? "" : match.stipulation;
     
     let result = '';
     if (eventStatus === 'completed' && resultType === 'Winner' && winner && winnerOptions.length >= 2) {
-      if (match.matchType === 'Gauntlet Match') {
-        // For Gauntlet Matches, we need to pass the wrestlerMap to format the progression
+      if (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match') {
         result = formatGauntletResult(match.participants, winner, wrestlers.reduce((map, w) => {
           map[w.id] = w;
           return map;
@@ -4316,9 +4417,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         result = formatResult(winner, others);
       }
     }
+    let matchToAdd = { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation };
+    const isGauntletTypeAdd = match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match';
+    const hasNoProgressionAdd = !match.gauntletProgression || match.gauntletProgression.length === 0;
+    const hasIncompleteProgressionAdd = match.gauntletProgression && match.gauntletProgression.some(p => !p.winner || !p.method);
+    if (isGauntletTypeAdd && (hasNoProgressionAdd || hasIncompleteProgressionAdd)) {
+      matchToAdd.gauntletProgression = [];
+      matchToAdd.winner = '';
+      matchToAdd.result = '';
+    }
     setMatches([
       ...matches,
-      { ...match, isLive: match.isLive || false, result, stipulation: finalStipulation }
+      matchToAdd
     ]);
     setMatch({
       participants: '',
@@ -5624,6 +5734,24 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                             winner: gauntletResult.winner
                           }));
                         }}
+                        initialProgression={match.gauntletProgression}
+                      />
+                    ) : match.matchType === 'Tag Team Gauntlet Match' ? (
+                      <TagTeamGauntletMatchBuilder
+                        wrestlers={wrestlers}
+                        value={match.participants}
+                        onChange={value => {
+                          const newMatch = { ...match, participants: value };
+                          setMatch(newMatch);
+                        }}
+                        onResultChange={gauntletResult => {
+                          setMatch(prev => ({
+                            ...prev,
+                            gauntletProgression: gauntletResult.progression,
+                            winner: gauntletResult.winner
+                          }));
+                        }}
+                        initialProgression={match.gauntletProgression}
                       />
                     ) : match.matchType === '2 out of 3 Falls' ? (
                       <TwoOutOfThreeFallsBuilder
@@ -7155,6 +7283,14 @@ const getMatchStructureFromMatchType = (matchType) => {
         { type: 'team', participants: ['', ''], name: '' },
         { type: 'team', participants: ['', ''], name: '' }
       ];
+    case '5-team Tag Team':
+      return [
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' }
+      ];
     case '6-team Tag Team':
       return [
         { type: 'team', participants: ['', ''], name: '' },
@@ -7193,13 +7329,21 @@ const getMatchStructureFromMatchType = (matchType) => {
         { type: 'individual', participants: [''] }
       ];
     case 'Gauntlet Match':
-      // Gauntlet Match: multiple individual participants (starting with 5)
+      // Gauntlet Match: 5–10 individual participants (default 5)
       return [
         { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] }
+      ];
+    case 'Tag Team Gauntlet Match':
+      // Tag Team Gauntlet: 4–10 teams of 2 (default 4)
+      return [
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' }
       ];
     case '2 out of 3 Falls':
       // 2 out of 3 Falls: 2 individual participants who wrestle multiple falls

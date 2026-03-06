@@ -12,6 +12,7 @@ import { supabase } from '../supabaseClient';
 import WrestlerAutocomplete from './WrestlerAutocomplete';
 import VisualMatchBuilder from './VisualMatchBuilder';
 import GauntletMatchBuilder from './GauntletMatchBuilder';
+import TagTeamGauntletMatchBuilder from './TagTeamGauntletMatchBuilder';
 import TwoOutOfThreeFallsBuilder from './TwoOutOfThreeFallsBuilder';
 import WarGamesMatchBuilder from './WarGamesMatchBuilder';
 import SurvivorSeriesMatchBuilder from './SurvivorSeriesMatchBuilder';
@@ -717,14 +718,14 @@ export default function MatchEdit({
 
     // For Gauntlet Match, 2 out of 3 Falls, War Games, and Survivor Series, preserve the existing result
     // NOTE: Battle Royal is NOT in this list, so it always regenerates the result
-    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls' || match.matchType === '5-on-5 War Games Match' || match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) {
+    if (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match' || match.matchType === '2 out of 3 Falls' || match.matchType === '5-on-5 War Games Match' || match.matchType === 'Survivor Series-style 10-man Tag Team Elimination match' || match.matchType?.includes('Survivor Series')) {
       result = match.result || result;
     }
     // Never overwrite a stored result with empty when user only changed summary/commentary/etc.
     if (initialMatch && initialMatch.result && !result) {
       result = initialMatch.result;
     }
-    const isGauntletOr2o3 = match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls';
+    const isGauntletOr2o3 = match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match' || match.matchType === '2 out of 3 Falls';
     const isStandardMatch = !isBattleRoyal && !isRoyalRumble && !isEliminationChamber && !isGauntletOr2o3 &&
       match.matchType !== '5-on-5 War Games Match' && match.matchType !== 'Survivor Series-style 10-man Tag Team Elimination match' && !match.matchType?.includes('Survivor Series');
     // Standard matches: if form would save a different result but winner wasn't set (init race), keep stored result
@@ -1043,6 +1044,14 @@ export default function MatchEdit({
           { type: 'team', participants: ['', ''], name: '' },
           { type: 'team', participants: ['', ''], name: '' }
         ];
+      case '5-team Tag Team':
+        return [
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' }
+        ];
       case '6-team Tag Team':
         return [
           { type: 'team', participants: ['', ''], name: '' },
@@ -1081,13 +1090,19 @@ export default function MatchEdit({
           { type: 'individual', participants: [''] }
         ];
       case 'Gauntlet Match':
-        // Gauntlet Match: multiple individual participants (starting with 5)
         return [
           { type: 'individual', participants: [''] },
           { type: 'individual', participants: [''] },
           { type: 'individual', participants: [''] },
           { type: 'individual', participants: [''] },
           { type: 'individual', participants: [''] }
+        ];
+      case 'Tag Team Gauntlet Match':
+        return [
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' }
         ];
       case '2 out of 3 Falls':
         // 2 out of 3 Falls: 2 individual participants who wrestle multiple falls
@@ -2237,13 +2252,31 @@ export default function MatchEdit({
                   }}
                   onResultChange={gauntletResult => {
                     console.log('Gauntlet result:', gauntletResult);
-                    // Store the gauntlet progression data
                     const winnerName = safeWrestlers.find(w => w.id === gauntletResult.winner)?.name || gauntletResult.winner;
                     setMatch(prev => ({
                       ...prev,
                       gauntletProgression: gauntletResult.progression,
                       winner: gauntletResult.winner,
-                      result: `${winnerName}` // Just the winner name
+                      result: `${winnerName}`
+                    }));
+                  }}
+                />
+              ) : match.matchType === 'Tag Team Gauntlet Match' ? (
+                <TagTeamGauntletMatchBuilder
+                  wrestlers={safeWrestlers}
+                  value={match.participants}
+                  initialProgression={initialMatch.gauntletProgression}
+                  onChange={(value, matchType) => {
+                    const newMatch = { ...match, participants: value };
+                    if (matchType) newMatch.matchType = matchType;
+                    setMatch(newMatch);
+                  }}
+                  onResultChange={gauntletResult => {
+                    setMatch(prev => ({
+                      ...prev,
+                      gauntletProgression: gauntletResult.progression,
+                      winner: gauntletResult.winner,
+                      result: gauntletResult.winner || prev.result
                     }));
                   }}
                 />
@@ -2375,7 +2408,7 @@ export default function MatchEdit({
               </select>
             </label>
           </div>
-          {resultType === 'Winner' && winnerOptions.length >= 2 && match.matchType !== 'Gauntlet Match' && match.matchType !== '2 out of 3 Falls' && (
+          {resultType === 'Winner' && winnerOptions.length >= 2 && match.matchType !== 'Gauntlet Match' && match.matchType !== 'Tag Team Gauntlet Match' && match.matchType !== '2 out of 3 Falls' && (
             <div>
               <label>
                 Winner:<br />

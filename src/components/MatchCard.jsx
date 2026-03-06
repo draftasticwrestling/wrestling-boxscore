@@ -619,8 +619,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     );
   }
 
-  // Early return for multi-team matches (6-team Tag Team, 4-way Tag Team, etc.)
-  if (match.matchType === '6-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team') {
+  // Early return for multi-team matches (6-team Tag Team, 5-team Tag Team, 4-way Tag Team, etc.)
+  if (match.matchType === '6-team Tag Team' || match.matchType === '5-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team') {
     let teamStrings = [];
     if (typeof match.participants === 'string') {
       teamStrings = match.participants.split(' vs ').map(s => s.trim());
@@ -783,6 +783,8 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           display: 'grid',
           gridTemplateColumns: match.matchType === '6-team Tag Team' 
             ? 'repeat(3, 1fr)' 
+            : match.matchType === '5-team Tag Team'
+            ? 'repeat(5, 1fr)'
             : 'repeat(auto-fit, minmax(120px, 1fr))',
           gap: '12px',
           justifyContent: 'center',
@@ -969,7 +971,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   const teams = getTeams(match.participants);
   let teamStrings = [];
   if (typeof match.participants === 'string' && match.participants) {
-    if (match.matchType === 'Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
+    if (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
       teamStrings = match.participants.split(' → ').map(s => s.trim());
     } else {
       teamStrings = match.participants.split(' vs ').map(s => s.trim());
@@ -1094,8 +1096,21 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     topLabel = labelParts.join(' — ');
   }
   
-  const isMultiSide = teams.length > 2;
-  const isTwoSide = teams.length === 2;
+  // Upcoming gauntlet (no progression/result): show as multi-way; otherwise use gauntlet progression UI
+  const hasGauntletProgressionOrResult =
+    (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match') &&
+    (() => {
+      const hasProgression = match.gauntletProgression && match.gauntletProgression.length > 0 &&
+        match.gauntletProgression.some(p => p && p.winner && p.method);
+      const hasResult = match.result && String(match.result).trim();
+      return !!(hasProgression || hasResult);
+    })();
+  const isMultiSide = teams.length > 2 ||
+    ((match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match') &&
+      typeof match.participants === 'string' &&
+      match.participants.includes(' → ') &&
+      !hasGauntletProgressionOrResult);
+  const isTwoSide = teams.length === 2 && !isMultiSide;
 
   return (
     <div
@@ -1158,7 +1173,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         </div>
       )}
       
-      {match.matchType === 'Gauntlet Match' && typeof match.participants === 'string' ? (
+      {(match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match') && typeof match.participants === 'string' && hasGauntletProgressionOrResult ? (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -1202,6 +1217,13 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             position: 'relative',
           }}>
             {(() => {
+              const isTagGauntlet = match.matchType === 'Tag Team Gauntlet Match';
+              const getPartDisplay = (str) => {
+                if (!str) return '';
+                if (str.includes(' & ')) return str.split('&').map(s => wrestlerMap[s.trim()]?.name || s.trim()).join(' & ');
+                return wrestlerMap[str]?.name || str;
+              };
+              const firstSlug = (str) => (str && str.includes(' & ') ? str.split('&').map(s => s.trim())[0] : str) || '';
               const matches = [];
               let currentWinner = teamStrings[0];
               
@@ -1215,14 +1237,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   const matchResult = match.gauntletProgression[i];
                   if (matchResult.winner) {
                     if (matchResult.winner === participant1) {
-                      winner = wrestlerMap[participant1]?.name || participant1;
+                      winner = getPartDisplay(participant1);
                       currentWinner = participant1;
                     } else if (matchResult.winner === participant2) {
-                      winner = wrestlerMap[participant2]?.name || participant2;
+                      winner = getPartDisplay(participant2);
                       currentWinner = participant2;
                     }
                   }
                 }
+                const disp1 = getPartDisplay(participant1);
+                const disp2 = getPartDisplay(participant2);
+                const winnerIs1 = winner === disp1;
+                const winnerIs2 = winner === disp2;
                
                 matches.push(
                   <div key={i} style={{
@@ -1243,55 +1269,67 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       border: '1px solid #444',
                       minWidth: 140,
                     }}>
-                      <Link to={wrestlerTo(participant1)} onClick={e => e.stopPropagation()} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        color: winner === wrestlerMap[participant1]?.name ? '#C6A04F' : '#fff',
-                        fontWeight: winner === wrestlerMap[participant1]?.name ? 'bold' : 'normal',
-                        textDecoration: 'none',
-                      }}>
-                        <img
-                          src={wrestlerMap[participant1]?.image_url || '/images/placeholder.png'}
-                          alt={wrestlerMap[participant1]?.name || participant1}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: winner === wrestlerMap[participant1]?.name ? '2px solid #C6A04F' : '1px solid #666',
-                          }}
-                        />
-                        <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {wrestlerMap[participant1]?.name || participant1}
+                      {isTagGauntlet ? (
+                        <span style={{ color: winnerIs1 ? '#C6A04F' : '#fff', fontWeight: winnerIs1 ? 'bold' : 'normal', fontSize: 10, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {disp1}
                         </span>
-                      </Link>
+                      ) : (
+                        <Link to={wrestlerTo(participant1)} onClick={e => e.stopPropagation()} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          color: winnerIs1 ? '#C6A04F' : '#fff',
+                          fontWeight: winnerIs1 ? 'bold' : 'normal',
+                          textDecoration: 'none',
+                        }}>
+                          <img
+                            src={wrestlerMap[firstSlug(participant1)]?.image_url || wrestlerMap[participant1]?.image_url || '/images/placeholder.png'}
+                            alt={disp1}
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: winnerIs1 ? '2px solid #C6A04F' : '1px solid #666',
+                            }}
+                          />
+                          <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {disp1}
+                          </span>
+                        </Link>
+                      )}
                       
                       <div style={{ color: '#C6A04F', fontSize: 9, fontWeight: 'bold' }}>vs</div>
                       
-                      <Link to={wrestlerTo(participant2)} onClick={e => e.stopPropagation()} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        color: winner === wrestlerMap[participant2]?.name ? '#C6A04F' : '#fff',
-                        fontWeight: winner === wrestlerMap[participant2]?.name ? 'bold' : 'normal',
-                        textDecoration: 'none',
-                      }}>
-                        <img
-                          src={wrestlerMap[participant2]?.image_url || '/images/placeholder.png'}
-                          alt={wrestlerMap[participant2]?.name || participant2}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: winner === wrestlerMap[participant2]?.name ? '2px solid #C6A04F' : '1px solid #666',
-                          }}
-                        />
-                        <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {wrestlerMap[participant2]?.name || participant2}
+                      {isTagGauntlet ? (
+                        <span style={{ color: winnerIs2 ? '#C6A04F' : '#fff', fontWeight: winnerIs2 ? 'bold' : 'normal', fontSize: 10, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {disp2}
                         </span>
-                      </Link>
+                      ) : (
+                        <Link to={wrestlerTo(participant2)} onClick={e => e.stopPropagation()} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          color: winnerIs2 ? '#C6A04F' : '#fff',
+                          fontWeight: winnerIs2 ? 'bold' : 'normal',
+                          textDecoration: 'none',
+                        }}>
+                          <img
+                            src={wrestlerMap[firstSlug(participant2)]?.image_url || wrestlerMap[participant2]?.image_url || '/images/placeholder.png'}
+                            alt={disp2}
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: winnerIs2 ? '2px solid #C6A04F' : '1px solid #666',
+                            }}
+                          />
+                          <span style={{ fontSize: 10, maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {disp2}
+                          </span>
+                        </Link>
+                      )}
                     </div>
                     
                     {!isLastMatch && (
@@ -1314,15 +1352,20 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
             let finalWinner = null;
             let finalWinnerSlug = null;
             if (match.winner) {
-              const winnerEntry = Object.entries(wrestlerMap).find(([slug, wrestler]) => 
-                wrestler.name === match.winner || slug === match.winner
-              );
-              if (winnerEntry) {
-                finalWinner = winnerEntry[1].name;
-                finalWinnerSlug = winnerEntry[0];
-              } else {
-                finalWinner = match.winner;
+              if (match.matchType === 'Tag Team Gauntlet Match' && match.winner.includes(' & ')) {
+                finalWinner = match.winner.split('&').map(s => wrestlerMap[s.trim()]?.name || s.trim()).join(' & ');
                 finalWinnerSlug = match.winner;
+              } else {
+                const winnerEntry = Object.entries(wrestlerMap).find(([slug, wrestler]) =>
+                  wrestler.name === match.winner || slug === match.winner
+                );
+                if (winnerEntry) {
+                  finalWinner = winnerEntry[1].name;
+                  finalWinnerSlug = winnerEntry[0];
+                } else {
+                  finalWinner = match.winner;
+                  finalWinnerSlug = match.winner;
+                }
               }
             }
             

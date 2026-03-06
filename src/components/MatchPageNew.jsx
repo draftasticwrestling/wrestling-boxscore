@@ -25,27 +25,44 @@ function formatDateShort(dateStr) {
   });
 }
 
+// When true, show gauntlet participants in entry order (→). When false, show as multi-way (vs).
+function hasGauntletResults(match) {
+  if (!match || (match.matchType !== 'Gauntlet Match' && match.matchType !== 'Tag Team Gauntlet Match')) return false;
+  const hasProgression = match.gauntletProgression && match.gauntletProgression.length > 0 &&
+    match.gauntletProgression.some(p => p && p.winner && p.method);
+  const hasResult = match.result && String(match.result).trim();
+  return !!(hasProgression || hasResult);
+}
+
 // Helper to get display names for participants from slugs
-function getParticipantsDisplay(participants, wrestlerMap, stipulation, matchType) {
+function getParticipantsDisplay(participants, wrestlerMap, stipulation, matchType, match) {
+  const useGauntletOrder = match && (matchType === 'Gauntlet Match' || matchType === 'Tag Team Gauntlet Match') && hasGauntletResults(match);
+  const gauntletSeparator = useGauntletOrder ? ' → ' : ' vs ';
   if (Array.isArray(participants)) {
     // Battle Royal: flat array of slugs
     if ((matchType || stipulation) === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
       return participants.map(slug => wrestlerMap?.[slug]?.name || slug).join(', ');
     }
+    // Tag Team Gauntlet: array of teams (each team [slug1, slug2])
+    if (matchType === 'Tag Team Gauntlet Match') {
+      return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(gauntletSeparator);
+    }
     // Gauntlet Match and 2 out of 3 Falls: array of individual participants
     if (matchType === 'Gauntlet Match' || matchType === '2 out of 3 Falls') {
-      return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join('')).join(' → ');
+      return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join('')).join(gauntletSeparator);
     }
     // Tag/singles: array of arrays
     return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
-    // Handle Gauntlet Matches and 2 out of 3 Falls with → separators
-    if (matchType === 'Gauntlet Match' || matchType === '2 out of 3 Falls') {
-      return participants.split(' → ').map(slug => {
-        const s = slug.trim();
-        return wrestlerMap[s]?.name || s;
-      }).join(' → ');
+    // Handle Gauntlet, Tag Team Gauntlet, and 2 out of 3 Falls (→ when has results, vs when upcoming)
+    if (matchType === 'Gauntlet Match' || matchType === 'Tag Team Gauntlet Match' || matchType === '2 out of 3 Falls') {
+      const parts = participants.split(' → ').map(part => {
+        const p = part.trim();
+        if (p.includes('&')) return p.split('&').map(s => wrestlerMap[s.trim()]?.name || s.trim()).join(' & ');
+        return wrestlerMap[p]?.name || p;
+      });
+      return parts.join(matchType === '2 out of 3 Falls' ? ' → ' : gauntletSeparator);
     }
     // Split by vs, then by &
     return participants.split(' vs ').map(side => {
@@ -200,16 +217,21 @@ export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [],
               </div>
             );
           })()}
-          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, safeWrestlerMap, match.stipulation, match.matchType)}</div>
-          {match.matchType === 'Gauntlet Match' && Array.isArray(match.gauntletProgression) && match.gauntletProgression.length > 0 && (
+          <div><b>Participants:</b> {getParticipantsDisplay(match.participants, safeWrestlerMap, match.stipulation, match.matchType, match)}</div>
+          {(match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match') && hasGauntletResults(match) && Array.isArray(match.gauntletProgression) && match.gauntletProgression.length > 0 && (
             <div style={{ marginTop: 8, marginBottom: 8 }}>
-              <b>Gauntlet Progression:</b>
+              <b>{match.matchType === 'Tag Team Gauntlet Match' ? 'Tag Team Gauntlet' : 'Gauntlet'} Progression:</b>
               <div style={{ marginLeft: 16, marginTop: 4 }}>
                 {match.gauntletProgression.map((matchResult, index) => {
                   if (matchResult.winner && matchResult.method) {
-                    const winnerName = safeWrestlerMap[matchResult.winner]?.name || matchResult.winner;
-                    const participant1Name = safeWrestlerMap[matchResult.participant1]?.name || matchResult.participant1;
-                    const participant2Name = safeWrestlerMap[matchResult.participant2]?.name || matchResult.participant2;
+                    const resolve = (str) => {
+                      if (!str) return '';
+                      if (str.includes(' & ')) return str.split('&').map(s => safeWrestlerMap[s.trim()]?.name || s.trim()).join(' & ');
+                      return safeWrestlerMap[str]?.name || str;
+                    };
+                    const winnerName = resolve(matchResult.winner);
+                    const participant1Name = resolve(matchResult.participant1);
+                    const participant2Name = resolve(matchResult.participant2);
                     return (
                       <div key={index} style={{ marginBottom: 2 }}>
                         {winnerName} def. {winnerName === participant1Name ? participant2Name : participant1Name} ({matchResult.method})
