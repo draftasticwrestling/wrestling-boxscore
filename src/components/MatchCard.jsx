@@ -1192,29 +1192,21 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               match.result && match.result !== 'No winner' ? 'Final' : match.result
             )}
           </div>
-            <div style={{ fontWeight: 700, color: '#C6A04F', fontSize: 15, marginBottom: 2, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
-              {match.cardType}{match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' ? ' - Title Match' : ''}
-            </div>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: 20, marginBottom: 2, textAlign: 'center' }}>
-              {isMatchInProgress ? (
-                <span style={{ color: '#27ae60' }}>MATCH IN PROGRESS</span>
-              ) : (
-                match.result && match.result !== 'No winner' ? 'Final' : match.result
-              )}
-            </div>
-            <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
-            <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
+          <div style={{ color: '#bbb', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>{match.method}</div>
+          <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center' }}>{match.time}</div>
           </div>
 
           <div style={{
             display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
             justifyContent: 'center',
-            gap: 12,
+            gap: 8,
             marginBottom: 16,
-            flexWrap: 'wrap',
-            position: 'relative',
+            width: '100%',
+            maxWidth: 400,
+            marginLeft: 'auto',
+            marginRight: 'auto',
           }}>
             {(() => {
               const isTagGauntlet = match.matchType === 'Tag Team Gauntlet Match';
@@ -1230,7 +1222,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               for (let i = 0; i < teamStrings.length - 1; i++) {
                 const participant1 = currentWinner;
                 const participant2 = teamStrings[i + 1];
-                const isLastMatch = i === teamStrings.length - 2;
                 
                 let winner = null;
                 if (match.gauntletProgression && match.gauntletProgression[i]) {
@@ -1255,9 +1246,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                     display: 'flex',
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 8,
-                    position: 'relative',
+                    gap: 10,
+                    marginLeft: i * 24,
                   }}>
+                    <span style={{
+                      color: '#C6A04F',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      minWidth: 52,
+                    }}>
+                      Match {i + 1}
+                    </span>
                     <div style={{
                       display: 'flex',
                       flexDirection: 'row',
@@ -1267,10 +1266,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       background: '#2a2a2a',
                       borderRadius: 6,
                       border: '1px solid #444',
-                      minWidth: 140,
+                      minWidth: isTagGauntlet ? 240 : 140,
                     }}>
                       {isTagGauntlet ? (
-                        <span style={{ color: winnerIs1 ? '#C6A04F' : '#fff', fontWeight: winnerIs1 ? 'bold' : 'normal', fontSize: 10, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ color: winnerIs1 ? '#C6A04F' : '#fff', fontWeight: winnerIs1 ? 'bold' : 'normal', fontSize: 10, whiteSpace: 'nowrap' }}>
                           {disp1}
                         </span>
                       ) : (
@@ -1302,7 +1301,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                       <div style={{ color: '#C6A04F', fontSize: 9, fontWeight: 'bold' }}>vs</div>
                       
                       {isTagGauntlet ? (
-                        <span style={{ color: winnerIs2 ? '#C6A04F' : '#fff', fontWeight: winnerIs2 ? 'bold' : 'normal', fontSize: 10, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ color: winnerIs2 ? '#C6A04F' : '#fff', fontWeight: winnerIs2 ? 'bold' : 'normal', fontSize: 10, whiteSpace: 'nowrap' }}>
                           {disp2}
                         </span>
                       ) : (
@@ -1331,16 +1330,6 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                         </Link>
                       )}
                     </div>
-                    
-                    {!isLastMatch && (
-                      <div style={{
-                        color: '#C6A04F',
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                      }}>
-                        →
-                      </div>
-                    )}
                   </div>
                 );
               }
@@ -1396,29 +1385,62 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                   }}>
                     WINNER
                   </div>
-                  <Link to={wrestlerTo(finalWinnerSlug)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none' }}>
-                    <img
-                      src={wrestlerMap[finalWinnerSlug]?.image_url || '/images/placeholder.png'}
-                      alt={finalWinner || 'Winner'}
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid #C6A04F',
-                        marginBottom: 8,
-                      }}
-                    />
-                    <span style={{
-                      fontSize: 14,
-                      color: '#C6A04F',
-                      fontWeight: 'bold',
-                      textAlign: 'center',
-                      maxWidth: 80,
-                    }}>
-                      {finalWinner || 'Winner'}
-                    </span>
-                  </Link>
+                  {match.matchType === 'Tag Team Gauntlet Match' && finalWinnerSlug && finalWinnerSlug.includes(' & ') ? (
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                      {finalWinnerSlug.split('&').map(s => s.trim()).filter(Boolean).map((slug) => (
+                        <Link key={slug} to={wrestlerTo(slug)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none' }}>
+                          <img
+                            src={wrestlerMap[slug]?.image_url || '/images/placeholder.png'}
+                            alt={wrestlerMap[slug]?.name || slug}
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '2px solid #C6A04F',
+                              marginBottom: 6,
+                            }}
+                          />
+                          <span style={{
+                            fontSize: 12,
+                            color: '#C6A04F',
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            maxWidth: 100,
+                            whiteSpace: 'normal',
+                            wordBreak: 'break-word',
+                            lineHeight: 1.2,
+                          }}>
+                            {wrestlerMap[slug]?.name || slug}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <Link to={wrestlerTo(finalWinnerSlug)} onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none' }}>
+                      <img
+                        src={wrestlerMap[finalWinnerSlug]?.image_url || '/images/placeholder.png'}
+                        alt={finalWinner || 'Winner'}
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid #C6A04F',
+                          marginBottom: 8,
+                        }}
+                      />
+                      <span style={{
+                        fontSize: 14,
+                        color: '#C6A04F',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        maxWidth: 80,
+                      }}>
+                        {finalWinner || 'Winner'}
+                      </span>
+                    </Link>
+                  )}
                 </div>
               </div>
             ) : null;
