@@ -66,3 +66,34 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* --- Pro Wrestling Boxscore: layout (mobile-first, desktop improvements) --- */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Tablet and up: more horizontal padding */
+@media (min-width: 768px) {
+  body {
+    place-items: stretch;
+  }
+  #root {
+    max-width: 100%;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* Desktop: comfortable max-width so content doesn’t stretch on large screens */
+@media (min-width: 1024px) {
+  #root {
+    max-width: 100%;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}

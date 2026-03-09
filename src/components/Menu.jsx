@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useIsDesktop } from '../hooks/useMediaQuery';
 
 const menuIcon = (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -19,6 +20,7 @@ const menuItems = [
 ];
 
 export default function Menu() {
+  const isDesktop = useIsDesktop();
   const [open, setOpen] = useState(false);
   const menuRef = useRef();
   const location = useLocation();
@@ -37,6 +39,66 @@ export default function Menu() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  // Desktop: horizontal nav bar as part of the page
+  if (isDesktop) {
+    return (
+      <nav
+        style={{
+          width: '100%',
+          background: '#1a1612',
+          borderBottom: '1px solid #333',
+          padding: '14px 0',
+          marginBottom: 0,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1600,
+            margin: '0 auto',
+            paddingLeft: 24,
+            paddingRight: 24,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            flexWrap: 'wrap',
+          }}
+        >
+          {menuItems.map(item => (
+            <Link
+              key={item.path}
+              to={item.path}
+              style={{
+                color: location.pathname === item.path ? '#C6A04F' : '#F5E7D0',
+                textDecoration: 'none',
+                padding: '8px 16px',
+                fontWeight: 600,
+                fontSize: 15,
+                borderRadius: 8,
+                background: location.pathname === item.path ? 'rgba(198, 160, 79, 0.15)' : 'transparent',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+              onMouseOver={e => {
+                if (location.pathname !== item.path) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                }
+              }}
+              onMouseOut={e => {
+                if (location.pathname !== item.path) {
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+    );
+  }
+
+  // Mobile: hamburger + dropdown
   return (
     <div style={{ position: 'fixed', top: 18, left: 18, zIndex: 1000 }} ref={menuRef}>
       <button

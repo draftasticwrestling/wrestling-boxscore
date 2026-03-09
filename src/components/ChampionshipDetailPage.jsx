@@ -33,8 +33,16 @@ function getBeltImageUrl(championshipId) {
   return `https://qvbqxietcmweltxoonvh.supabase.co/storage/v1/object/public/belts/${filename}`;
 }
 
+// Parse as local date-only to avoid timezone shifting (e.g. 2025-04-01 showing as Mar 31)
 function formatDate(dateStr) {
   if (!dateStr) return '—';
+  const s = String(dateStr).trim();
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch;
+    const dLocal = new Date(Number(y), Number(m) - 1, Number(d));
+    if (!isNaN(dLocal.getTime())) return dLocal.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -80,7 +88,9 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
     date_won: '',
     date_lost: '',
     event_name: '',
+    event_lost: '',
   });
+  const [addReignType, setAddReignType] = useState(null); // 'historical' | 'title_change'
   const [savingReign, setSavingReign] = useState(false);
   const [reignError, setReignError] = useState('');
 
@@ -216,6 +226,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
 
   const openAddReign = () => {
     setEditingRowId(null);
+    setAddReignType(null);
     setReignForm({
       champion: '',
       champion_slug: '',
@@ -224,14 +235,30 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
       date_won: '',
       date_lost: '',
       event_name: '',
+      event_lost: '',
     });
     setReignError('');
     setShowAddReign(true);
   };
 
+  const startAddReignAs = (type) => {
+    setAddReignType(type);
+    const prev = sortedHistory[0];
+    if (type === 'title_change' && prev) {
+      setReignForm((f) => ({
+        ...f,
+        previous_champion: prev.champion || '',
+        previous_champion_slug: prev.champion_slug || '',
+        date_won: prev.date_lost || '',
+        event_name: prev.event_lost || '',
+      }));
+    }
+  };
+
   const openEditReign = (row) => {
     setShowAddReign(false);
     setEditingRowId(row.id);
+    setAddReignType(null);
     setReignForm({
       champion: row.champion || '',
       champion_slug: row.champion_slug || '',
@@ -240,6 +267,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
       date_won: row.date_won || '',
       date_lost: row.date_lost || '',
       event_name: row.event_name || '',
+      event_lost: row.event_lost || '',
     });
     setReignError('');
   };
@@ -247,6 +275,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
   const cancelReignForm = () => {
     setShowAddReign(false);
     setEditingRowId(null);
+    setAddReignType(null);
     setReignError('');
   };
 
@@ -277,6 +306,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
         date_won: reignForm.date_won.trim(),
         date_lost: reignForm.date_lost?.trim() || null,
         event_name: reignForm.event_name?.trim() || null,
+        event_lost: reignForm.event_lost?.trim() || null,
         days_held: daysHeld,
       };
       if (editingRowId) {
@@ -290,6 +320,20 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
           .from('championship_history')
           .insert(payload);
         if (insertError) throw insertError;
+        // Title Change: update the previous reign (current champion) with date_lost and event_lost
+        if (addReignType === 'title_change' && sortedHistory.length > 0) {
+          const prevReign = sortedHistory[0];
+          if (prevReign && (prevReign.date_lost == null || prevReign.date_lost === '')) {
+            await supabase
+              .from('championship_history')
+              .update({
+                date_lost: reignForm.date_won.trim(),
+                event_lost: reignForm.event_name?.trim() || null,
+                days_held: computeDaysHeld(prevReign.date_won, reignForm.date_won.trim()),
+              })
+              .eq('id', prevReign.id);
+          }
+        }
       }
       await refetchHistory();
       cancelReignForm();
@@ -454,6 +498,44 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
             <div style={{ background: '#222', padding: 16, borderRadius: 8, border: '1px solid #444', marginBottom: 16 }}>
               <h3 style={{ color: gold, fontSize: 14, margin: '0 0 12px' }}>{editingRowId ? 'Edit reign' : 'Add reign'}</h3>
               {reignError && <p style={{ color: '#e57373', fontSize: 13, marginBottom: 12 }}>{reignError}</p>}
+              {!editingRowId && !addReignType && (
+                <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => startAddReignAs('historical')}
+                    style={{
+                      padding: '10px 18px',
+                      background: '#333',
+                      color: '#fff',
+                      border: `2px solid ${gold}`,
+                      borderRadius: 8,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Historical Reign
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startAddReignAs('title_change')}
+                    style={{
+                      padding: '10px 18px',
+                      background: '#333',
+                      color: '#fff',
+                      border: `2px solid ${gold}`,
+                      borderRadius: 8,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Title Change
+                  </button>
+                  <span style={{ color: '#888', fontSize: 13, alignSelf: 'center' }}>
+                    Historical = past reign for records. Title Change = new champion; previous reign’s Date/Event lost will be set from this entry.
+                  </span>
+                </div>
+              )}
+              {(editingRowId || addReignType) && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Champion *</label>
@@ -484,6 +566,16 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                     style={inputStyle}
                   />
                 </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Event won</label>
+                  <input
+                    type="text"
+                    value={reignForm.event_name}
+                    onChange={(e) => setReignForm((f) => ({ ...f, event_name: e.target.value }))}
+                    placeholder="e.g. WrestleMania 40"
+                    style={inputStyle}
+                  />
+                </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Date lost</label>
                   <input
@@ -494,16 +586,18 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                   />
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Event</label>
+                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Event lost</label>
                   <input
                     type="text"
-                    value={reignForm.event_name}
-                    onChange={(e) => setReignForm((f) => ({ ...f, event_name: e.target.value }))}
-                    placeholder="e.g. WrestleMania 40"
+                    value={reignForm.event_lost}
+                    onChange={(e) => setReignForm((f) => ({ ...f, event_lost: e.target.value }))}
+                    placeholder="e.g. SmackDown"
                     style={inputStyle}
                   />
                 </div>
               </div>
+              )}
+              {(editingRowId || addReignType) && (
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <button
                   type="button"
@@ -536,6 +630,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                   Cancel
                 </button>
               </div>
+              )}
             </div>
           )}
 
@@ -549,9 +644,9 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                     <th style={{ padding: '10px 12px', textAlign: 'left' }}>Champion</th>
                     <th style={{ padding: '10px 12px', textAlign: 'left' }}>Defeated</th>
                     <th style={{ padding: '10px 12px', textAlign: 'left' }}>Date Won</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left' }}>Event Won</th>
                     <th style={{ padding: '10px 12px', textAlign: 'left' }}>Date Lost</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Days</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left' }}>Event</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left' }}>Event Lost</th>
                     {isAuthorized && <th style={{ padding: '10px 12px', width: 100 }} />}
                   </tr>
                 </thead>
@@ -580,9 +675,9 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                         )}
                       </td>
                       <td style={{ padding: '10px 12px' }}>{formatDate(row.date_won)}</td>
-                      <td style={{ padding: '10px 12px' }}>{formatDate(row.date_lost)}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>{row.days_held != null ? row.days_held : '—'}</td>
                       <td style={{ padding: '10px 12px', color: '#aaa', fontSize: 13 }}>{row.event_name || '—'}</td>
+                      <td style={{ padding: '10px 12px' }}>{formatDate(row.date_lost)}</td>
+                      <td style={{ padding: '10px 12px', color: '#aaa', fontSize: 13 }}>{row.event_lost || '—'}</td>
                       {isAuthorized && (
                         <td style={{ padding: '10px 12px' }}>
                           <button

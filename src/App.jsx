@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, Component } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
 import { useUser } from './hooks/useUser';
+import { useIsDesktop } from './hooks/useMediaQuery';
 import MatchEdit from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
 import MatchPageNew from './components/MatchPageNew';
@@ -93,7 +94,8 @@ const sectionStyle = {
   boxShadow: '0 0 24px #C6A04F22',
   padding: '24px 40px',
   margin: '24px auto',
-  maxWidth: 1200,
+  maxWidth: 1600,
+  width: '100%',
 };
 const tableStyle = {
   width: '100%',
@@ -294,7 +296,9 @@ const SHOW_FILTER_OPTIONS = [
 
 function EventList({ events, showFilterFromRoute }) {
   const user = useUser();
+  const isDesktop = useIsDesktop();
   const navigate = useNavigate();
+  const routeLocation = useLocation();
   const [visibleCount, setVisibleCount] = useState(30);
   const [activeTab, setActiveTab] = useState('completed'); // 'completed' | 'upcoming'
   const [showFilter, setShowFilterState] = useState(showFilterFromRoute || 'all'); // 'all' | 'raw' | 'smackdown' | 'ple'
@@ -369,7 +373,7 @@ function EventList({ events, showFilterFromRoute }) {
   const showMeta = showFilterFromRoute ? showTitles[showFilterFromRoute] : null;
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ maxWidth: isDesktop ? 1600 : 900, margin: '0 auto', width: '100%' }}>
       {showFilterFromRoute ? (
         showMeta && (
           <Helmet>
@@ -411,7 +415,7 @@ function EventList({ events, showFilterFromRoute }) {
         marginTop: 0
       }}>WWE Event Results</h1>
 
-      <div style={{ maxWidth: 720, margin: '0 auto 20px', textAlign: 'center' }}>
+      <div style={{ maxWidth: isDesktop ? 900 : 720, margin: '0 auto 20px', textAlign: 'center' }}>
         {showFilterFromRoute === 'raw' && (
           <>
             <p style={{ color: '#ddd', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
@@ -461,6 +465,199 @@ function EventList({ events, showFilterFromRoute }) {
         )}
       </div>
 
+      {isDesktop ? (
+        /* ESPN-style 3-column layout: left nav | main content | right sidebar */
+        <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 300px', gap: 28, alignItems: 'start', marginTop: 28 }}>
+          {/* Left sidebar: Quick links */}
+          <aside style={{
+            position: 'sticky',
+            top: 24,
+            padding: '16px 0',
+            background: 'rgba(34,34,34,0.98)',
+            borderRadius: 12,
+            border: '1px solid #333',
+          }}>
+            <div style={{ color: gold, fontWeight: 700, fontSize: 13, marginBottom: 12, padding: '0 16px' }}>Quick links</div>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {[
+                { to: '/', label: 'All Events' },
+                { to: '/raw', label: 'Raw' },
+                { to: '/smackdown', label: 'SmackDown' },
+                { to: '/ple', label: 'PLEs' },
+                { to: '/wrestlers', label: 'Wrestlers' },
+                { to: '/championships', label: 'Championships' },
+                { to: '/faq', label: 'FAQ' },
+              ].map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  style={{
+                    display: 'block',
+                    padding: '10px 16px',
+                    color: routeLocation.pathname === to || (to !== '/' && routeLocation.pathname.startsWith(to)) ? gold : '#F5E7D0',
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    borderLeft: (routeLocation.pathname === to || (to !== '/' && routeLocation.pathname.startsWith(to))) ? `3px solid ${gold}` : '3px solid transparent',
+                  }}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </aside>
+
+          {/* Center: Tabs, filters, event list */}
+          <main style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 0 }}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('completed')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 999,
+                  border: '1px solid #444',
+                  background: activeTab === 'completed' ? gold : '#232323',
+                  color: activeTab === 'completed' ? '#232323' : '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                }}
+              >
+                Completed Events
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('upcoming')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 999,
+                  border: '1px solid #444',
+                  background: activeTab === 'upcoming' ? gold : '#232323',
+                  color: activeTab === 'upcoming' ? '#232323' : '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                }}
+              >
+                Upcoming Events
+              </button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+              {SHOW_FILTER_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setShowFilter(value)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    border: '1px solid #444',
+                    background: showFilter === value ? 'rgba(198, 160, 79, 0.25)' : '#232323',
+                    color: showFilter === value ? gold : '#aaa',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: 13,
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {visibleEvents.map(event => (
+                <Link
+                  to={`/events/${getEventSlug(event)}`}
+                  key={event.id}
+                  onClick={saveListScroll}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'stretch',
+                    gap: 0,
+                    background: 'rgba(34,34,34,0.98)',
+                    borderRadius: 10,
+                    boxShadow: '0 0 8px #C6A04F22',
+                    padding: '16px 24px',
+                  marginBottom: 0,
+                    textDecoration: 'none',
+                    color: gold,
+                    transition: 'background 0.2s',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    border: '1px solid #333',
+                    minHeight: 64,
+                  }}
+                >
+                  <div style={{ width: 110, minWidth: 110, maxWidth: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 12 }}>
+                    <EventLogoOrText name={event.name} style={{ display: 'block', margin: '0 auto', maxHeight: 48, maxWidth: 96, height: 'auto', width: 'auto', objectFit: 'contain' }} textStyle={{ color: gold }} />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{event.name}</span>
+                      {event.isLive && <span style={{ background: '#27ae60', color: 'white', fontWeight: 700, borderRadius: 4, padding: '2px 10px', fontSize: 14, marginLeft: 4 }}>LIVE</span>}
+                      {isUpcomingEST(event) && <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>(upcoming)</span>}
+                      {!isUpcomingEST(event) && event.status === 'upcoming' && <span style={{ fontSize: 14, color: '#ffa726', marginLeft: 4 }}>(results pending)</span>}
+                    </div>
+                    <div style={{ color: gold, fontSize: 16, marginTop: 2 }}>{formatDate(event.date)} — {event.location}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {sourceEvents.length > visibleCount && (
+              <div style={{ textAlign: 'center', marginTop: 24 }}>
+                <button
+                  onClick={() => setVisibleCount(c => Math.min(c + 30, sourceEvents.length))}
+                  style={{ padding: '10px 24px', borderRadius: 8, background: gold, color: '#232323', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600 }}
+                >
+                  Load more events
+                </button>
+              </div>
+            )}
+          </main>
+
+          {/* Right sidebar: Latest WWE results */}
+          <aside style={{ position: 'sticky', top: 24 }}>
+            {completedEvents.length > 0 && (
+              <section style={{
+                padding: '20px 20px',
+                background: 'rgba(34,34,34,0.98)',
+                borderRadius: 12,
+                border: '1px solid #333',
+              }}>
+                <h2 style={{ color: gold, fontSize: 18, fontWeight: 700, margin: '0 0 6px' }}>Latest WWE results</h2>
+                <p style={{ color: '#aaa', fontSize: 13, margin: '0 0 12px' }}>Full match cards and winners.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {completedEvents.slice(0, 3).map(event => (
+                    <Link
+                      to={`/events/${getEventSlug(event)}`}
+                      key={event.id}
+                      onClick={saveListScroll}
+                      style={{
+                        display: 'block',
+                        padding: '10px 12px',
+                        background: '#222',
+                        borderRadius: 8,
+                        border: '1px solid #444',
+                        textDecoration: 'none',
+                        color: '#fff',
+                        transition: 'background 0.2s',
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.background = '#2a2a2a'; e.currentTarget.style.borderColor = gold; }}
+                      onMouseOut={e => { e.currentTarget.style.background = '#222'; e.currentTarget.style.borderColor = '#444'; }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>{event.name}</span>
+                      <div style={{ color: gold, fontSize: 12, marginTop: 4 }}>{formatDate(event.date)}</div>
+                      <span style={{ fontWeight: 600, fontSize: 12, color: gold }}>View results →</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </aside>
+        </div>
+      ) : (
+        <>
       {/* Latest WWE results */}
       {completedEvents.length > 0 && (
         <section style={{
@@ -573,7 +770,12 @@ function EventList({ events, showFilterFromRoute }) {
         ))}
       </div>
 
-      <div style={{ marginTop: 24 }}>
+      <div style={{
+        marginTop: 24,
+        display: isDesktop ? 'grid' : 'block',
+        gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : undefined,
+        gap: isDesktop ? 20 : 0,
+      }}>
         {visibleEvents.map(event => {
           const isUpcoming = isUpcomingEST(event);
           const isResultsPending = !isUpcoming && event.status === 'upcoming';
@@ -591,7 +793,7 @@ function EventList({ events, showFilterFromRoute }) {
                 borderRadius: 10,
                 boxShadow: '0 0 8px #C6A04F22',
                 padding: '16px 24px',
-                marginBottom: 18,
+                marginBottom: isDesktop ? 0 : 18,
                 textDecoration: 'none',
                 color: gold,
                 transition: 'background 0.2s',
@@ -679,6 +881,8 @@ function EventList({ events, showFilterFromRoute }) {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -832,6 +1036,7 @@ function EventIdRedirect({ events }) {
 // Event Box Score Component (with discreet Edit/Delete below the match card)
 function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpdate, wrestlerMap, wrestlers }) {
   const user = useUser();
+  const isDesktop = useIsDesktop();
   const { eventSlug } = useParams();
   const eventsList = Array.isArray(events) ? events : [];
   const event = eventsList.find(e => e && (getEventSlug(e) === eventSlug || e.id === eventSlug));
@@ -1115,7 +1320,11 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
           </div>
         )}
         <h3 style={{ marginTop: 24, color: '#fff' }}>Match Results</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 20,
+        }}>
           {matchesWithCardType.map((match, index) => {
             const isExpanded = expandedMatchIndex === index;
             const matchIndex = index;
