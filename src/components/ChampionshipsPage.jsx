@@ -366,17 +366,17 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   const getBeltImageUrl = (championshipId) => {
     // Map championship IDs to belt image filenames
     const beltImageMap = {
-      'wwe-championship': 'undisputed-wwe-championship.png',
-      'world-heavyweight-championship': 'world-heavyweight-championship.png',
-      'mens-ic-championship': 'mens-intercontinental-championship1.png',
-      'mens-us-championship': 'mens-united-states-championship.png',
-      'raw-tag-team-championship': 'raw-tag-team-championship.png',
-      'smackdown-tag-team-championship': 'smackdown-tag-team-championship.png',
-      'wwe-womens-championship': 'wwe-womens-championship.png',
-      'womens-world-championship': 'womens-world-championship.png',
-      'womens-ic-championship': 'womens-intercontinental-championship.png',
-      'womens-us-championship': 'womens-united-states-championship.png',
-      'womens-tag-team-championship': 'womens-tag-team-championship.png'
+      'wwe-championship': 'mens-wwe-champion.png',
+      'world-heavyweight-championship': 'mens-world-heavyweight.png',
+      'mens-ic-championship': 'mens-intercontinental.png',
+      'mens-us-championship': 'mens-united-states.png',
+      'raw-tag-team-championship': 'mens-wwe-tag.png',
+      'smackdown-tag-team-championship': 'mens-world-tag.png',
+      'wwe-womens-championship': 'womens-wwe-champion.png',
+      'womens-world-championship': 'womens-world-champion.png',
+      'womens-ic-championship': 'womens-intercontinental.png',
+      'womens-us-championship': 'womens-united-states.png',
+      'womens-tag-team-championship': 'womens-tag.png',
     };
     
     const filename = beltImageMap[championshipId];

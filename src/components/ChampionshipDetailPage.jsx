@@ -7,17 +7,17 @@ import { useUser } from '../hooks/useUser';
 const gold = '#C6A04F';
 
 const BELT_IMAGE_MAP = {
-  'wwe-championship': 'undisputed-wwe-championship.png',
-  'world-heavyweight-championship': 'world-heavyweight-championship.png',
-  'mens-ic-championship': 'mens-intercontinental-championship1.png',
-  'mens-us-championship': 'mens-united-states-championship.png',
-  'raw-tag-team-championship': 'raw-tag-team-championship.png',
-  'smackdown-tag-team-championship': 'smackdown-tag-team-championship.png',
-  'wwe-womens-championship': 'wwe-womens-championship.png',
-  'womens-world-championship': 'womens-world-championship.png',
-  'womens-ic-championship': 'womens-intercontinental-championship.png',
-  'womens-us-championship': 'womens-united-states-championship.png',
-  'womens-tag-team-championship': 'womens-tag-team-championship.png',
+  'wwe-championship': 'mens-wwe-champion.png',
+  'world-heavyweight-championship': 'mens-world-heavyweight.png',
+  'mens-ic-championship': 'mens-intercontinental.png',
+  'mens-us-championship': 'mens-united-states.png',
+  'raw-tag-team-championship': 'mens-wwe-tag.png',
+  'smackdown-tag-team-championship': 'mens-world-tag.png',
+  'wwe-womens-championship': 'womens-wwe-champion.png',
+  'womens-world-championship': 'womens-world-champion.png',
+  'womens-ic-championship': 'womens-intercontinental.png',
+  'womens-us-championship': 'womens-united-states.png',
+  'womens-tag-team-championship': 'womens-tag.png',
 };
 
 const BRAND_COLORS = {
@@ -647,6 +647,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                     <th style={{ padding: '10px 12px', textAlign: 'left' }}>Event Won</th>
                     <th style={{ padding: '10px 12px', textAlign: 'left' }}>Date Lost</th>
                     <th style={{ padding: '10px 12px', textAlign: 'left' }}>Event Lost</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Days</th>
                     {isAuthorized && <th style={{ padding: '10px 12px', width: 100 }} />}
                   </tr>
                 </thead>
@@ -678,6 +679,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                       <td style={{ padding: '10px 12px', color: '#aaa', fontSize: 13 }}>{row.event_name || '—'}</td>
                       <td style={{ padding: '10px 12px' }}>{formatDate(row.date_lost)}</td>
                       <td style={{ padding: '10px 12px', color: '#aaa', fontSize: 13 }}>{row.event_lost || '—'}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>{row.days_held != null ? row.days_held : '—'}</td>
                       {isAuthorized && (
                         <td style={{ padding: '10px 12px' }}>
                           <button
