@@ -31,6 +31,7 @@ import SurvivorSeriesMatchBuilder from './components/SurvivorSeriesMatchBuilder'
 import ChampionshipsPage from './components/ChampionshipsPage';
 import ChampionshipDetailPage from './components/ChampionshipDetailPage';
 import FAQPage from './components/FAQPage';
+import DraftasticPage from './components/DraftasticPage';
 import AdminLoginPage from './components/AdminLoginPage';
 import { getRoyalRumbleHighlights } from './utils/royalRumbleStats';
 import { getEventSlug } from './utils/eventSlug';
@@ -7079,6 +7080,7 @@ function App() {
             <Route path="/championship/:id" element={<ChampionshipDetailPage wrestlers={wrestlers} />} />
             <Route path="/participant-demo" element={<ParticipantSelectionDemo wrestlers={wrestlers} />} />
             <Route path="/faq" element={<FAQPage />} />
+            <Route path="/draftastic" element={<DraftasticPage />} />
             <Route
               path="/about"
               element={
