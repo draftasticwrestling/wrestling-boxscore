@@ -1399,7 +1399,7 @@ function AddEvent({ addEvent, wrestlers }) {
   const [location, setLocation] = useState('');
   const [preview, setPreview] = useState('');
   const [recap, setRecap] = useState('');
-  const [broadcastTime, setBroadcastTime] = useState(''); // datetime-local string (optional)
+  const [broadcastTime, setBroadcastTime] = useState(''); // time string (HH:mm, optional)
   const [matches, setMatches] = useState([]);
   const [match, setMatch] = useState({
     participants: '',
@@ -2076,7 +2076,7 @@ function AddEvent({ addEvent, wrestlers }) {
       name: eventType,
       date,
       location,
-      broadcast_start_ts: broadcastTime ? new Date(broadcastTime).toISOString() : null,
+      broadcast_start_ts: broadcastTime ? new Date(`${date}T${broadcastTime}:00`).toISOString() : null,
       broadcast_start_ts_source: broadcastTime ? 'manual' : null,
       preview: preview.trim() || '',
       recap: recap.trim() || '',
@@ -2197,9 +2197,9 @@ function AddEvent({ addEvent, wrestlers }) {
           </div>
           <div>
             <label>
-              Broadcast time:<br />
+              Broadcast start time:<br />
               <input
-                type="datetime-local"
+                type="time"
                 value={broadcastTime}
                 onChange={e => setBroadcastTime(e.target.value)}
                 style={{ width: '100%' }}
@@ -4023,18 +4023,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
 
-  const toDatetimeLocalValue = (ts) => {
+  const toTimeValue = (ts) => {
     if (!ts) return '';
     const d = new Date(ts);
     if (isNaN(d.getTime())) return '';
     const pad = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   const [name, setName] = useState(event.name);
   const [date, setDate] = useState(event.date);
   const [location, setLocation] = useState(event.location);
-  const [broadcastTime, setBroadcastTime] = useState(event.broadcast_start_ts ? toDatetimeLocalValue(event.broadcast_start_ts) : '');
+  const [broadcastTime, setBroadcastTime] = useState(event.broadcast_start_ts ? toTimeValue(event.broadcast_start_ts) : '');
   const [preview, setPreview] = useState(event.preview || '');
   const [recap, setRecap] = useState(event.recap || '');
   const [matches, setMatches] = useState(Array.isArray(event.matches) ? event.matches : []);
@@ -4103,7 +4103,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       name !== event.name ||
       date !== event.date ||
       location !== event.location ||
-      broadcastTime !== (event.broadcast_start_ts ? toDatetimeLocalValue(event.broadcast_start_ts) : '') ||
+      broadcastTime !== (event.broadcast_start_ts ? toTimeValue(event.broadcast_start_ts) : '') ||
       (preview || '') !== (event.preview || '') ||
       (recap || '') !== (event.recap || '') ||
       JSON.stringify(matches || []) !== JSON.stringify(event.matches || [])
@@ -4749,7 +4749,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       name,
       date,
       location,
-      broadcast_start_ts: broadcastTime ? new Date(broadcastTime).toISOString() : null,
+      broadcast_start_ts: broadcastTime ? new Date(`${date}T${broadcastTime}:00`).toISOString() : null,
       broadcast_start_ts_source: broadcastTime ? 'manual' : null,
       preview: preview.trim() || '',
       recap: recap.trim() || '',
@@ -4866,9 +4866,9 @@ function EditEvent({ events, updateEvent, wrestlers }) {
           </div>
           <div>
             <label>
-              Broadcast time:<br />
+              Broadcast start time:<br />
               <input
-                type="datetime-local"
+                type="time"
                 value={broadcastTime}
                 onChange={e => setBroadcastTime(e.target.value)}
                 style={{ width: '100%' }}
