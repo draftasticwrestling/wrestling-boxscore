@@ -79,6 +79,22 @@ function formatDateShort(dateStr) {
   });
 }
 
+function formatBroadcastDateTime(isoTs) {
+  if (!isoTs) return '';
+  const d = new Date(isoTs);
+  if (isNaN(d.getTime())) return '';
+
+  // Display as an absolute instant in the viewer's local timezone.
+  return d.toLocaleString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+}
+
 // Add a gold/black theme style at the top level
 const appBackground = {
   minHeight: '100vh',
@@ -1048,8 +1064,15 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
               <Link to="/wrestlers" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Roster</Link>
               <Link to="/championships" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Championships</Link>
             </p>
-            <div style={{ color: gold, marginTop: 8, fontSize: 18 }}>
-              <strong>{formatDate(event.date)}</strong> — {event.location}
+            <div style={{ color: gold, marginTop: 8, fontSize: 18, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, alignItems: 'center' }}>
+              <span>
+                <strong>{formatDate(event.date)}</strong> — {event.location}
+              </span>
+              {event.broadcast_start_ts && (
+                <span style={{ fontSize: 14, color: '#ddd', fontWeight: 600 }}>
+                  Broadcast: <span style={{ color: gold, fontWeight: 700 }}>{formatBroadcastDateTime(event.broadcast_start_ts)}</span>
+                </span>
+              )}
             </div>
           </div>
           {showPreviewRecapSection && (
@@ -1376,6 +1399,7 @@ function AddEvent({ addEvent, wrestlers }) {
   const [location, setLocation] = useState('');
   const [preview, setPreview] = useState('');
   const [recap, setRecap] = useState('');
+  const [broadcastTime, setBroadcastTime] = useState(''); // datetime-local string (optional)
   const [matches, setMatches] = useState([]);
   const [match, setMatch] = useState({
     participants: '',
@@ -1438,6 +1462,7 @@ function AddEvent({ addEvent, wrestlers }) {
       eventType ||
       date ||
       location ||
+      broadcastTime ||
       preview ||
       recap ||
       (Array.isArray(matches) && matches.length > 0) ||
@@ -2051,6 +2076,8 @@ function AddEvent({ addEvent, wrestlers }) {
       name: eventType,
       date,
       location,
+      broadcast_start_ts: broadcastTime ? new Date(broadcastTime).toISOString() : null,
+      broadcast_start_ts_source: broadcastTime ? 'manual' : null,
       preview: preview.trim() || '',
       recap: recap.trim() || '',
       matches,
@@ -2166,6 +2193,17 @@ function AddEvent({ addEvent, wrestlers }) {
             <label>
               Location:<br />
               <input value={location} onChange={e => setLocation(e.target.value)} required style={{ width: '100%' }} />
+            </label>
+          </div>
+          <div>
+            <label>
+              Broadcast time:<br />
+              <input
+                type="datetime-local"
+                value={broadcastTime}
+                onChange={e => setBroadcastTime(e.target.value)}
+                style={{ width: '100%' }}
+              />
             </label>
           </div>
           <div>
@@ -3985,9 +4023,18 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     return <div style={{ padding: 24 }}>Event not found.</div>;
   }
 
+  const toDatetimeLocalValue = (ts) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const [name, setName] = useState(event.name);
   const [date, setDate] = useState(event.date);
   const [location, setLocation] = useState(event.location);
+  const [broadcastTime, setBroadcastTime] = useState(event.broadcast_start_ts ? toDatetimeLocalValue(event.broadcast_start_ts) : '');
   const [preview, setPreview] = useState(event.preview || '');
   const [recap, setRecap] = useState(event.recap || '');
   const [matches, setMatches] = useState(Array.isArray(event.matches) ? event.matches : []);
@@ -4056,6 +4103,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       name !== event.name ||
       date !== event.date ||
       location !== event.location ||
+      broadcastTime !== (event.broadcast_start_ts ? toDatetimeLocalValue(event.broadcast_start_ts) : '') ||
       (preview || '') !== (event.preview || '') ||
       (recap || '') !== (event.recap || '') ||
       JSON.stringify(matches || []) !== JSON.stringify(event.matches || [])
@@ -4701,6 +4749,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       name,
       date,
       location,
+      broadcast_start_ts: broadcastTime ? new Date(broadcastTime).toISOString() : null,
+      broadcast_start_ts_source: broadcastTime ? 'manual' : null,
       preview: preview.trim() || '',
       recap: recap.trim() || '',
       matches: updatedMatches,
@@ -4812,6 +4862,17 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             <label>
               Location:<br />
               <input value={location} onChange={e => setLocation(e.target.value)} required style={{ width: '100%' }} />
+            </label>
+          </div>
+          <div>
+            <label>
+              Broadcast time:<br />
+              <input
+                type="datetime-local"
+                value={broadcastTime}
+                onChange={e => setBroadcastTime(e.target.value)}
+                style={{ width: '100%' }}
+              />
             </label>
           </div>
           <div>
@@ -6378,7 +6439,19 @@ function App() {
       console.log('Attempting to add event to Supabase:', event);
       
       // Only send allowed fields to Supabase
-      const allowedFields = ['id', 'name', 'date', 'location', 'preview', 'recap', 'matches', 'status', 'isLive'];
+      const allowedFields = [
+        'id',
+        'name',
+        'date',
+        'location',
+        'broadcast_start_ts',
+        'broadcast_start_ts_source',
+        'preview',
+        'recap',
+        'matches',
+        'status',
+        'isLive',
+      ];
       const sanitizedEvent = {};
       for (const key of allowedFields) {
         if (event[key] !== undefined) sanitizedEvent[key] = event[key];
@@ -6907,7 +6980,19 @@ function App() {
   const updateEvent = async (updatedEvent) => {
     try {
       // Only send allowed fields to Supabase
-      const allowedFields = ['id', 'name', 'date', 'location', 'preview', 'recap', 'matches', 'status', 'isLive'];
+      const allowedFields = [
+        'id',
+        'name',
+        'date',
+        'location',
+        'broadcast_start_ts',
+        'broadcast_start_ts_source',
+        'preview',
+        'recap',
+        'matches',
+        'status',
+        'isLive',
+      ];
       const sanitizedEvent = {};
       for (const key of allowedFields) {
         if (updatedEvent[key] !== undefined) sanitizedEvent[key] = updatedEvent[key];
