@@ -1070,7 +1070,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
               </span>
               {event.broadcast_start_ts && (
                 <span style={{ fontSize: 14, color: '#ddd', fontWeight: 600 }}>
-                  Broadcast: <span style={{ color: gold, fontWeight: 700 }}>{formatBroadcastDateTime(event.broadcast_start_ts)}</span>
+                  Event Time: <span style={{ color: gold, fontWeight: 700 }}>{formatBroadcastDateTime(event.broadcast_start_ts)}</span>
                 </span>
               )}
             </div>
@@ -2197,7 +2197,7 @@ function AddEvent({ addEvent, wrestlers }) {
           </div>
           <div>
             <label>
-              Broadcast start time:<br />
+              Event Time:<br />
               <input
                 type="time"
                 value={broadcastTime}
@@ -4866,7 +4866,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
           </div>
           <div>
             <label>
-              Broadcast start time:<br />
+              Event Time:<br />
               <input
                 type="time"
                 value={broadcastTime}
