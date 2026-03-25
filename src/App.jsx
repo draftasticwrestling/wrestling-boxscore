@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } 
 import { events as initialEvents } from './events';
 import { supabase } from './supabaseClient';
 import { useUser } from './hooks/useUser';
-import MatchEdit from './components/MatchEdit';
+import MatchEdit, { PromoMatchEdit } from './components/MatchEdit';
 import MatchPage from './components/MatchPage';
 import MatchPageNew from './components/MatchPageNew';
 import MatchCard from './components/MatchCard';
@@ -18,6 +18,7 @@ import {
 import Menu from './components/Menu';
 import WrestlersPage from './components/WrestlersPage';
 import WrestlerProfile from './components/WrestlerProfile';
+import WrestlerMatchRecordPage from './components/WrestlerMatchRecordPage';
 import Layout from './components/Layout';
 import { Helmet } from 'react-helmet';
 import WrestlerAutocomplete from './components/WrestlerAutocomplete';
@@ -911,20 +912,6 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     setIsEditingMatch(true);
   };
 
-  const handleSaveMatch = (updatedMatch) => {
-    // Find index in event.matches by order (display list is sorted by order, so editingMatchIndex is not the same as event.matches index)
-    const indexToUpdate = event.matches.findIndex(
-      (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
-    );
-    const targetIndex = indexToUpdate >= 0 ? indexToUpdate : editingMatchIndex;
-    const updatedMatches = [...event.matches];
-    updatedMatches[targetIndex] = updatedMatch;
-    onEditMatch(event.id, updatedMatches);
-    setIsEditingMatch(false);
-    setEditingMatchIndex(null);
-    setEditedMatch(null);
-  };
-
   const handleCancelEditMatch = () => {
     setIsEditingMatch(false);
     setEditingMatchIndex(null);
@@ -955,6 +942,30 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     return (a.order || 0) - (b.order || 0);
   });
 
+  const handleSaveMatch = (updatedMatch) => {
+    // Prefer order on the saved payload; fallback: order from sorted display row (display index ≠ event.matches index)
+    let targetIndex = event.matches.findIndex(
+      (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
+    );
+    if (targetIndex < 0 && editingMatchIndex >= 0) {
+      const atDisplay = matchesWithCardType[editingMatchIndex];
+      if (atDisplay) {
+        targetIndex = event.matches.findIndex(
+          (m) => (m.order ?? 0) === (atDisplay.order ?? 0)
+        );
+      }
+    }
+    if (targetIndex < 0) targetIndex = editingMatchIndex;
+    const updatedMatches = [...event.matches];
+    if (targetIndex >= 0 && targetIndex < updatedMatches.length) {
+      updatedMatches[targetIndex] = updatedMatch;
+    }
+    onEditMatch(event.id, updatedMatches);
+    setIsEditingMatch(false);
+    setEditingMatchIndex(null);
+    setEditedMatch(null);
+  };
+
   if (isEditingMatch) {
     return (
       <div style={appBackground}>
@@ -971,17 +982,26 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
             ← Back to Events
           </Link>
           <h2 style={{ color: gold, marginTop: 24 }}>Edit Match</h2>
-          <MatchEdit
-            initialMatch={editedMatch}
-            onSave={handleSaveMatch}
-            onCancel={handleCancelEditMatch}
-            eventStatus={event.status}
-            eventDate={event.date}
-            onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
-            eventId={event.id}
-            matchOrder={editedMatch.order}
-            wrestlers={wrestlers}
-          />
+          {editedMatch.matchType === 'Promo' ? (
+            <PromoMatchEdit
+              initialMatch={editedMatch}
+              onSave={handleSaveMatch}
+              onCancel={handleCancelEditMatch}
+              wrestlers={wrestlers}
+            />
+          ) : (
+            <MatchEdit
+              initialMatch={editedMatch}
+              onSave={handleSaveMatch}
+              onCancel={handleCancelEditMatch}
+              eventStatus={event.status}
+              eventDate={event.date}
+              onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
+              eventId={event.id}
+              matchOrder={editedMatch.order}
+              wrestlers={wrestlers}
+            />
+          )}
         </div>
       </div>
     );
@@ -1410,10 +1430,11 @@ function AddEvent({ addEvent, wrestlers }) {
     stipulation: 'None', // Set default to None
     customStipulation: '',
     title: '',
-          titleOutcome: '',
-      defendingChampion: '',
-      notes: ''
-    });
+    titleOutcome: '',
+    defendingChampion: '',
+    notes: '',
+    cardType: 'Undercard',
+  });
   const [specialWinnerType, setSpecialWinnerType] = useState("None");
   const [specialWinnerName, setSpecialWinnerName] = useState('');
   const navigate = useNavigate();
@@ -1600,7 +1621,8 @@ function AddEvent({ addEvent, wrestlers }) {
       titleOutcome: '',
       defendingChampion: '',
       notes: '',
-      isLive: false
+      isLive: false,
+      cardType: 'Undercard'
     });
     setResultType('');
     setWinner('');
@@ -1691,7 +1713,8 @@ function AddEvent({ addEvent, wrestlers }) {
         titleOutcome: '',
         defendingChampion: '',
         notes: '',
-        isLive: false
+        isLive: false,
+        cardType: 'Undercard'
       });
       setResultType('');
       setWinner('');
@@ -1785,7 +1808,8 @@ function AddEvent({ addEvent, wrestlers }) {
         titleOutcome: '',
         defendingChampion: '',
         notes: '',
-        isLive: false
+        isLive: false,
+        cardType: 'Undercard'
       });
       setResultType('');
       setWinner('');
@@ -1970,7 +1994,8 @@ function AddEvent({ addEvent, wrestlers }) {
       titleOutcome: '',
       defendingChampion: '',
       notes: '',
-      isLive: false
+      isLive: false,
+      cardType: 'Undercard'
     });
     setResultType('');
     setWinner('');
@@ -2295,15 +2320,28 @@ function AddEvent({ addEvent, wrestlers }) {
             </div>
 
             {entryType === 'match' && (
-              <label style={{ color: gold, fontWeight: 600 }}>
-                <input
-                  type="checkbox"
-                  checked={match.isLive || false}
-                  onChange={e => setMatch({ ...match, isLive: e.target.checked })}
-                  style={{ marginRight: 8 }}
-                />
-                Live Match
-              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ color: gold, fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={match.isLive || false}
+                    onChange={e => setMatch({ ...match, isLive: e.target.checked })}
+                    style={{ marginRight: 8 }}
+                  />
+                  Live Match
+                </label>
+                <label style={{ color: gold, fontWeight: 600 }}>
+                  Card Type:<br />
+                  <select
+                    value={match.cardType || 'Undercard'}
+                    onChange={e => setMatch({ ...match, cardType: e.target.value })}
+                    style={{ ...inputStyle, marginBottom: 0, maxWidth: 240 }}
+                  >
+                    <option value="Undercard">Undercard</option>
+                    <option value="Main Event">Main Event</option>
+                  </select>
+                </label>
+              </div>
             )}
           </div>
 
@@ -4053,10 +4091,11 @@ function EditEvent({ events, updateEvent, wrestlers }) {
     customStipulationType: '',
     customStipulation: '',
     title: '',
-          titleOutcome: '',
-      defendingChampion: '',
-      notes: ''
-    });
+    titleOutcome: '',
+    defendingChampion: '',
+    notes: '',
+    cardType: 'Undercard',
+  });
   const [resultType, setResultType] = useState('');
   const [winner, setWinner] = useState('');
   const [eventStatus, setEventStatus] = useState(event.status || 'completed');
@@ -4220,7 +4259,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         titleOutcome: '',
         defendingChampion: '',
         notes: '',
-        isLive: false
+        isLive: false,
+        cardType: 'Undercard'
       });
       setResultType('');
       setWinner('');
@@ -4309,7 +4349,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         titleOutcome: '',
         defendingChampion: '',
         notes: '',
-        isLive: false
+        isLive: false,
+        cardType: 'Undercard'
       });
       setResultType('');
       setWinner('');
@@ -4403,7 +4444,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
         titleOutcome: '',
         defendingChampion: '',
         notes: '',
-        isLive: false
+        isLive: false,
+        cardType: 'Undercard'
       });
       setResultType('');
       setWinner('');
@@ -4491,7 +4533,8 @@ function EditEvent({ events, updateEvent, wrestlers }) {
       titleOutcome: '',
       defendingChampion: '',
       notes: '',
-      isLive: false
+      isLive: false,
+      cardType: 'Undercard'
     });
     setResultType('');
     setWinner('');
@@ -5011,6 +5054,19 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                   <li key={m.order || idx} style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '8px 0', borderBottom: '1px solid #333' }}>
                   {editingMatchIdx === idx ? (
                     <div style={{ flex: 1, width: '100%' }}>
+                      {m.matchType === 'Promo' ? (
+                        <PromoMatchEdit
+                          initialMatch={m}
+                          onSave={updatedMatch => {
+                            const updated = [...matches];
+                            updated[idx] = updatedMatch;
+                            setMatches(updated);
+                            setEditingMatchIdx(null);
+                          }}
+                          onCancel={() => setEditingMatchIdx(null)}
+                          wrestlers={wrestlers}
+                        />
+                      ) : (
                       <MatchEdit
                         initialMatch={m}
                         eventStatus={eventStatus}
@@ -5034,6 +5090,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                         onCancel={() => setEditingMatchIdx(null)}
                         wrestlers={wrestlers}
                       />
+                      )}
                     </div>
                   ) : (
                     <>
@@ -5216,15 +5273,28 @@ function EditEvent({ events, updateEvent, wrestlers }) {
             {addEntryType === 'match' && (
           <form onSubmit={handleAddMatch}>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ color: gold, fontWeight: 600 }}>
-                <input
-                  type="checkbox"
-                  checked={match.isLive || false}
-                  onChange={e => setMatch({ ...match, isLive: e.target.checked })}
-                  style={{ marginRight: 8 }}
-                />
-                Live Match
-              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ color: gold, fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={match.isLive || false}
+                    onChange={e => setMatch({ ...match, isLive: e.target.checked })}
+                    style={{ marginRight: 8 }}
+                  />
+                  Live Match
+                </label>
+                <label style={{ color: gold, fontWeight: 600 }}>
+                  Card Type:<br />
+                  <select
+                    value={match.cardType || 'Undercard'}
+                    onChange={e => setMatch({ ...match, cardType: e.target.value })}
+                    style={{ ...inputStyle, marginBottom: 0, maxWidth: 240 }}
+                  >
+                    <option value="Undercard">Undercard</option>
+                    <option value="Main Event">Main Event</option>
+                  </select>
+                </label>
+              </div>
             </div>
             <div>
               <label>
@@ -7015,7 +7085,7 @@ function App() {
       // Update current champions via the championship detail page (+ Add reign / Edit) or Edit Championship on the championships list.
 
       // Update local state with the sanitized event data (always include promos in local state)
-      setEvents(events.map(e => e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e));
+      setEvents(prev => prev.map(e => e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e));
     } catch (error) {
       console.error('Error updating event:', error);
       alert('Failed to update event. Please try again.');
@@ -7160,6 +7230,10 @@ function App() {
               element={<EditEvent events={events} updateEvent={updateEvent} wrestlers={wrestlers} />}
             />
             <Route path="/wrestlers" element={<WrestlersPage wrestlers={wrestlers} />} />
+            <Route
+              path="/wrestler/:slug/matches"
+              element={<WrestlerMatchRecordPage events={events} wrestlers={wrestlers} wrestlerMap={wrestlerMap} />}
+            />
             <Route path="/wrestler/:slug" element={<WrestlerProfile events={events} wrestlers={wrestlers} wrestlerMap={wrestlerMap} onUpdateWrestler={handleUpdateWrestler} />} />
             <Route path="/championships" element={<ChampionshipsPage wrestlers={wrestlers} />} />
             <Route path="/championship/:id" element={<ChampionshipDetailPage wrestlers={wrestlers} />} />
@@ -7286,12 +7360,22 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   };
 
   const handleSave = (updatedMatch) => {
-    const indexToUpdate = event.matches.findIndex(
+    let targetIndex = event.matches.findIndex(
       (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
     );
-    const targetIndex = indexToUpdate >= 0 ? indexToUpdate : matchIndex;
+    if (targetIndex < 0 && matchIndex >= 0) {
+      const atDisplay = sortedMatches[matchIndex];
+      if (atDisplay) {
+        targetIndex = event.matches.findIndex(
+          (m) => (m.order ?? 0) === (atDisplay.order ?? 0)
+        );
+      }
+    }
+    if (targetIndex < 0) targetIndex = matchIndex;
     const updatedMatches = [...event.matches];
-    updatedMatches[targetIndex] = updatedMatch;
+    if (targetIndex >= 0 && targetIndex < updatedMatches.length) {
+      updatedMatches[targetIndex] = updatedMatch;
+    }
     onEditMatch(event.id, updatedMatches);
     setIsEditing(false);
   };
@@ -7306,17 +7390,26 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
         <Link to={`/events/${getEventSlug(event)}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
         <h2 style={{ color: '#C6A04F', marginTop: 24 }}>Edit Match</h2>
         {canEdit && (
-          <MatchEdit
-            initialMatch={match}
-            eventStatus={event.status}
-            eventDate={event.date}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
-            eventId={event.id}
-            matchOrder={match.order}
-            wrestlers={wrestlers}
-          />
+          match.matchType === 'Promo' ? (
+            <PromoMatchEdit
+              initialMatch={match}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              wrestlers={wrestlers}
+            />
+          ) : (
+            <MatchEdit
+              initialMatch={match}
+              eventStatus={event.status}
+              eventDate={event.date}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
+              eventId={event.id}
+              matchOrder={match.order}
+              wrestlers={wrestlers}
+            />
+          )
         )}
       </div>
     );

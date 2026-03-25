@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import MatchEdit from './MatchEdit';
+import MatchEdit, { PromoMatchEdit } from './MatchEdit';
 import { useUser } from '../hooks/useUser';
 import { getEventSlug } from '../utils/eventSlug';
 
@@ -82,22 +82,59 @@ export default function MatchPage({ events, onEditMatch, getParticipantsDisplay,
       <div style={sectionStyle}>
         <Link to={`/events/${getEventSlug(event)}`} style={{ color: gold }}>← Back to Event</Link>
         <h2 style={{ color: gold, marginTop: 24 }}>Edit Match</h2>
-        <MatchEdit
-          initialMatch={match}
-          eventStatus={event.status}
-          eventDate={event.date}
-          onSave={updatedMatch => {
-            const updatedMatches = [...event.matches];
-            // Use originalMatchIndex if available, otherwise fall back to matchIndex
-            const indexToUpdate = originalMatchIndex !== -1 ? originalMatchIndex : matchIndex;
-            if (indexToUpdate !== -1) {
-              updatedMatches[indexToUpdate] = updatedMatch;
-              onEditMatch(event.id, updatedMatches);
-              setIsEditing(false);
-            }
-          }}
-          onCancel={() => setIsEditing(false)}
-        />
+        {match.matchType === 'Promo' ? (
+          <PromoMatchEdit
+            initialMatch={match}
+            onSave={updatedMatch => {
+              let targetIndex = event.matches.findIndex(
+                (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
+              );
+              if (targetIndex < 0 && matchIndex >= 0) {
+                const atDisplay = sortedMatches[matchIndex];
+                if (atDisplay) {
+                  targetIndex = event.matches.findIndex(
+                    (m) => (m.order ?? 0) === (atDisplay.order ?? 0)
+                  );
+                }
+              }
+              if (targetIndex < 0 && originalMatchIndex >= 0) targetIndex = originalMatchIndex;
+              const updatedMatches = [...event.matches];
+              if (targetIndex >= 0 && targetIndex < updatedMatches.length) {
+                updatedMatches[targetIndex] = updatedMatch;
+                onEditMatch(event.id, updatedMatches);
+                setIsEditing(false);
+              }
+            }}
+            onCancel={() => setIsEditing(false)}
+          />
+        ) : (
+          <MatchEdit
+            initialMatch={match}
+            eventStatus={event.status}
+            eventDate={event.date}
+            onSave={updatedMatch => {
+              let targetIndex = event.matches.findIndex(
+                (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
+              );
+              if (targetIndex < 0 && matchIndex >= 0) {
+                const atDisplay = sortedMatches[matchIndex];
+                if (atDisplay) {
+                  targetIndex = event.matches.findIndex(
+                    (m) => (m.order ?? 0) === (atDisplay.order ?? 0)
+                  );
+                }
+              }
+              if (targetIndex < 0 && originalMatchIndex >= 0) targetIndex = originalMatchIndex;
+              const updatedMatches = [...event.matches];
+              if (targetIndex >= 0 && targetIndex < updatedMatches.length) {
+                updatedMatches[targetIndex] = updatedMatch;
+                onEditMatch(event.id, updatedMatches);
+                setIsEditing(false);
+              }
+            }}
+            onCancel={() => setIsEditing(false)}
+          />
+        )}
       </div>
     );
   }

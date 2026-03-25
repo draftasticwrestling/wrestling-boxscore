@@ -15,6 +15,7 @@ import {
   shouldShowLastFiveStats,
 } from '../utils/matchOutcomes';
 import { getEventSlug } from '../utils/eventSlug';
+import MatchCardTabsSection from './MatchCardTabsSection';
 
 // Helper functions
 function getSpecialWinnerIcon(specialWinnerType) {
@@ -88,14 +89,6 @@ function renderWrestlerMeta(wrestler) {
       </div>
     </div>
   );
-}
-
-// Elapsed time for commentary (minutes from start)
-function formatCommentaryElapsedTime(ts, liveStart, commentary) {
-  let start = liveStart;
-  if (!start && commentary?.length) start = commentary[0].timestamp;
-  if (!ts || !start) return "0'";
-  return `${Math.max(0, Math.ceil((ts - start) / 60000))}'`;
 }
 
 const getTeams = (participants) => {
@@ -221,13 +214,19 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   const statsParticipantData = useMemo(() => {
     if (!showStatsLastFive || !events || !match || !wrestlerMap) return [];
     const slugs = [...extractWrestlerSlugs(match.participants)];
-    const excludeEventId = event?.id ?? null;
+    const priorToMatch =
+      event?.id != null && (matchIndex != null || match?.order != null)
+        ? { eventId: event.id, matchIndex, matchOrder: match?.order }
+        : undefined;
     return slugs.map((slug) => {
-      const lastFive = getLastMatchesForWrestler(events, slug, 5, excludeEventId ? { excludeEventId } : {});
+      const lastFive = getLastMatchesForWrestler(events, slug, 5, {
+        wrestlerMap,
+        priorToMatch,
+      });
       const outcomes = lastFive.map(({ match: m }) => getMatchOutcome(m, slug, wrestlerMap));
       return { slug, name: wrestlerMap[slug]?.name || slug, imageUrl: wrestlerMap[slug]?.image_url, outcomes };
     });
-  }, [showStatsLastFive, events, match, wrestlerMap, event?.id]);
+  }, [showStatsLastFive, events, match, wrestlerMap, event?.id, matchIndex, match?.order]);
   // Show custom stipulation text (e.g. "Three Stages of Hell") instead of "Custom/Other" on the card
   const displayStipulation = (match?.stipulation === 'Custom/Other' && (match?.customStipulation || '').trim())
     ? match.customStipulation.trim()
@@ -884,85 +883,20 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           })}
         </div>
 
-        {/* Summary / Commentary / Statistics pills (same as default card) */}
-        <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #444', width: '100%' }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 8 }}>
-            <button type="button" onClick={() => setCardView('summary')} style={cardView === 'summary' ? pillActive : pillBase}>
-              Summary
-            </button>
-            <button type="button" onClick={() => setCardView('commentary')} style={cardView === 'commentary' ? pillActive : pillBase}>
-              Commentary
-            </button>
-            <button type="button" onClick={() => setCardView('statistics')} title="Last 5 matches: Win / Draw / Loss" style={cardView === 'statistics' ? pillActive : pillBase}>
-              Statistics
-            </button>
-          </div>
-          {cardView != null && (cardView !== 'statistics' || !events || !shouldShowLastFiveStats(match)) && (
-            <div style={{ background: '#1a1a1a', borderRadius: 8, padding: 12, minHeight: 48, width: '100%' }}>
-              {cardView === 'summary' && (
-                <div>
-                  <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>Summary</div>
-                  {royalRumbleHighlights && (
-                    <div style={{ marginBottom: 12, padding: '10px 12px', background: '#1a1a1a', borderRadius: 8, border: '1px solid #C6A04F' }}>
-                      <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
-                        <span style={{ color: '#C6A04F', fontWeight: 600 }}>Winner:</span>{' '}
-                        {royalRumbleHighlights.winner ? (
-                          <Link to={wrestlerTo(royalRumbleHighlights.winner)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.winner]?.name || royalRumbleHighlights.winner}</Link>
-                        ) : '—'}
-                      </div>
-                      {royalRumbleHighlights.mostEliminations && (
-                        <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
-                          <span style={{ color: '#C6A04F', fontWeight: 600 }}>Most Eliminations:</span>{' '}
-                          {royalRumbleHighlights.mostEliminations.map((w, i) => (
-                            <span key={w.slug}>{i > 0 && ' & '}<Link to={wrestlerTo(w.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[w.slug]?.name || w.slug}</Link></span>
-                          ))} ({royalRumbleHighlights.mostEliminations[0].count})
-                        </div>
-                      )}
-                      {royalRumbleHighlights.ironman && (
-                        <div style={{ fontSize: 13, color: '#ccc' }}>
-                          <span style={{ color: '#C6A04F', fontWeight: 600 }}>Ironman/Ironwoman:</span>{' '}
-                          <Link to={wrestlerTo(royalRumbleHighlights.ironman.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.ironman.slug]?.name || royalRumbleHighlights.ironman.slug}</Link>
-                          {royalRumbleHighlights.ironman.time && ` (${royalRumbleHighlights.ironman.time})`}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                    {summaryContent || 'No summary added for this match.'}
-                  </div>
-                </div>
-              )}
-              {cardView === 'commentary' && (
-                <div>
-                  <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>Match Commentary</div>
-                  {hasCommentary ? (
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                      {match.commentary.map((c, i) => (
-                        <li key={i} style={{ marginBottom: 4, fontSize: 13, color: '#ccc' }}>
-                          <span style={{ color: '#C6A04F', marginRight: 6 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
-                          {c.text}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div style={{ color: '#888', fontSize: 13 }}>No match commentary available for this match.</div>
-                  )}
-                </div>
-              )}
-              {cardView === 'statistics' && (
-                <div>
-                  {!events ? (
-                    <div style={{ color: '#888', fontSize: 13 }}>Event data is needed to show wrestler statistics.</div>
-                  ) : !shouldShowLastFiveStats(match) ? (
-                    <div style={{ color: '#888', fontSize: 13 }}>
-                      Last-5 record is not shown for matches with many participants (e.g. Royal Rumble, Battle Royals, Survivor Series, War Games, Elimination Chamber).
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <MatchCardTabsSection
+          match={match}
+          event={event}
+          wrestlerMap={wrestlerMap}
+          events={events}
+          matchIndex={matchIndex}
+          royalRumbleHighlights={royalRumbleHighlights}
+          wrestlerTo={wrestlerTo}
+          summaryContent={summaryContent}
+          hasSummary={hasSummary}
+          hasCommentary={hasCommentary}
+          cardView={cardView}
+          setCardView={setCardView}
+        />
       </div>
     );
   }
@@ -984,14 +918,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   const winner = match.result && match.result.includes(' def. ')
     ? match.result.split(' def. ')[0]
     : (match.result ? match.result : '');
-  
-  console.log('MatchCard winner detection:', {
-    matchResult: match.result,
-    winner: winner,
-    teamStrings: teamStrings,
-    participants: match.participants
-  });
-  
+
   function normalize(str) {
     return (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
   }
@@ -1000,32 +927,18 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
   teamStrings.forEach((teamStr, idx) => {
     const { teamName, slugs } = parseTeamString(teamStr);
     const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
-    
-    console.log('Checking team:', {
-      teamStr,
-      teamName,
-      slugs,
-      individualNames,
-      winner,
-      normalizedWinner: normalize(winner),
-      normalizedTeamName: normalize(teamName),
-      normalizedIndividualNames: normalize(individualNames)
-    });
-    
+
     // Check if winner matches team name
     if (teamName && normalize(winner) === normalize(teamName)) {
       winnerIndex = idx;
-      console.log('Winner matched by team name');
     }
     // Check if winner matches individual names
     else if (normalize(winner) === normalize(individualNames)) {
       winnerIndex = idx;
-      console.log('Winner matched by individual names');
     }
     // Check if winner matches the full team string (e.g., "TeamName (wrestler1 & wrestler2)")
     else if (normalize(winner) === normalize(teamStr)) {
       winnerIndex = idx;
-      console.log('Winner matched by full team string');
     }
   });
   
@@ -2801,89 +2714,20 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         </div>
       )}
 
-      {/* Summary / Commentary / Statistics pills inside card (event page + match page) */}
-      <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #444', width: '100%' }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 8 }}>
-          <button type="button" onClick={() => setCardView('summary')} style={cardView === 'summary' ? pillActive : pillBase}>
-            Summary
-          </button>
-          {match?.matchType !== 'Promo' && (
-            <>
-              <button type="button" onClick={() => setCardView('commentary')} style={cardView === 'commentary' ? pillActive : pillBase}>
-                Commentary
-              </button>
-              <button type="button" onClick={() => setCardView('statistics')} title="Last 5 matches: Win / Draw / Loss" style={cardView === 'statistics' ? pillActive : pillBase}>
-                Statistics
-              </button>
-            </>
-          )}
-        </div>
-        {cardView != null && (cardView !== 'statistics' || !events || !shouldShowLastFiveStats(match)) && (
-        <div style={{ background: '#1a1a1a', borderRadius: 8, padding: 12, minHeight: 48, width: '100%' }}>
-          {cardView === 'summary' && (
-            <div>
-              <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>{match?.matchType === 'Promo' ? 'Segment recap' : 'Summary'}</div>
-              {royalRumbleHighlights && (
-                <div style={{ marginBottom: 12, padding: '10px 12px', background: '#1a1a1a', borderRadius: 8, border: '1px solid #C6A04F' }}>
-                  <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
-                    <span style={{ color: '#C6A04F', fontWeight: 600 }}>Winner:</span>{' '}
-                    {royalRumbleHighlights.winner ? (
-                      <Link to={wrestlerTo(royalRumbleHighlights.winner)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.winner]?.name || royalRumbleHighlights.winner}</Link>
-                    ) : '—'}
-                  </div>
-                  {royalRumbleHighlights.mostEliminations && (
-                    <div style={{ fontSize: 13, color: '#ccc', marginBottom: 4 }}>
-                      <span style={{ color: '#C6A04F', fontWeight: 600 }}>Most Eliminations:</span>{' '}
-                      {royalRumbleHighlights.mostEliminations.map((w, i) => (
-                        <span key={w.slug}>{i > 0 && ' & '}<Link to={wrestlerTo(w.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[w.slug]?.name || w.slug}</Link></span>
-                      ))} ({royalRumbleHighlights.mostEliminations[0].count})
-                    </div>
-                  )}
-                  {royalRumbleHighlights.ironman && (
-                    <div style={{ fontSize: 13, color: '#ccc' }}>
-                      <span style={{ color: '#C6A04F', fontWeight: 600 }}>Ironman/Ironwoman:</span>{' '}
-                      <Link to={wrestlerTo(royalRumbleHighlights.ironman.slug)} onClick={e => e.stopPropagation()} style={{ color: '#ccc', textDecoration: 'none' }}>{wrestlerMap[royalRumbleHighlights.ironman.slug]?.name || royalRumbleHighlights.ironman.slug}</Link>
-                      {royalRumbleHighlights.ironman.time && ` (${royalRumbleHighlights.ironman.time})`}
-                    </div>
-                  )}
-                </div>
-              )}
-              <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                {summaryContent || (match?.matchType === 'Promo' ? 'No recap added.' : 'No summary added for this match.')}
-              </div>
-            </div>
-          )}
-          {cardView === 'commentary' && (
-            <div>
-              <div style={{ color: '#C6A04F', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>Match Commentary</div>
-              {hasCommentary ? (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {match.commentary.map((c, i) => (
-                    <li key={i} style={{ marginBottom: 4, fontSize: 13, color: '#ccc' }}>
-                      <span style={{ color: '#C6A04F', marginRight: 6 }}>{formatCommentaryElapsedTime(c.timestamp, match.liveStart, match.commentary)}</span>
-                      {c.text}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div style={{ color: '#888', fontSize: 13 }}>No match commentary available for this match.</div>
-              )}
-            </div>
-          )}
-          {cardView === 'statistics' && (
-            <div>
-              {!events ? (
-                <div style={{ color: '#888', fontSize: 13 }}>Event data is needed to show wrestler statistics.</div>
-              ) : !shouldShowLastFiveStats(match) ? (
-                <div style={{ color: '#888', fontSize: 13 }}>
-                  Last-5 record is not shown for matches with many participants (e.g. Royal Rumble, Battle Royals, Survivor Series, War Games, Elimination Chamber).
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
-        )}
-      </div>
+      <MatchCardTabsSection
+        match={match}
+        event={event}
+        wrestlerMap={wrestlerMap}
+        events={events}
+        matchIndex={matchIndex}
+        royalRumbleHighlights={royalRumbleHighlights}
+        wrestlerTo={wrestlerTo}
+        summaryContent={summaryContent}
+        hasSummary={hasSummary}
+        hasCommentary={hasCommentary}
+        cardView={cardView}
+        setCardView={setCardView}
+      />
     </div>
   );
 } 

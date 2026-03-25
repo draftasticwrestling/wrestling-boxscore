@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import BeltIcon from './BeltIcon';
 import { Helmet } from 'react-helmet';
 import { useUser } from '../hooks/useUser';
-import MatchEdit from './MatchEdit';
+import MatchEdit, { PromoMatchEdit } from './MatchEdit';
 import MatchCard from './MatchCard';
+import MatchPageHero from './MatchPageHero';
+import MatchCardTabsSection from './MatchCardTabsSection';
 import { getRoyalRumbleHighlights } from '../utils/royalRumbleStats';
 import { getEventSlug } from '../utils/eventSlug';
+import { buildMatchPageHeadline, shouldUseEnhancedMatchPage } from '../utils/matchPageLayout';
 
 // Short date for title/meta (e.g. "Feb 16, 2026")
 function formatDateShort(dateStr) {
@@ -129,20 +131,47 @@ export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [],
   const showPreview = match?.eventStatus === 'upcoming' && match?.eventPreview;
   const showRecap = (match?.eventStatus === 'completed' || match?.eventStatus === 'live') && match?.eventRecap;
 
-  const eventName = match?.eventName || match?.title || 'WWE';
-  const matchTitle = match?.title || 'Match';
+  const eventName = match?.eventName || 'WWE';
+  const headline = buildMatchPageHeadline(match);
   const dateShort = match?.date ? formatDateShort(match.date) : '';
   const winnerDisplay = getWinnerDisplay(match, safeWrestlerMap);
   const metaDescription =
-    `${matchTitle} at ${eventName}${dateShort ? ` (${dateShort})` : ''}. ` +
+    `${headline} at ${eventName}${dateShort ? ` (${dateShort})` : ''}. ` +
     (winnerDisplay ? `${winnerDisplay} wins. ` : '') +
     'Full match results, method, and time.';
+
+  const useEnhanced = shouldUseEnhancedMatchPage(match, safeWrestlerMap);
+  const matchIndexForCard = matchOrderFromUrl != null ? parseInt(matchOrderFromUrl, 10) - 1 : undefined;
+  const navigationIndex = matchIndexForCard != null ? matchIndexForCard + 1 : match?.order || 1;
+  const eventSlug = getEventSlug({ name: match.eventName, date: match.date });
+  const wrestlerLinkState = useMemo(
+    () =>
+      match.eventId
+        ? { fromEvent: match.eventId, fromEventSlug: eventSlug, eventName: match.eventName || 'Event', matchOrder: navigationIndex }
+        : null,
+    [match.eventId, eventSlug, match.eventName, navigationIndex]
+  );
+  const wrestlerTo = useCallback(
+    (slugOrId) => (slugOrId ? { pathname: `/wrestler/${slugOrId}`, state: wrestlerLinkState || {} } : '/wrestlers'),
+    [wrestlerLinkState]
+  );
+
+  const hasSummary = !!(match?.summary || (match?.matchType === 'Promo' && match?.notes));
+  const hasCommentary = Array.isArray(match?.commentary) && match.commentary.length > 0;
+  const summaryContent = match?.matchType === 'Promo' ? (match?.notes || '') : (match?.summary || '');
+
+  const eventForHero = {
+    id: match.eventId,
+    name: match.eventName,
+    date: match.date,
+    status: match.eventStatus,
+  };
 
   return (
     <>
       <Helmet>
         <title>
-          {[matchTitle, eventName + ' Results', dateShort].filter(Boolean).join(' — ')} | Pro Wrestling Boxscore
+          {[headline, eventName + ' Results', dateShort].filter(Boolean).join(' — ')} | Pro Wrestling Boxscore
         </title>
         <meta name="description" content={metaDescription} />
         <link
@@ -174,19 +203,60 @@ export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [],
             </div>
           </div>
         )}
-        <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800, marginBottom: 8, textAlign: 'center' }}>
-          {match.title}
+        <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800, marginBottom: 6, textAlign: 'center' }}>
+          {headline}
         </h1>
-        
-        {/* Use the unified MatchCard component (includes Summary / Commentary / Statistics pills) */}
-        <MatchCard 
-          match={match} 
-          event={{ id: match.eventId, name: match.eventName }} 
-          wrestlerMap={wrestlerMap} 
-          isClickable={false}
-          matchIndex={matchOrderFromUrl != null ? parseInt(matchOrderFromUrl, 10) - 1 : undefined}
-          events={events}
-        />
+        <p style={{ color: '#aaa', fontSize: 14, textAlign: 'center', margin: '0 0 20px' }}>
+          {eventName}
+          {dateShort && ` · ${dateShort}`}
+        </p>
+
+        {useEnhanced ? (
+          <>
+            <MatchPageHero
+              match={match}
+              event={eventForHero}
+              wrestlerMap={safeWrestlerMap}
+              events={events}
+              matchIndex={matchIndexForCard}
+              wrestlerTo={wrestlerTo}
+            />
+            <div
+              style={{
+                background: '#232323',
+                borderRadius: 12,
+                border: '1px solid #444',
+                boxShadow: '0 0 12px #C6A04F22',
+                padding: '18px 24px',
+                marginBottom: 24,
+              }}
+            >
+              <MatchCardTabsSection
+                match={match}
+                event={{ id: match.eventId, name: match.eventName }}
+                wrestlerMap={safeWrestlerMap}
+                events={events}
+                matchIndex={matchIndexForCard}
+                royalRumbleHighlights={null}
+                wrestlerTo={wrestlerTo}
+                summaryContent={summaryContent}
+                hasSummary={hasSummary}
+                hasCommentary={hasCommentary}
+                statisticsExtraHint="Last 5 and calendar-year records are shown above each competitor."
+                standalone
+              />
+            </div>
+          </>
+        ) : (
+          <MatchCard
+            match={match}
+            event={{ id: match.eventId, name: match.eventName }}
+            wrestlerMap={wrestlerMap}
+            isClickable={false}
+            matchIndex={matchIndexForCard}
+            events={events}
+          />
+        )}
 
         <div style={{ background: '#111', borderRadius: 8, padding: 16, marginBottom: 24 }}>
           <div style={{ color: '#C6A04F', fontWeight: 700, marginBottom: 8 }}>Match Details</div>
@@ -298,7 +368,10 @@ export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [],
           <div><b>Method:</b> {match.method}</div>
           <div><b>Time:</b> {match.time}</div>
           <div><b>Stipulation:</b> {(match.stipulation === 'Custom/Other' && (match.customStipulation || '').trim()) ? match.customStipulation.trim() : (match.stipulation || 'None')}</div>
-          <div><b>Title:</b> {match.title}</div>
+          <div>
+            <b>Title:</b>{' '}
+            {match.title && match.title !== 'None' ? match.title : <span style={{ color: '#888' }}>Non-title match</span>}
+          </div>
           <div><b>Title Outcome:</b> {match.titleOutcome}</div>
         </div>
         <div style={{ textAlign: 'center' }}>
@@ -390,11 +463,21 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
   };
 
   const handleSave = (updatedMatch) => {
+    let targetIndex = event.matches.findIndex(
+      (m) => (m.order ?? 0) === (updatedMatch.order ?? 0)
+    );
+    if (targetIndex < 0 && matchIndex >= 0) {
+      const atDisplay = sortedMatches[matchIndex];
+      if (atDisplay) {
+        targetIndex = event.matches.findIndex(
+          (m) => (m.order ?? 0) === (atDisplay.order ?? 0)
+        );
+      }
+    }
+    if (targetIndex < 0 && originalMatchIndex >= 0) targetIndex = originalMatchIndex;
     const updatedMatches = [...event.matches];
-    // Use originalMatchIndex if available, otherwise fall back to matchIndex
-    const indexToUpdate = originalMatchIndex !== -1 ? originalMatchIndex : matchIndex;
-    if (indexToUpdate !== -1) {
-      updatedMatches[indexToUpdate] = updatedMatch;
+    if (targetIndex >= 0 && targetIndex < updatedMatches.length) {
+      updatedMatches[targetIndex] = updatedMatch;
       onEditMatch(event.id, updatedMatches);
       setIsEditing(false);
     }
@@ -410,17 +493,26 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
         <Link to={`/events/${getEventSlug(event)}`} style={{ color: '#C6A04F' }}>← Back to Event</Link>
         <h2 style={{ color: '#C6A04F', marginTop: 24 }}>Edit Match</h2>
         {user && (
-          <MatchEdit
-            initialMatch={match}
-            eventStatus={event.status}
-            eventDate={event.date}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
-            eventId={event.id}
-            matchOrder={match.order}
-            wrestlers={safeWrestlers}
-          />
+          match.matchType === 'Promo' ? (
+            <PromoMatchEdit
+              initialMatch={match}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              wrestlers={safeWrestlers}
+            />
+          ) : (
+            <MatchEdit
+              initialMatch={match}
+              eventStatus={event.status}
+              eventDate={event.date}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              onRealTimeCommentaryUpdate={onRealTimeCommentaryUpdate}
+              eventId={event.id}
+              matchOrder={match.order}
+              wrestlers={safeWrestlers}
+            />
+          )
         )}
       </div>
     );

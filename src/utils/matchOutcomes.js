@@ -40,6 +40,31 @@ export function parseEventDate(dateStr) {
   return !isNaN(parsed.getTime()) ? parsed : null;
 }
 
+function normalizeText(s) {
+  return (s || '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function includesName(text, wrestlerName) {
+  if (!text || !wrestlerName) return false;
+  const hay = normalizeText(text);
+  const needle = normalizeText(wrestlerName);
+  return !!needle && hay.includes(needle);
+}
+
+function didWrestlerParticipate(match, wrestlerSlug, wrestlerMap) {
+  const wrestlerName = wrestlerMap?.[wrestlerSlug]?.name;
+  const participantSlugs = extractWrestlerSlugs(match?.participants);
+  if (participantSlugs.has(wrestlerSlug)) return true;
+
+  if (wrestlerName) {
+    if (typeof match?.participants === 'string' && includesName(match.participants, wrestlerName)) return true;
+    if (includesName(match?.result, wrestlerName)) return true;
+    if (includesName(match?.winner, wrestlerName)) return true;
+  }
+
+  return false;
+}
+
 const DRAW_RESULT_PHRASES = [
   'no contest',
   'no winner',
@@ -65,13 +90,14 @@ export function isDrawResult(result, method) {
  */
 export function getMatchOutcome(match, wrestlerSlug, wrestlerMap) {
   const wrestlerName = wrestlerMap?.[wrestlerSlug]?.name;
-  const normalize = (s) =>
-    (s || '').toLowerCase().trim().replace(/\s+/g, ' ');
   const participantSlugs = extractWrestlerSlugs(match.participants);
-  const wasInMatch = participantSlugs.has(wrestlerSlug);
+  const wasInMatch = didWrestlerParticipate(match, wrestlerSlug, wrestlerMap);
 
   if (match.winner) {
     if (match.winner === wrestlerSlug) return 'W';
+    const winnerSlugs = extractWrestlerSlugs(match.winner);
+    if (winnerSlugs.has(wrestlerSlug)) return 'W';
+    if (wrestlerName && includesName(match.winner, wrestlerName)) return 'W';
     if (wasInMatch) return 'L';
     return 'D';
   }
@@ -93,12 +119,12 @@ export function getMatchOutcome(match, wrestlerSlug, wrestlerMap) {
 
   if (
     winnerSlugs.has(wrestlerSlug) ||
-    (wrestlerName && normalize(winnerSide) === normalize(wrestlerName))
+    (wrestlerName && includesName(winnerSide, wrestlerName))
   )
     return 'W';
   if (
     loserSlugs.has(wrestlerSlug) ||
-    (wrestlerName && loserSide.split(/\s+and\s+|\s*&\s+/).some((part) => normalize(part.trim()) === normalize(wrestlerName)))
+    (wrestlerName && includesName(loserSide, wrestlerName))
   )
     return 'L';
   if (wasInMatch) return 'L';
@@ -106,39 +132,74 @@ export function getMatchOutcome(match, wrestlerSlug, wrestlerMap) {
 }
 
 /**
- * Get last N matches (excluding promos) that the wrestler participated in, newest first.
- * Only includes matches from completed events; upcoming (and live) events are excluded.
- * @param {Array} events - All events (chronological order doesn't matter; we sort by date desc).
- * @param {string} wrestlerSlug - Wrestler slug to find matches for.
- * @param {number} limit - Max number of matches to return (default 5).
- * @param {{ excludeEventId?: string }} options - If excludeEventId is set, that event is skipped
- *   so the returned matches are "prior to" that event (e.g. for match cards, show record leading up to the match).
+ * All completed, non-promo matches for a wrestler in true chronological order (oldest → newest).
+ * Same calendar day: events sorted by id; within an event, matches by `order`.
  */
-export function getLastMatchesForWrestler(events, wrestlerSlug, limit = 5, { excludeEventId } = {}) {
-  const results = [];
+export function buildChronologicalWrestlerMatchList(events, wrestlerSlug, wrestlerMap) {
+  const list = [];
   const sortedEvents = [...(events || [])].sort((a, b) => {
     const da = parseEventDate(a.date);
     const db = parseEventDate(b.date);
     if (!da || !db) return 0;
-    return db - da;
+    if (da.getTime() !== db.getTime()) return da - db;
+    return String(a.id ?? '').localeCompare(String(b.id ?? ''));
   });
   for (const event of sortedEvents) {
     if (event.status !== 'completed') continue;
-    if (excludeEventId && event.id === excludeEventId) continue;
     const matches = Array.isArray(event.matches) ? event.matches : [];
     const sortedMatches = [...matches].sort((a, b) => (a.order || 0) - (b.order || 0));
     for (let i = 0; i < sortedMatches.length; i++) {
       const match = sortedMatches[i];
       if (match.matchType === 'Promo') continue;
       if (match.status != null && match.status !== 'completed') continue;
-      const slugs = extractWrestlerSlugs(match.participants);
-      if (slugs.has(wrestlerSlug)) {
-        results.push({ event, match, matchIndex: i });
-        if (results.length >= limit) return results;
-      }
+      if (!didWrestlerParticipate(match, wrestlerSlug, wrestlerMap)) continue;
+      list.push({ event, match, matchIndex: i });
     }
   }
-  return results;
+  return list;
+}
+
+function findMatchIndexInTimeline(timeline, { eventId, matchIndex, matchOrder }) {
+  if (eventId == null) return -1;
+  if (matchIndex != null) {
+    const byCardIndex = timeline.findIndex(
+      (item) => String(item.event.id) === String(eventId) && item.matchIndex === matchIndex
+    );
+    if (byCardIndex >= 0) return byCardIndex;
+  }
+  if (matchOrder != null && !Number.isNaN(Number(matchOrder))) {
+    const mo = Number(matchOrder);
+    return timeline.findIndex(
+      (item) => String(item.event.id) === String(eventId) && (item.match.order || 0) === mo
+    );
+  }
+  return -1;
+}
+
+/**
+ * Get last N matches (excluding promos) that the wrestler participated in, newest first in the returned array.
+ * Only includes matches from completed events.
+ *
+ * @param {object} [options]
+ * @param {object} [options.wrestlerMap]
+ * @param {{ eventId: string, matchIndex: number, matchOrder?: number }} [options.priorToMatch] — When set (e.g. on a
+ *   match card), returns the N matches **immediately before this match** on the timeline — not the globally latest N.
+ *   Omit on wrestler profiles for "most recent 5 overall".
+ */
+export function getLastMatchesForWrestler(events, wrestlerSlug, limit = 5, options = {}) {
+  const { wrestlerMap, priorToMatch } = options;
+  const list = buildChronologicalWrestlerMatchList(events, wrestlerSlug, wrestlerMap);
+
+  if (priorToMatch && priorToMatch.eventId != null) {
+    const idx = findMatchIndexInTimeline(list, priorToMatch);
+    if (idx <= 0) return [];
+    const start = Math.max(0, idx - limit);
+    return list.slice(start, idx).reverse();
+  }
+
+  if (list.length === 0) return [];
+  const start = Math.max(0, list.length - limit);
+  return list.slice(start).reverse();
 }
 
 /** Match type substrings that exclude per-participant last-5 stats (too many participants). */
@@ -159,4 +220,111 @@ export function shouldShowLastFiveStats(match, maxParticipantCount = 10) {
     return false;
   const slugs = extractWrestlerSlugs(match.participants);
   return slugs.size <= maxParticipantCount;
+}
+
+/** Calendar year from event date string (YYYY-MM-DD safe). */
+export function getYearFromEventDate(dateStr) {
+  if (!dateStr) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr).trim())) {
+    return parseInt(String(dateStr).slice(0, 4), 10);
+  }
+  const d = parseEventDate(dateStr);
+  return d && !isNaN(d.getTime()) ? d.getFullYear() : null;
+}
+
+/** Only the canonical METHOD_OPTIONS value "DQ" counts (matches saved match forms). */
+function isDqMethod(method) {
+  return (method || '').trim() === 'DQ';
+}
+
+/**
+ * Yearly match record for a wrestler (completed events only; excludes promos).
+ * Internally tracks non-DQ wins/losses plus DQW/DQL; **winTotal** / **lossTotal** are all wins / all losses.
+ * W% / L% match common boxscore style: total wins (or losses) ÷ MW (same as Draftastic-style displays).
+ * Draw / no-contest style outcomes are counted as NC.
+ */
+/**
+ * All completed matches for a wrestler in a calendar year (newest events first, then card order).
+ * Same filters as getMatchRecordStatsForYear; excludes promos and incomplete matches.
+ */
+export function getMatchesForWrestlerForYear(events, wrestlerSlug, year, wrestlerMap) {
+  const sortedEvents = [...(events || [])].sort((a, b) => {
+    const da = parseEventDate(a.date);
+    const db = parseEventDate(b.date);
+    if (!da || !db) return 0;
+    return db - da;
+  });
+  const results = [];
+  for (const event of sortedEvents) {
+    if (event.status !== 'completed') continue;
+    if (getYearFromEventDate(event.date) !== year) continue;
+    const matches = Array.isArray(event.matches) ? event.matches : [];
+    const sortedMatches = [...matches].sort((a, b) => (a.order || 0) - (b.order || 0));
+    for (let i = 0; i < sortedMatches.length; i++) {
+      const match = sortedMatches[i];
+      if (match.matchType === 'Promo') continue;
+      if (match.status != null && match.status !== 'completed') continue;
+      if (!didWrestlerParticipate(match, wrestlerSlug, wrestlerMap)) continue;
+      results.push({ event, match, matchIndex: i });
+    }
+  }
+  return results;
+}
+
+export function getMatchRecordStatsForYear(events, wrestlerSlug, year, wrestlerMap) {
+  let mw = 0;
+  let win = 0;
+  let loss = 0;
+  let nc = 0;
+  let dqWin = 0;
+  let dqLoss = 0;
+
+  for (const event of events || []) {
+    if (event.status !== 'completed') continue;
+    if (getYearFromEventDate(event.date) !== year) continue;
+    const matches = Array.isArray(event.matches) ? event.matches : [];
+    const sortedMatches = [...matches].sort((a, b) => (a.order || 0) - (b.order || 0));
+    for (const match of sortedMatches) {
+      if (match.matchType === 'Promo') continue;
+      if (match.status != null && match.status !== 'completed') continue;
+      if (!didWrestlerParticipate(match, wrestlerSlug, wrestlerMap)) continue;
+      mw++;
+      const outcome = getMatchOutcome(match, wrestlerSlug, wrestlerMap);
+      const method = (match.method || '').trim();
+      if (outcome === 'W') {
+        if (isDqMethod(method)) dqWin++;
+        else win++;
+      } else if (outcome === 'L') {
+        if (isDqMethod(method)) dqLoss++;
+        else loss++;
+      } else {
+        nc++;
+      }
+    }
+  }
+
+  const pct = (n) => (mw > 0 ? ((n / mw) * 100).toFixed(1) : '0.0');
+  const dqTotal = dqWin + dqLoss;
+  const winTotal = win + dqWin;
+  const lossTotal = loss + dqLoss;
+  return {
+    mw,
+    /** Wins not via DQ (pinfall, submission, etc.) */
+    win,
+    /** Losses not via DQ */
+    loss,
+    nc,
+    dqWin,
+    dqLoss,
+    /** All wins (Win column + DQW breakdown) */
+    winTotal,
+    /** All losses (Loss column + DQL breakdown) */
+    lossTotal,
+    /** Total wins ÷ MW */
+    winPct: pct(winTotal),
+    /** Total losses ÷ MW */
+    lossPct: pct(lossTotal),
+    /** Matches ending in DQ (win or loss) ÷ MW */
+    dqPct: pct(dqTotal),
+  };
 }

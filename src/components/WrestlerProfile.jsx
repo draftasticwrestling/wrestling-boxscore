@@ -9,11 +9,29 @@ import { supabase } from '../supabaseClient';
 import {
   getMatchOutcome,
   getLastMatchesForWrestler,
+  getMatchRecordStatsForYear,
 } from '../utils/matchOutcomes';
 import { getEventSlug } from '../utils/eventSlug';
 
+/** Parse YYYY-MM-DD as a local calendar date (avoids UTC off-by-one vs title history). */
+function parseCalendarDateMs(dateStr) {
+  if (!dateStr) return 0;
+  const s = String(dateStr).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, mo, d] = s.split('-').map(Number);
+    return new Date(y, mo - 1, d).getTime();
+  }
+  const dt = new Date(dateStr);
+  return Number.isNaN(dt.getTime()) ? 0 : dt.getTime();
+}
+
 function formatReignDate(dateStr) {
   if (!dateStr) return '—';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr).trim())) {
+    const [y, mo, d] = String(dateStr).split('-').map(Number);
+    const dt = new Date(y, mo - 1, d);
+    return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -33,6 +51,34 @@ function calculateAge(dob) {
   const m = today.getMonth() - d.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
   return age;
+}
+
+function daysHeldFromDateWon(dateStr) {
+  if (!dateStr) return null;
+  let start;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr).trim())) {
+    const [y, mo, d] = String(dateStr).split('-').map(Number);
+    start = new Date(y, mo - 1, d);
+  } else {
+    start = new Date(dateStr);
+  }
+  if (Number.isNaN(start.getTime())) return null;
+  const today = new Date();
+  const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.max(0, Math.round((t - s) / 86400000));
+}
+
+function formatChampionshipWonDate(dateStr) {
+  if (!dateStr) return '—';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr).trim())) {
+    const [y, mo, d] = String(dateStr).split('-').map(Number);
+    const dt = new Date(y, mo - 1, d);
+    return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
+  }
+  const dt = new Date(dateStr);
+  if (Number.isNaN(dt.getTime())) return dateStr;
+  return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
 }
 
 const gold = '#C6A04F';
@@ -64,8 +110,8 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
   const wrestler = map[slug] || (wrestlers || []).find(w => w.id === slug);
 
   const lastFiveMatches = useMemo(
-    () => (slug && events ? getLastMatchesForWrestler(events, slug, 5) : []),
-    [events, slug]
+    () => (slug && events ? getLastMatchesForWrestler(events, slug, 5, { wrestlerMap: map }) : []),
+    [events, slug, map]
   );
 
   const lastFiveOutcomes = useMemo(
@@ -75,6 +121,42 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
 
   const [titleHistory, setTitleHistory] = useState([]);
   const [titleHistoryLoading, setTitleHistoryLoading] = useState(true);
+  const [currentChampionships, setCurrentChampionships] = useState([]);
+  const [currentChampionshipsLoading, setCurrentChampionshipsLoading] = useState(true);
+  const [matchRecordYear, setMatchRecordYear] = useState(2026);
+
+  const matchRecordStats = useMemo(
+    () =>
+      slug && events
+        ? getMatchRecordStatsForYear(events, slug, matchRecordYear, map)
+        : null,
+    [events, slug, matchRecordYear, map]
+  );
+
+  /**
+   * Banner "Won" date: prefer the active reign from championship_history (same as Title history).
+   * The championships.date_won column can lag or differ from title history after updates.
+   */
+  const currentChampionshipsWithResolvedDates = useMemo(() => {
+    return currentChampionships.map((ch) => {
+      const presentReigns = titleHistory.filter(
+        (r) =>
+          String(r.championship_id) === String(ch.id) &&
+          (r.date_lost == null || String(r.date_lost).trim() === '')
+      );
+      let best = null;
+      let bestTs = -1;
+      for (const r of presentReigns) {
+        const ts = parseCalendarDateMs(r.date_won);
+        if (ts >= bestTs) {
+          bestTs = ts;
+          best = r;
+        }
+      }
+      const resolvedDateWon = best?.date_won ?? ch.date_won;
+      return { ...ch, resolvedDateWon };
+    });
+  }, [currentChampionships, titleHistory]);
 
   useEffect(() => {
     if (!slug) {
@@ -213,6 +295,56 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
     })();
     return () => { cancelled = true; };
   }, [slug, wrestler?.name, wrestlers]);
+
+  useEffect(() => {
+    if (!slug) {
+      setCurrentChampionships([]);
+      setCurrentChampionshipsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setCurrentChampionshipsLoading(true);
+    (async () => {
+      try {
+        const { data: directRows } = await supabase
+          .from('championships')
+          .select('id, title_name, date_won, current_champion_slug, type')
+          .eq('current_champion_slug', slug);
+
+        const teamIds = [];
+        const { data: teamMembers } = await supabase
+          .from('tag_team_members')
+          .select('tag_team_id')
+          .eq('wrestler_slug', slug);
+        if (teamMembers?.length) {
+          teamIds.push(...new Set(teamMembers.map((m) => m.tag_team_id).filter(Boolean)));
+        }
+
+        let teamRows = [];
+        if (teamIds.length > 0) {
+          const { data: teamChamps } = await supabase
+            .from('championships')
+            .select('id, title_name, date_won, current_champion_slug, type')
+            .in('current_champion_slug', teamIds);
+          teamRows = teamChamps || [];
+        }
+
+        const byId = new Map();
+        for (const r of [...(directRows || []), ...teamRows]) {
+          if (!r || !r.id) continue;
+          if (!r.current_champion_slug || r.current_champion_slug === 'vacant') continue;
+          byId.set(r.id, r);
+        }
+        const list = Array.from(byId.values());
+        if (!cancelled) setCurrentChampionships(list);
+      } catch {
+        if (!cancelled) setCurrentChampionships([]);
+      } finally {
+        if (!cancelled) setCurrentChampionshipsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [slug]);
 
   if (!wrestler) {
     return (
@@ -370,6 +502,169 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
             </div>
           </div>
 
+          {/* Current championship — gold banner (sister-site style) */}
+          {isWrestler && !currentChampionshipsLoading && currentChampionshipsWithResolvedDates.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              {currentChampionshipsWithResolvedDates.map((ch) => {
+                const days = daysHeldFromDateWon(ch.resolvedDateWon);
+                return (
+                  <Link
+                    key={ch.id}
+                    to={`/championship/${ch.id}`}
+                    style={{
+                      display: 'block',
+                      textDecoration: 'none',
+                      marginBottom: 12,
+                      borderRadius: 12,
+                      border: '1px solid #4a3d18',
+                      background: 'linear-gradient(100deg, #c9a84a 0%, #e6cf7a 35%, #d4b24a 70%, #9a7320 100%)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.35)',
+                      padding: '26px 20px',
+                      textAlign: 'center',
+                      color: '#2d2110',
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: 0.5, opacity: 0.92, marginBottom: 8 }}>
+                      Current championship
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.25, marginBottom: 10, textShadow: '0 1px 0 rgba(255,255,255,0.25)' }}>
+                      {ch.title_name || 'Championship'}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 500 }}>
+                      <span style={{ fontWeight: 700 }}>Won</span>{' '}
+                      {formatChampionshipWonDate(ch.resolvedDateWon)}
+                      {days != null && (
+                        <>
+                          {' '}
+                          <span style={{ fontWeight: 700 }}>Days held</span> {days}
+                        </>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Match record by year — MatchCard-style dark card */}
+          {isWrestler && matchRecordStats && (
+            <section style={{ marginBottom: 32 }}>
+              <div
+                style={{
+                  background: '#232323',
+                  border: '1px solid #444',
+                  borderRadius: 12,
+                  boxShadow: '0 0 12px #C6A04F22',
+                  padding: '20px 18px 16px',
+                  color: '#ccc',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                    marginBottom: 16,
+                    paddingBottom: 12,
+                    borderBottom: '1px solid #444',
+                  }}
+                >
+                  <Link
+                    to={`/wrestler/${slug}/matches`}
+                    state={{ year: matchRecordYear }}
+                    style={{
+                      margin: 0,
+                      fontSize: 18,
+                      fontWeight: 800,
+                      color: gold,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <h2 style={{ margin: 0, fontSize: 'inherit', fontWeight: 800, color: 'inherit' }}>
+                      Match record ({matchRecordYear})
+                    </h2>
+                  </Link>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: '#bbb',
+                    }}
+                  >
+                    Year
+                    <select
+                      value={matchRecordYear}
+                      onChange={(e) => setMatchRecordYear(Number(e.target.value))}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #444',
+                        background: '#2a2a2a',
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        minWidth: 100,
+                      }}
+                    >
+                      <option value={2026}>2026</option>
+                      <option value={2025}>2025</option>
+                    </select>
+                  </label>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'nowrap',
+                    gap: '10px 18px',
+                    alignItems: 'baseline',
+                    fontSize: 15,
+                    lineHeight: 1.5,
+                    color: '#e8e8e8',
+                    overflowX: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                    paddingBottom: 4,
+                  }}
+                >
+                  {[
+                    ['MW', matchRecordStats.mw],
+                    ['Win', matchRecordStats.winTotal],
+                    ['W%', matchRecordStats.winPct],
+                    ['Loss', matchRecordStats.lossTotal],
+                    ['L%', matchRecordStats.lossPct],
+                    ['NC', matchRecordStats.nc],
+                    ['DQW', matchRecordStats.dqWin],
+                    ['DQL', matchRecordStats.dqLoss],
+                    ['DQ%', matchRecordStats.dqPct],
+                  ].map(([label, val]) => (
+                    <span key={label} style={{ flexShrink: 0 }}>
+                      <strong style={{ color: gold }}>{label}</strong> {val}
+                    </span>
+                  ))}
+                </div>
+                <p
+                  style={{
+                    margin: '14px 0 0',
+                    paddingTop: 12,
+                    borderTop: '1px solid #444',
+                    fontSize: 11,
+                    color: '#888',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  MW = Matches wrestled · Win/Loss = total wins/losses (DQ included) · NC = No contest / draw
+                  outcomes · DQW/DQL = subset won/lost via DQ · W%/L% = total wins or losses ÷ MW · DQ% = DQ
+                  matches ÷ MW
+                </p>
+              </div>
+            </section>
+          )}
+
           {/* Accomplishments - only for wrestlers */}
           {isWrestler && (
           <section style={{ marginBottom: 32 }}>
@@ -463,19 +758,14 @@ export default function WrestlerProfile({ events, wrestlers, wrestlerMap, onUpda
                       {event.date && ` — ${event.date}`}
                       {event.location && ` — ${event.location}`}
                     </div>
-                    <Link
-                      to={`/events/${getEventSlug(event)}/match/${matchIndex + 1}`}
-                      style={{ textDecoration: 'none', display: 'block' }}
-                    >
-                      <MatchCard
-                        match={match}
-                        event={event}
-                        wrestlerMap={wrestlerMap}
-                        isClickable={true}
-                        matchIndex={matchIndex}
-                        events={events}
-                      />
-                    </Link>
+                    <MatchCard
+                      match={match}
+                      event={event}
+                      wrestlerMap={wrestlerMap}
+                      isClickable
+                      matchIndex={matchIndex}
+                      events={events}
+                    />
                   </div>
                 ))}
               </div>
