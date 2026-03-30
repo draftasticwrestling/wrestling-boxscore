@@ -10,6 +10,7 @@ import WrestlerAddModal from './WrestlerAddModal';
 import FactionsView from './FactionsView';
 import TagTeamsView from './TagTeamsView';
 import countries from '../data/countries';
+import { createWrestlerImageUrlErrorHandler } from '../utils/wrestlerImageUrl';
 
 const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'AAA'];
 const BRAND_LABELS = {
@@ -270,7 +271,12 @@ function WrestlerCard({ w, onEdit, isAuthorized, isExpanded, onToggleExpand }) {
       )}
       <div style={{ position: 'relative', width: 72, height: 72 }}>
         <Link to={`/wrestler/${w.id}`} onClick={e => e.stopPropagation()} style={{ display: 'block' }}>
-          <img src={w.image_url} alt={w.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
+          <img
+            src={w.image_url}
+            alt={w.name}
+            onError={createWrestlerImageUrlErrorHandler(w)}
+            style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }}
+          />
         </Link>
 
         {/* Get status - handle both lowercase and capital S (database has "Status") */}

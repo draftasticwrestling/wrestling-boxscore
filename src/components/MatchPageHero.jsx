@@ -60,12 +60,12 @@ function LastFiveBoxes({ outcomes, size = 22 }) {
 /** Sizes so multiple teammates fit in one horizontal row without wrapping. */
 function teammateSizing(teammateCount) {
   if (teammateCount <= 1) {
-    return { cardMax: 200, imgMax: 180, imgMaxH: 320, nameSize: 15 };
+    return { cardMax: 200, imgMax: 180, imgMaxH: 320, nameSize: 15, infoH: 200 };
   }
   if (teammateCount === 2) {
-    return { cardMax: 168, imgMax: 155, imgMaxH: 260, nameSize: 14 };
+    return { cardMax: 168, imgMax: 155, imgMaxH: 260, nameSize: 14, infoH: 176 };
   }
-  return { cardMax: 118, imgMax: 108, imgMaxH: 200, nameSize: 12 };
+  return { cardMax: 118, imgMax: 108, imgMaxH: 200, nameSize: 12, infoH: 158 };
 }
 
 function WrestlerDetailBlock({ slug, wrestlerMap, events, match, event, isWinner, wrestlerTo, teammateCount = 1, matchIndex }) {
@@ -92,6 +92,9 @@ function WrestlerDetailBlock({ slug, wrestlerMap, events, match, event, isWinner
   }, [events, slug, event?.date, wrestlerMap]);
 
   const img = w?.full_body_image_url || w?.image_url || '/images/placeholder.png';
+  const imgBoxW = sz.imgMax;
+  const imgBoxH = sz.imgMaxH;
+  const infoH = sz.infoH;
 
   return (
     <div
@@ -99,53 +102,93 @@ function WrestlerDetailBlock({ slug, wrestlerMap, events, match, event, isWinner
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        flex: teammateCount > 1 ? '1 1 0' : undefined,
+        flex: teammateCount > 1 ? '1 1 0' : 1,
         minWidth: teammateCount > 1 ? 0 : undefined,
+        alignSelf: 'stretch',
+        width: '100%',
         maxWidth: sz.cardMax,
+        margin: '0 auto',
+        height: '100%',
+        minHeight: 0,
+        justifyContent: 'flex-start',
         padding: '8px 10px',
         borderRadius: 10,
-        border: isWinner ? `2px solid ${gold}` : '1px solid #444',
+        // Same border width both sides so image frames line up (2px vs 1px was shifting layout)
+        border: `2px solid ${isWinner ? gold : '#444'}`,
+        boxSizing: 'border-box',
         background: isWinner ? '#2a2618' : '#1e1e1e',
       }}
     >
-      <Link to={wrestlerTo(slug)} style={{ lineHeight: 0, textDecoration: 'none', width: '100%' }}>
-        <img
-          src={img}
-          alt={w?.name || slug}
+      <Link
+        to={wrestlerTo(slug)}
+        style={{
+          lineHeight: 0,
+          textDecoration: 'none',
+          display: 'block',
+          width: '100%',
+          maxWidth: imgBoxW,
+          flexShrink: 0,
+          boxSizing: 'border-box',
+        }}
+      >
+        <div
           style={{
             width: '100%',
-            maxWidth: sz.imgMax,
-            height: 'auto',
-            maxHeight: sz.imgMaxH,
-            objectFit: 'contain',
-            objectPosition: 'center top',
-            display: 'block',
+            maxWidth: imgBoxW,
+            height: imgBoxH,
+            boxSizing: 'border-box',
             margin: '0 auto',
             borderRadius: 8,
             background: '#111',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
           }}
-        />
+        >
+          <img
+            src={img}
+            alt={w?.name || slug}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              objectPosition: 'center bottom',
+              display: 'block',
+            }}
+          />
+        </div>
       </Link>
-      <div style={{ marginTop: 10, textAlign: 'center', width: '100%' }}>
+      <div
+        style={{
+          marginTop: 10,
+          textAlign: 'center',
+          width: '100%',
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          height: infoH,
+          minHeight: infoH,
+          maxHeight: infoH,
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          boxSizing: 'border-box',
+          paddingLeft: 2,
+          paddingRight: 2,
+        }}
+      >
         <Link
           to={wrestlerTo(slug)}
-          style={{ color: isWinner ? gold : '#fff', fontWeight: 800, fontSize: sz.nameSize, textDecoration: 'none' }}
+          style={{ color: isWinner ? gold : '#fff', fontWeight: 800, fontSize: sz.nameSize, textDecoration: 'none', wordBreak: 'break-word' }}
         >
           {w?.name || slug}
         </Link>
-        {w?.brand && (
-          <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
-            <span style={{ color: '#888' }}>Brand</span> {w.brand}
-          </div>
-        )}
         {(w?.height || w?.weight) && (
           <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
             {[w.height, w.weight].filter(Boolean).join(' · ')}
-          </div>
-        )}
-        {w?.billed_from && (
-          <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-            From {w.billed_from}
           </div>
         )}
         <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
@@ -178,6 +221,8 @@ function WrestlerDetailBlock({ slug, wrestlerMap, events, match, event, isWinner
           </div>
         )}
       </div>
+      {/* Absorb extra column height so cards stay one visual block with content top-aligned */}
+      <div style={{ flex: 1, minHeight: 0, width: '100%' }} aria-hidden />
     </div>
   );
 }
@@ -191,10 +236,12 @@ function TeammateRow({ slugs, winnerIndex, sideIdx, wrestlerMap, events, match, 
         flexDirection: 'row',
         flexWrap: n > 1 ? 'nowrap' : 'wrap',
         justifyContent: 'center',
-        alignItems: 'flex-start',
+        alignItems: 'stretch',
         gap: 10,
         width: '100%',
         minWidth: 0,
+        flex: 1,
+        minHeight: 0,
         ...(n > 2 ? { overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 } : {}),
       }}
     >
@@ -232,6 +279,37 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
   const sides = teamStrings.map((ts) => parseTeamStringForPage(ts, wrestlerMap));
 
   const isMultiWay = match.matchType === 'Triple Threat match' || match.matchType === 'Fatal Four-way match';
+
+  /** Reserve the same vertical space for team name on both sides when either side is a tag team or has a name */
+  const sideHasMultipleSlugs = (s) => (s?.slugs?.length ?? 0) > 1;
+  const sideHasTeamName = (s) => !!(s?.teamName && String(s.teamName).trim());
+  const reserveTeamNameSlotVs =
+    sideHasMultipleSlugs(sides[0]) ||
+    sideHasMultipleSlugs(sides[1]) ||
+    sideHasTeamName(sides[0]) ||
+    sideHasTeamName(sides[1]);
+  const reserveTeamNameSlotMulti = sides.some((s) => sideHasMultipleSlugs(s) || sideHasTeamName(s));
+
+  const teamNameSlotVsStyle = {
+    minHeight: 48,
+    fontWeight: 800,
+    fontSize: 17,
+    textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1.25,
+  };
+  const teamNameSlotMultiStyle = {
+    minHeight: 44,
+    fontWeight: 800,
+    fontSize: 15,
+    textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1.25,
+  };
 
   return (
     <div
@@ -289,7 +367,7 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
             flexWrap: 'wrap',
             justifyContent: 'center',
             gap: 8,
-            alignItems: 'flex-end',
+            alignItems: 'stretch',
             width: '100%',
           }}
         >
@@ -300,8 +378,27 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
                   VS
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                {side.teamName ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                  gap: 8,
+                  flex: '1 1 200px',
+                  minWidth: 0,
+                  maxWidth: 420,
+                }}
+              >
+                {reserveTeamNameSlotMulti ? (
+                  <div
+                    style={{
+                      ...teamNameSlotMultiStyle,
+                      color: winnerIndex === sideIdx ? gold : '#fff',
+                    }}
+                  >
+                    {side.teamName || '\u00a0'}
+                  </div>
+                ) : side.teamName ? (
                   <div style={{ fontWeight: 800, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 15, textAlign: 'center' }}>{side.teamName}</div>
                 ) : null}
                 <TeammateRow
@@ -324,17 +421,22 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
           style={{
             display: 'flex',
             flexDirection: 'row',
-            alignItems: 'flex-start',
+            alignItems: 'stretch',
             justifyContent: 'center',
             gap: 16,
             flexWrap: 'wrap',
             width: '100%',
           }}
         >
-          <div style={{ flex: 1, minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            {sides[0]?.teamName && (
-              <div style={{ fontWeight: 800, color: winnerIndex === 0 ? gold : '#fff', fontSize: 17, textAlign: 'center' }}>{sides[0].teamName}</div>
+          <div style={{ flex: 1, minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+            {reserveTeamNameSlotVs ? (
+              <div style={{ ...teamNameSlotVsStyle, color: winnerIndex === 0 ? gold : '#fff' }}>{sides[0]?.teamName || '\u00a0'}</div>
+            ) : (
+              sides[0]?.teamName && (
+                <div style={{ fontWeight: 800, color: winnerIndex === 0 ? gold : '#fff', fontSize: 17, textAlign: 'center' }}>{sides[0].teamName}</div>
+              )
             )}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
             <TeammateRow
               slugs={sides[0]?.slugs || []}
               winnerIndex={winnerIndex}
@@ -346,12 +448,18 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
               wrestlerTo={wrestlerTo}
               matchIndex={matchIndex}
             />
+            </div>
           </div>
           <div style={{ alignSelf: 'center', fontSize: 18, fontWeight: 800, color: gold, padding: '0 8px', flexShrink: 0 }}>VS</div>
-          <div style={{ flex: 1, minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            {sides[1]?.teamName && (
-              <div style={{ fontWeight: 800, color: winnerIndex === 1 ? gold : '#fff', fontSize: 17, textAlign: 'center' }}>{sides[1].teamName}</div>
+          <div style={{ flex: 1, minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+            {reserveTeamNameSlotVs ? (
+              <div style={{ ...teamNameSlotVsStyle, color: winnerIndex === 1 ? gold : '#fff' }}>{sides[1]?.teamName || '\u00a0'}</div>
+            ) : (
+              sides[1]?.teamName && (
+                <div style={{ fontWeight: 800, color: winnerIndex === 1 ? gold : '#fff', fontSize: 17, textAlign: 'center' }}>{sides[1].teamName}</div>
+              )
             )}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
             <TeammateRow
               slugs={sides[1]?.slugs || []}
               winnerIndex={winnerIndex}
@@ -363,6 +471,7 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
               wrestlerTo={wrestlerTo}
               matchIndex={matchIndex}
             />
+            </div>
           </div>
         </div>
       )}

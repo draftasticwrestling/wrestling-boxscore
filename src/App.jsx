@@ -36,6 +36,8 @@ import DraftasticPage from './components/DraftasticPage';
 import AdminLoginPage from './components/AdminLoginPage';
 import { getRoyalRumbleHighlights } from './utils/royalRumbleStats';
 import { getEventSlug } from './utils/eventSlug';
+import { getSortedMatchesForEvent } from './utils/eventMatchesOrder';
+import { normalizeWrestlerImageFields } from './utils/wrestlerImageUrl';
 
 // Place these at the top level, after imports
 
@@ -918,29 +920,12 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
     setEditedMatch(null);
   };
 
-  // Prepare matches with stable order and card type.
-  const baseMatches = Array.isArray(event.matches) ? event.matches : [];
-  const orderedMatches = baseMatches.map((m, idx) => ({
+  // Same sort as MatchPageNewWrapper (`/events/:slug/match/:n`) so card clicks open the correct match.
+  const sortedForDisplay = getSortedMatchesForEvent(event);
+  const matchesWithCardType = sortedForDisplay.map((m) => ({
     ...m,
-    order: m.order || idx + 1,
+    cardType: m.cardType || 'Undercard',
   }));
-
-  // Apply display-time cardType defaults:
-  // - Use existing cardType if present.
-  // - Otherwise default to "Undercard".
-  // Main Event is now **only** set explicitly by the user.
-  const withCardTypes = orderedMatches.map((m) => {
-    const cardType = m.cardType || 'Undercard';
-    return { ...m, cardType };
-  });
-
-  // For display, respect the chronological order (order field)
-  // so promos or segments that happen after the main event can
-  // still appear last, while the main event card is visually
-  // marked via its cardType.
-  const matchesWithCardType = [...withCardTypes].sort((a, b) => {
-    return (a.order || 0) - (b.order || 0);
-  });
 
   const handleSaveMatch = (updatedMatch) => {
     // Prefer order on the saved payload; fallback: order from sorted display row (display index ≠ event.matches index)
@@ -7125,20 +7110,22 @@ function App() {
   useEffect(() => {
     async function fetchWrestlers() {
       const { data } = await supabase.from('wrestlers').select('*');
-      setWrestlers(data);
+      const normalized = (data || []).map(normalizeWrestlerImageFields);
+      setWrestlers(normalized);
       const map = {};
-      data.forEach(w => { map[w.id] = w; });
+      normalized.forEach(w => { map[w.id] = w; });
       setWrestlerMap(map);
     }
     fetchWrestlers();
   }, []);
 
   const handleUpdateWrestler = (updatedWrestler, previousId) => {
-    setWrestlers(prev => prev.map(w => w.id === previousId ? updatedWrestler : w));
+    const w = normalizeWrestlerImageFields(updatedWrestler);
+    setWrestlers(prev => prev.map(x => x.id === previousId ? w : x));
     setWrestlerMap(prev => {
       const next = { ...prev };
-      if (previousId !== updatedWrestler.id) delete next[previousId];
-      next[updatedWrestler.id] = updatedWrestler;
+      if (previousId !== w.id) delete next[previousId];
+      next[w.id] = w;
       return next;
     });
   };
@@ -7335,12 +7322,8 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
     return <div style={{ padding: 24, color: '#fff' }}>Event not found.</div>;
   }
   
-  // Sort matches by order (same as event page) to ensure consistent lookup
-  const sortedMatches = [...event.matches].sort((a, b) => {
-    const orderA = a.order || 0;
-    const orderB = b.order || 0;
-    return orderA - orderB;
-  });
+  // Same ordering as EventBoxScore / MatchCard (default missing `order`, then sort)
+  const sortedMatches = getSortedMatchesForEvent(event);
   
   // Use the matchOrder as an index (1-based) to find the match in the sorted array
   // matchOrder comes from the URL and represents the position in the sorted list

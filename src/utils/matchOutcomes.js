@@ -3,6 +3,8 @@
  * Used by WrestlerProfile and MatchCard Statistics view.
  */
 
+import { getSortedMatchesForEvent } from './eventMatchesOrder';
+
 export function extractWrestlerSlugs(participants) {
   const slugs = new Set();
   if (!participants) return slugs;
@@ -134,6 +136,7 @@ export function getMatchOutcome(match, wrestlerSlug, wrestlerMap) {
 /**
  * All completed, non-promo matches for a wrestler in true chronological order (oldest → newest).
  * Same calendar day: events sorted by id; within an event, matches by `order`.
+ * Includes **live** events so matches already finished on tonight's show count toward "last 5 before this match".
  */
 export function buildChronologicalWrestlerMatchList(events, wrestlerSlug, wrestlerMap) {
   const list = [];
@@ -145,9 +148,8 @@ export function buildChronologicalWrestlerMatchList(events, wrestlerSlug, wrestl
     return String(a.id ?? '').localeCompare(String(b.id ?? ''));
   });
   for (const event of sortedEvents) {
-    if (event.status !== 'completed') continue;
-    const matches = Array.isArray(event.matches) ? event.matches : [];
-    const sortedMatches = [...matches].sort((a, b) => (a.order || 0) - (b.order || 0));
+    if (event.status !== 'completed' && event.status !== 'live') continue;
+    const sortedMatches = getSortedMatchesForEvent(event);
     for (let i = 0; i < sortedMatches.length; i++) {
       const match = sortedMatches[i];
       if (match.matchType === 'Promo') continue;
@@ -185,6 +187,8 @@ function findMatchIndexInTimeline(timeline, { eventId, matchIndex, matchOrder })
  * @param {{ eventId: string, matchIndex: number, matchOrder?: number }} [options.priorToMatch] — When set (e.g. on a
  *   match card), returns the N matches **immediately before this match** on the timeline — not the globally latest N.
  *   Omit on wrestler profiles for "most recent 5 overall".
+ *   If the anchor match is not on the timeline yet (e.g. first match on a **live** card before it is stored as completed),
+ *   falls back to the globally latest N completed matches (same as omitting priorToMatch).
  */
 export function getLastMatchesForWrestler(events, wrestlerSlug, limit = 5, options = {}) {
   const { wrestlerMap, priorToMatch } = options;
@@ -192,7 +196,12 @@ export function getLastMatchesForWrestler(events, wrestlerSlug, limit = 5, optio
 
   if (priorToMatch && priorToMatch.eventId != null) {
     const idx = findMatchIndexInTimeline(list, priorToMatch);
-    if (idx <= 0) return [];
+    if (idx < 0) {
+      if (list.length === 0) return [];
+      const start = Math.max(0, list.length - limit);
+      return list.slice(start).reverse();
+    }
+    if (idx === 0) return [];
     const start = Math.max(0, idx - limit);
     return list.slice(start, idx).reverse();
   }
@@ -258,8 +267,7 @@ export function getMatchesForWrestlerForYear(events, wrestlerSlug, year, wrestle
   for (const event of sortedEvents) {
     if (event.status !== 'completed') continue;
     if (getYearFromEventDate(event.date) !== year) continue;
-    const matches = Array.isArray(event.matches) ? event.matches : [];
-    const sortedMatches = [...matches].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const sortedMatches = getSortedMatchesForEvent(event);
     for (let i = 0; i < sortedMatches.length; i++) {
       const match = sortedMatches[i];
       if (match.matchType === 'Promo') continue;
@@ -282,8 +290,7 @@ export function getMatchRecordStatsForYear(events, wrestlerSlug, year, wrestlerM
   for (const event of events || []) {
     if (event.status !== 'completed') continue;
     if (getYearFromEventDate(event.date) !== year) continue;
-    const matches = Array.isArray(event.matches) ? event.matches : [];
-    const sortedMatches = [...matches].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const sortedMatches = getSortedMatchesForEvent(event);
     for (const match of sortedMatches) {
       if (match.matchType === 'Promo') continue;
       if (match.status != null && match.status !== 'completed') continue;

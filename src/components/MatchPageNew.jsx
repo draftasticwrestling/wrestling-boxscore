@@ -143,6 +143,11 @@ export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [],
   const useEnhanced = shouldUseEnhancedMatchPage(match, safeWrestlerMap);
   const matchIndexForCard = matchOrderFromUrl != null ? parseInt(matchOrderFromUrl, 10) - 1 : undefined;
   const navigationIndex = matchIndexForCard != null ? matchIndexForCard + 1 : match?.order || 1;
+  /** Path segment for `/events/.../match/:n` — must match the URL, not necessarily `match.order` in the DB */
+  const matchPathSegment =
+    matchOrderFromUrl != null && String(matchOrderFromUrl).trim() !== ''
+      ? String(matchOrderFromUrl)
+      : String(match?.order ?? '');
   const eventSlug = getEventSlug({ name: match.eventName, date: match.date });
   const wrestlerLinkState = useMemo(
     () =>
@@ -176,7 +181,7 @@ export default function MatchPageNew({ match, matchOrderFromUrl, wrestlers = [],
         <meta name="description" content={metaDescription} />
         <link
           rel="canonical"
-          href={`https://prowrestlingboxscore.com/events/${match?.eventSlug || match?.eventId || ''}/match/${match?.order || ''}`}
+          href={`https://prowrestlingboxscore.com/events/${match?.eventSlug || match?.eventId || ''}/match/${matchPathSegment}`}
         />
       </Helmet>
       <div style={{ background: '#181818', color: '#fff', borderRadius: 12, maxWidth: 900, margin: '32px auto', padding: 32 }}>
