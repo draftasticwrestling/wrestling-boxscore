@@ -6715,6 +6715,46 @@ function App() {
     // Helper to normalize strings for comparison
     const normalize = (str) => (str || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
 
+    const pairDisplayFromSlugs = (slugs) =>
+      slugs.map((s) => wrestlerMap[s]?.name || s).join(' & ');
+
+    // Resolve tag team when slugs are a subset of members (e.g. stable with 4 members, match won by 2).
+    // Prefer the smallest roster that contains all slugs so a dedicated duo team wins over a larger stable.
+    const resolveTagTeamBySlugs = async (slugs) => {
+      if (!slugs || slugs.length < 2) return null;
+      const { data: teamMembers, error: membersError } = await supabase
+        .from('tag_team_members')
+        .select('tag_team_id')
+        .in('wrestler_slug', slugs)
+        .eq('active', true);
+      if (membersError || !teamMembers?.length) return null;
+      const teamIds = [...new Set(teamMembers.map((m) => m.tag_team_id))];
+      const candidates = [];
+      for (const teamId of teamIds) {
+        const { data: fullTeam, error: teamError } = await supabase
+          .from('tag_team_members')
+          .select('wrestler_slug')
+          .eq('tag_team_id', teamId)
+          .eq('active', true);
+        if (teamError || !fullTeam?.length) continue;
+        const teamSlugs = fullTeam.map((m) => m.wrestler_slug);
+        const allMatch = slugs.every((slug) => teamSlugs.includes(slug));
+        if (!allMatch) continue;
+        const { data: team, error: teamNameError } = await supabase
+          .from('tag_teams')
+          .select('id, name')
+          .eq('id', teamId)
+          .single();
+        if (teamNameError || !team) continue;
+        candidates.push({ team, teamSize: teamSlugs.length });
+      }
+      if (!candidates.length) return null;
+      candidates.sort((a, b) => a.teamSize - b.teamSize);
+      const { team } = candidates[0];
+      const pairNames = pairDisplayFromSlugs(slugs);
+      return { slug: team.id, name: `${team.name} (${pairNames})` };
+    };
+
     // 1. Try to get winner from match.winner field
     if (match.winner) {
       // Check if it's a tag team ID
@@ -6766,44 +6806,14 @@ function App() {
         // Try to find tag team by name
         const teamNameLower = teamName.toLowerCase();
         if (tagTeamsMap[teamNameLower] && typeof tagTeamsMap[teamNameLower] === 'object') {
-          return { slug: tagTeamsMap[teamNameLower].id, name: tagTeamsMap[teamNameLower].name };
+          const teamObj = tagTeamsMap[teamNameLower];
+          const pairNames = pairDisplayFromSlugs(slugs);
+          return { slug: teamObj.id, name: `${teamObj.name} (${pairNames})` };
         }
         
-        // Try to find tag team by matching slugs with tag_team_members
         if (slugs.length >= 2) {
-          const { data: teamMembers, error: membersError } = await supabase
-            .from('tag_team_members')
-            .select('tag_team_id')
-            .in('wrestler_slug', slugs)
-            .eq('active', true);
-          
-          if (!membersError && teamMembers && teamMembers.length > 0) {
-            // Find the tag team that has all the slugs
-            const teamIds = [...new Set(teamMembers.map(m => m.tag_team_id))];
-            for (const teamId of teamIds) {
-              const { data: fullTeam, error: teamError } = await supabase
-                .from('tag_team_members')
-                .select('wrestler_slug')
-                .eq('tag_team_id', teamId)
-                .eq('active', true);
-              
-              if (!teamError && fullTeam) {
-                const teamSlugs = fullTeam.map(m => m.wrestler_slug);
-                const allMatch = slugs.every(slug => teamSlugs.includes(slug));
-                if (allMatch && slugs.length === teamSlugs.length) {
-                  const { data: team, error: teamNameError } = await supabase
-                    .from('tag_teams')
-                    .select('id, name')
-                    .eq('id', teamId)
-                    .single();
-                  
-                  if (!teamNameError && team) {
-                    return { slug: team.id, name: team.name };
-                  }
-                }
-              }
-            }
-          }
+          const resolved = await resolveTagTeamBySlugs(slugs);
+          if (resolved) return resolved;
         }
         
         // Fallback: return team name and construct slug
@@ -6815,41 +6825,14 @@ function App() {
         const slugs = winnerPart.split('&').map(s => s.trim()).filter(Boolean);
         // Try to find tag team by slugs
         if (slugs.length >= 2) {
-          const { data: teamMembers, error: membersError } = await supabase
-            .from('tag_team_members')
-            .select('tag_team_id')
-            .in('wrestler_slug', slugs)
-            .eq('active', true);
-          
-          if (!membersError && teamMembers && teamMembers.length > 0) {
-            const teamIds = [...new Set(teamMembers.map(m => m.tag_team_id))];
-            for (const teamId of teamIds) {
-              const { data: fullTeam, error: teamError } = await supabase
-                .from('tag_team_members')
-                .select('wrestler_slug')
-                .eq('tag_team_id', teamId)
-                .eq('active', true);
-              
-              if (!teamError && fullTeam) {
-                const teamSlugs = fullTeam.map(m => m.wrestler_slug);
-                const allMatch = slugs.every(slug => teamSlugs.includes(slug));
-                if (allMatch && slugs.length === teamSlugs.length) {
-                  const { data: team, error: teamNameError } = await supabase
-                    .from('tag_teams')
-                    .select('id, name')
-                    .eq('id', teamId)
-                    .single();
-                  
-                  if (!teamNameError && team) {
-                    return { slug: team.id, name: team.name };
-                  }
-                }
-              }
-            }
-          }
+          const resolved = await resolveTagTeamBySlugs(slugs);
+          if (resolved) return resolved;
         }
-        // Fallback: return first slug and construct name
-        return { slug: slugs[0], name: slugs.join(' & ') };
+        // Fallback: use first slug as champion id (legacy); show display names when possible
+        return {
+          slug: slugs[0],
+          name: pairDisplayFromSlugs(slugs),
+        };
       }
       
       // Check if it's a slug in wrestlerMap
@@ -6904,7 +6887,9 @@ function App() {
                 // Try to find tag team
                 const teamNameLower = teamName.toLowerCase();
                 if (tagTeamsMap[teamNameLower] && typeof tagTeamsMap[teamNameLower] === 'object') {
-                  return { slug: tagTeamsMap[teamNameLower].id, name: tagTeamsMap[teamNameLower].name };
+                  const teamObj = tagTeamsMap[teamNameLower];
+                  const pairNames = pairDisplayFromSlugs(slugs);
+                  return { slug: teamObj.id, name: `${teamObj.name} (${pairNames})` };
                 }
                 
                 // Fallback

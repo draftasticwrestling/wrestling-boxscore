@@ -27,7 +27,11 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], ta
       const memberSlugs = tagTeamMembers[team.id];
       if (Array.isArray(memberSlugs) && memberSlugs.length > 0) {
         const names = memberSlugs.map((slug) => wrestlerById[slug] || slug);
-        labels[team.id] = `${team.name || team.id} (${names.join(' & ')})`;
+        if (memberSlugs.length > 2) {
+          labels[team.id] = `${team.name || team.id} (stable — set the two champions in the name field)`;
+        } else {
+          labels[team.id] = `${team.name || team.id} (${names.join(' & ')})`;
+        }
       } else {
         labels[team.id] = team.name || team.id;
       }
@@ -43,7 +47,12 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], ta
     }
     const tagTeam = sortedTagTeams.find((t) => t.id === slug);
     if (tagTeam) {
-      setChampionName(tagTeamDisplayLabels[tagTeam.id] ?? tagTeam.name ?? slug);
+      const memberSlugs = tagTeamMembers[tagTeam.id];
+      if (Array.isArray(memberSlugs) && memberSlugs.length > 2) {
+        setChampionName(tagTeam.name ?? slug);
+      } else {
+        setChampionName(tagTeamDisplayLabels[tagTeam.id] ?? tagTeam.name ?? slug);
+      }
       return;
     }
     const wrestler = sortedWrestlers.find((w) => w.id === slug);
@@ -63,7 +72,12 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], ta
       if (!effectiveChampionName && selectedSlug && selectedSlug !== 'vacant') {
         const tagTeam = sortedTagTeams.find((t) => t.id === selectedSlug);
         if (tagTeam) {
-          effectiveChampionName = tagTeamDisplayLabels[tagTeam.id] ?? tagTeam.name ?? selectedSlug;
+          const m = tagTeamMembers[tagTeam.id];
+          if (Array.isArray(m) && m.length > 2) {
+            effectiveChampionName = tagTeam.name ?? selectedSlug;
+          } else {
+            effectiveChampionName = tagTeamDisplayLabels[tagTeam.id] ?? tagTeam.name ?? selectedSlug;
+          }
         } else {
           const wrestler = sortedWrestlers.find((w) => w.id === selectedSlug);
           if (wrestler) effectiveChampionName = wrestler.name;
@@ -193,6 +207,14 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], ta
               }}
               placeholder="Leave blank to use wrestler's name"
             />
+            {selectedSlug &&
+              (tagTeamMembers[selectedSlug] || []).length > 2 &&
+              sortedTagTeams.some((t) => t.id === selectedSlug) && (
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: '#aaa', lineHeight: 1.4 }}>
+                  For stables with more than two members, include the two title holders in parentheses,
+                  e.g. The Vision (Logan Paul & Austin Theory).
+                </p>
+              )}
           </div>
 
           <div style={{ marginBottom: 12 }}>

@@ -197,6 +197,10 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
 
     // If it's a tag team championship, try to find the tag team
     if (champType === 'Tag Team') {
+      // If we stored the full line including the defending/holding pair (e.g. stable), keep it
+      if (name && /\([^)]+\)/.test(name)) {
+        return name.trim();
+      }
       // First try to get tag team name from slug directly
       if (championSlug) {
         const teamName = getTagTeamName(championSlug);
@@ -319,16 +323,32 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     });
     
     if (tagTeam) {
-      // Get members from tag_team_members
+      // Prefer the two names/slugs in parentheses (actual title holders for stables)
+      const parenMatch = name.match(/\(([^)]+)\)/);
+      if (parenMatch) {
+        const segments = parenMatch[1].split('&').map((s) => s.trim()).filter(Boolean);
+        const norm = (s) => (s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+        // Only treat as the title-holding pair when exactly two names are listed (stables list all members otherwise).
+        if (segments.length === 2) {
+          const fromParen = segments.map((segment) => {
+            const bySlug = wrestlers.find((w) => w.id === segment);
+            if (bySlug?.image_url) return bySlug.image_url;
+            const segNorm = norm(segment);
+            const byName = wrestlers.find((w) => norm(w.name) === segNorm);
+            return byName?.image_url;
+          }).filter(Boolean);
+          if (fromParen.length >= 2) {
+            return fromParen;
+          }
+        }
+      }
+      // Default: first two members in DB order (classic two-person teams)
       const teamId = tagTeam.id;
       const memberSlugs = tagTeamMembers[teamId] || [];
-      
-      // Get images for the first 2 members (for display)
-      const images = memberSlugs.slice(0, 2).map(slug => {
-        const wrestler = wrestlers.find(w => w.id === slug);
+      const images = memberSlugs.slice(0, 2).map((slug) => {
+        const wrestler = wrestlers.find((w) => w.id === slug);
         return wrestler?.image_url;
       }).filter(Boolean);
-      
       if (images.length > 0) {
         return images;
       }
