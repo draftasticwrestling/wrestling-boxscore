@@ -12,6 +12,7 @@ export const MATCH_TYPE_OPTIONS = [
   "Royal Rumble",
   "Elimination Chamber",
   "Fatal Four-way match",
+  "5-way Match",
   "Triple Threat match",
   "Gauntlet Match",
   "Tag Team Gauntlet Match",

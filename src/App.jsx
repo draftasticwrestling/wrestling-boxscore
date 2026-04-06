@@ -38,6 +38,7 @@ import { getRoyalRumbleHighlights } from './utils/royalRumbleStats';
 import { getEventSlug } from './utils/eventSlug';
 import { getSortedMatchesForEvent } from './utils/eventMatchesOrder';
 import { normalizeWrestlerImageFields } from './utils/wrestlerImageUrl';
+import { getSidesFromMatchParticipants } from './utils/matchPageLayout';
 
 // Place these at the top level, after imports
 
@@ -771,7 +772,7 @@ const getTeams = (participants) => {
 };
 
 // When displaying participants as a string
-const getParticipantsDisplay = (participants, wrestlerMap, stipulation, matchType) => {
+const getParticipantsDisplay = (participants, wrestlerMap, stipulation, matchType, match) => {
   if (Array.isArray(participants)) {
     // Battle Royal: flat array of slugs
     if ((matchType || stipulation) === 'Battle Royal' || participants.every(p => typeof p === 'string')) {
@@ -785,23 +786,29 @@ const getParticipantsDisplay = (participants, wrestlerMap, stipulation, matchTyp
     return participants.map(team => (Array.isArray(team) ? team : []).map(slug => wrestlerMap?.[slug]?.name || slug).join(' & ')).join(' vs ');
   }
   if (typeof participants === 'string' && wrestlerMap) {
-    // Gauntlet or Tag Team Gauntlet: "a → b → c" or "a & b → c & d"
-    if (participants.includes(' → ') && !participants.includes(' vs ')) {
-      return participants.split(' → ').map(part => {
+    if (matchType === 'Gauntlet Match' || matchType === 'Tag Team Gauntlet Match' || matchType === '2 out of 3 Falls') {
+      const parts = participants.split(' → ').map((part) => {
         const p = part.trim();
-        if (p.includes('&')) {
-          return p.split('&').map(s => wrestlerMap[s.trim()]?.name || s.trim()).join(' & ');
-        }
+        if (p.includes('&')) return p.split('&').map((s) => wrestlerMap[s.trim()]?.name || s.trim()).join(' & ');
         return wrestlerMap[p]?.name || p;
-      }).join(' → ');
+      });
+      return parts.join(matchType === '2 out of 3 Falls' ? ' → ' : ' → ');
     }
-    // Regular: "A vs B" or "A & B vs C & D"
-    return participants.split(' vs ').map(side =>
-      side.split('&').map(slug => {
+    const synthetic = match || { participants, matchType, stipulation };
+    const sideStrings = getSidesFromMatchParticipants({ ...synthetic, participants, matchType });
+    return sideStrings.map((side) => {
+      const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
+      if (teamMatch) {
+        const teamName = teamMatch[1].trim();
+        const slugs = teamMatch[2].split('&').map((s) => s.trim());
+        const names = slugs.map((slug) => wrestlerMap[slug]?.name || slug).join(' & ');
+        return `${teamName} (${names})`;
+      }
+      return side.split('&').map((slug) => {
         const s = slug.trim();
         return wrestlerMap[s]?.name || s;
-      }).join(' & ')
-    ).join(' vs ');
+      }).join(' & ');
+    }).join(' vs ');
   }
   return participants || '';
 };
@@ -1229,7 +1236,7 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
                   })()}
                   {/* Modern compact details layout */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8 }}>
-                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation, match.matchType)}</div>
+                    <div><strong>Participants:</strong> {getParticipantsDisplay(match.participants, wrestlerMap, match.stipulation, match.matchType, match)}</div>
                     <div><strong>Winner:</strong> {(() => {
                       const winnerSlug = match.result && match.result.includes(' def. ')
                         ? match.result.split(' def. ')[0]
@@ -3873,6 +3880,7 @@ function AddEvent({ addEvent, wrestlers }) {
                     <VisualMatchBuilder
                       key={formResetKey}
                       wrestlers={wrestlers}
+                      matchType={match.matchType}
                       value={match.participants}
                       onChange={value => {
                         console.log('VisualMatchBuilder onChange called with value:', value);
@@ -5896,6 +5904,7 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                       <VisualMatchBuilder
                         key={formResetKey}
                         wrestlers={wrestlers}
+                        matchType={match.matchType}
                         value={match.participants}
                         onChange={value => {
                           console.log('VisualMatchBuilder onChange called with value:', value);
@@ -7467,6 +7476,14 @@ const getMatchStructureFromMatchType = (matchType) => {
       ];
     case 'Fatal Four-way match':
       return [
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] },
+        { type: 'individual', participants: [''] }
+      ];
+    case '5-way Match':
+      return [
+        { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] },
         { type: 'individual', participants: [''] },

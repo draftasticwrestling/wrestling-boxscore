@@ -16,6 +16,12 @@ import {
 } from '../utils/matchOutcomes';
 import { getEventSlug } from '../utils/eventSlug';
 import MatchCardTabsSection from './MatchCardTabsSection';
+import {
+  getSidesFromMatchParticipants,
+  shouldUseDedicatedMultiTeamTagCard,
+  shouldUseTagTeamMultiGrid,
+  parseTeamStringForPage,
+} from '../utils/matchPageLayout';
 
 // Helper functions
 function getSpecialWinnerIcon(specialWinnerType) {
@@ -91,50 +97,7 @@ function renderWrestlerMeta(wrestler) {
   );
 }
 
-const getTeams = (participants) => {
-  if (Array.isArray(participants)) {
-    return participants;
-  }
-  if (typeof participants === 'string') {
-    return participants.split(' vs ').map(s => s.trim());
-  }
-  return [];
-};
-
-const parseTeamString = (teamStr, wrestlerMap = {}) => {
-  if (!teamStr) {
-    return { teamName: '', slugs: [] };
-  }
-  
-  const teamMatch = teamStr.match(/^([^(]+)\s*\(([^)]+)\)$/);
-  if (teamMatch) {
-    const teamName = teamMatch[1].trim();
-    const potentialSlugs = teamMatch[2].split('&').map(s => s.trim());
-    // Convert display names to slugs if needed
-    const slugs = potentialSlugs.map(potentialSlug => {
-      // If it's already a slug (contains hyphen and lowercase), use it
-      if (wrestlerMap[potentialSlug]) {
-        return potentialSlug;
-      }
-      // Otherwise, try to find by name
-      const found = Object.values(wrestlerMap).find(w => w.name === potentialSlug || w.id === potentialSlug);
-      return found ? found.id : potentialSlug;
-    });
-    return { teamName, slugs };
-  }
-  const potentialSlugs = teamStr.split('&').map(s => s.trim());
-  // Convert display names to slugs if needed
-  const slugs = potentialSlugs.map(potentialSlug => {
-    // If it's already a slug (contains hyphen and lowercase), use it
-    if (wrestlerMap[potentialSlug]) {
-      return potentialSlug;
-    }
-    // Otherwise, try to find by name
-    const found = Object.values(wrestlerMap).find(w => w.name === potentialSlug || w.id === potentialSlug);
-    return found ? found.id : potentialSlug;
-  });
-  return { teamName: '', slugs };
-};
+const parseTeamString = parseTeamStringForPage;
 
 // Helper function to get current champion slug for a title
 const getCurrentChampionForTitle = (titleName) => {
@@ -618,15 +581,10 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     );
   }
 
-  // Early return for multi-team matches (6-team Tag Team, 5-team Tag Team, 4-way Tag Team, etc.)
-  if (match.matchType === '6-team Tag Team' || match.matchType === '5-team Tag Team' || match.matchType === '4-way Tag Team' || match.matchType === '3-way Tag Team') {
-    let teamStrings = [];
-    if (typeof match.participants === 'string') {
-      teamStrings = match.participants.split(' vs ').map(s => s.trim());
-    } else if (Array.isArray(match.participants)) {
-      // For array format, each element represents a team
-      teamStrings = match.participants;
-    }
+  // Early return: compact grid for multi-team tag titles (and Fatal Four-way / Triple Threat when every side is a tag pair)
+  const teamStringsDedicated = getSidesFromMatchParticipants(match);
+  if (shouldUseDedicatedMultiTeamTagCard(match, teamStringsDedicated, wrestlerMap)) {
+    const teamStrings = teamStringsDedicated;
     const winner = match.result && match.result.includes(' def. ')
       ? match.result.split(' def. ')[0]
       : (match.result ? match.result : '');
@@ -780,11 +738,16 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         {/* Multi-team grid layout */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: match.matchType === '6-team Tag Team' 
-            ? 'repeat(3, 1fr)' 
-            : match.matchType === '5-team Tag Team'
-            ? 'repeat(5, 1fr)'
-            : 'repeat(auto-fit, minmax(120px, 1fr))',
+          gridTemplateColumns:
+            match.matchType === '6-team Tag Team'
+              ? 'repeat(3, 1fr)'
+              : match.matchType === '5-team Tag Team'
+                ? 'repeat(5, 1fr)'
+                : teamStrings.length === 4
+                  ? 'repeat(4, minmax(0, 1fr))'
+                  : teamStrings.length === 3
+                    ? 'repeat(3, minmax(0, 1fr))'
+                    : 'repeat(auto-fit, minmax(120px, 1fr))',
           gap: '12px',
           justifyContent: 'center',
           marginBottom: 16,
@@ -901,19 +864,9 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     );
   }
 
-  // Parse participants
-  const teams = getTeams(match.participants);
-  let teamStrings = [];
-  if (typeof match.participants === 'string' && match.participants) {
-    if (match.matchType === 'Gauntlet Match' || match.matchType === 'Tag Team Gauntlet Match' || match.matchType === '2 out of 3 Falls') {
-      teamStrings = match.participants.split(' → ').map(s => s.trim());
-    } else {
-      teamStrings = match.participants.split(' vs ').map(s => s.trim());
-    }
-  } else if (Array.isArray(match.participants)) {
-    // For array format, each element represents a team
-    teamStrings = match.participants;
-  }
+  // Parse participants (case-insensitive "vs", array/JSON shapes — same as match page)
+  const teamStrings = getSidesFromMatchParticipants(match);
+  const teams = teamStrings;
   
   const winner = match.result && match.result.includes(' def. ')
     ? match.result.split(' def. ')[0]
@@ -973,6 +926,12 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
     // Whether they're retaining or becoming a new champion, show belt on the winner
     championIndex = winnerIndex;
   }
+
+  const sidesForTagGrid = teamStrings.map((ts) => parseTeamString(ts, wrestlerMap));
+  const tagGridModeCard = shouldUseTagTeamMultiGrid(match, teamStrings, sidesForTagGrid);
+  const useTagGrid2x2Card = tagGridModeCard === '2x2';
+  const useTagGrid1x3Card = tagGridModeCard === '1x3';
+  const isTagTeamGridLayout = (useTagGrid2x2Card || useTagGrid1x3Card) && match.matchType !== 'Promo';
   
   const triangleRight = (
     <svg width="14" height="18" viewBox="0 0 8 16" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 8 }}>
@@ -2198,7 +2157,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
               </>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: match.matchType === 'Promo' && teamStrings.length > 7 ? 'column' : 'row', alignItems: 'flex-start', justifyContent: 'center', gap: match.matchType === 'Promo' && teamStrings.length > 7 ? 8 : 32, width: '100%' }}>
+          <div style={{
+            display: isTagTeamGridLayout ? 'grid' : 'flex',
+            gridTemplateColumns: useTagGrid2x2Card ? 'repeat(4, minmax(0, 1fr))' : useTagGrid1x3Card ? 'repeat(3, minmax(0, 1fr))' : undefined,
+            flexDirection: match.matchType === 'Promo' && teamStrings.length > 7 ? 'column' : 'row',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            gap: isTagTeamGridLayout ? 12 : (match.matchType === 'Promo' && teamStrings.length > 7 ? 8 : 32),
+            width: '100%',
+            maxWidth: isTagTeamGridLayout ? 1280 : undefined,
+            margin: isTagTeamGridLayout ? '0 auto' : undefined,
+          }}>
             {match.matchType === 'Promo' && teamStrings.length > 7 ? (
               (() => {
                 const half = Math.ceil(teamStrings.length / 2);
@@ -2250,7 +2219,17 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
                 const { teamName, slugs } = parseTeamString(teamStr, wrestlerMap);
                 const individualNames = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
                 return (
-                  <div key={sideIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+                  <div key={sideIdx} style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    minWidth: isTagTeamGridLayout ? 0 : 120,
+                    boxSizing: 'border-box',
+                    padding: isTagTeamGridLayout ? '10px 8px' : undefined,
+                    borderRadius: isTagTeamGridLayout ? 10 : undefined,
+                    border: isTagTeamGridLayout ? `2px solid ${winnerIndex === sideIdx ? '#C6A04F' : '#444'}` : undefined,
+                    background: isTagTeamGridLayout ? (winnerIndex === sideIdx ? '#2a2618' : '#1e1e1e') : undefined,
+                  }}>
                     <div style={{ height: 22, marginBottom: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                       {winnerIndex === sideIdx ? triangleDown : <span style={{ display: 'inline-block', width: 16, height: 8 }} />}
                     </div>

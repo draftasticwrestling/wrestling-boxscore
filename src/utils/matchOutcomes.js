@@ -15,7 +15,7 @@ export function extractWrestlerSlugs(participants) {
     return slugs;
   }
   if (typeof participants !== 'string') return slugs;
-  const sides = participants.split(' vs ');
+  const sides = participants.split(/\s+vs\s+/i);
   sides.forEach((side) => {
     const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
     if (teamMatch) {

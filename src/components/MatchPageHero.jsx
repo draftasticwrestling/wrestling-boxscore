@@ -7,7 +7,13 @@ import {
   getMatchRecordStatsForYear,
   getYearFromEventDate,
 } from '../utils/matchOutcomes';
-import { getWinnerSideIndex, parseTeamStringForPage, getVersusTeamStrings } from '../utils/matchPageLayout';
+import {
+  getWinnerSideIndex,
+  parseTeamStringForPage,
+  getSidesFromMatchParticipants,
+  normalizeParticipantsToVersusString,
+  shouldUseTagTeamMultiGrid,
+} from '../utils/matchPageLayout';
 
 const gold = '#C6A04F';
 
@@ -267,8 +273,8 @@ function TeammateRow({ slugs, winnerIndex, sideIdx, wrestlerMap, events, match, 
  * Full-image match header for singles, tag, triple threat, fatal four-way, and 6-person tag — used on the dedicated match page only.
  */
 export default function MatchPageHero({ match, event, wrestlerMap, events, matchIndex, wrestlerTo }) {
-  const teamStrings = getVersusTeamStrings(match) || [];
-  const winnerIndex = getWinnerSideIndex(teamStrings, match, wrestlerMap);
+  const teamStrings = getSidesFromMatchParticipants(match);
+  const winnerIndex = teamStrings.length > 0 ? getWinnerSideIndex(teamStrings, match, wrestlerMap) : -1;
   const displayStipulation =
     match.stipulation === 'Custom/Other' && (match.customStipulation || '').trim()
       ? match.customStipulation.trim()
@@ -277,8 +283,22 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
   const isMatchInProgress = event?.status === 'live' && match?.isLive;
 
   const sides = teamStrings.map((ts) => parseTeamStringForPage(ts, wrestlerMap));
+  const normalizedParticipantsHint = normalizeParticipantsToVersusString(match);
 
-  const isMultiWay = match.matchType === 'Triple Threat match' || match.matchType === 'Fatal Four-way match';
+  const tagGridMode = shouldUseTagTeamMultiGrid(match, teamStrings, sides);
+  const useTagGrid2x2 = tagGridMode === '2x2';
+  const useTagGrid1x3 = tagGridMode === '1x3';
+
+  const isMultiWay =
+    match.matchType === 'Triple Threat match' ||
+    match.matchType === 'Fatal Four-way match' ||
+    match.matchType === '5-way Match' ||
+    match.matchType === '3-way Tag Team' ||
+    match.matchType === '4-way Tag Team' ||
+    displayStipulation === '3-way Tag Team' ||
+    displayStipulation === '4-way Tag Team' ||
+    useTagGrid2x2 ||
+    useTagGrid1x3;
 
   /** Reserve the same vertical space for team name on both sides when either side is a tag team or has a name */
   const sideHasMultipleSlugs = (s) => (s?.slugs?.length ?? 0) > 1;
@@ -343,6 +363,31 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
         </div>
       )}
 
+      {teamStrings.length === 0 && (
+        <div
+          style={{
+            color: '#aaa',
+            textAlign: 'center',
+            padding: '12px 8px 0',
+            fontSize: 13,
+            lineHeight: 1.45,
+            marginBottom: 8,
+          }}
+        >
+          Could not parse teams from participant data. Use &quot;vs&quot; between sides (e.g.{' '}
+          <span style={{ color: '#888' }}>Team (slug1 & slug2) vs Team (slug3 & slug4)</span>
+          {normalizedParticipantsHint ? (
+            <>
+              . Normalized:{' '}
+              <span style={{ color: '#666', wordBreak: 'break-word' }}>
+                {normalizedParticipantsHint.slice(0, 280)}
+                {normalizedParticipantsHint.length > 280 ? '…' : ''}
+              </span>
+            </>
+          ) : null}
+        </div>
+      )}
+
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 13, color: gold, fontWeight: 700, marginBottom: 6 }}>
           {[match.matchType, displayStipulation && displayStipulation !== 'None' ? displayStipulation : null, match.title && match.title !== 'None' ? match.title : null]
@@ -361,6 +406,62 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
       </div>
 
       {isMultiWay ? (
+        useTagGrid2x2 || useTagGrid1x3 ? (
+          <div
+            style={{
+              display: 'grid',
+              /* One horizontal row of tag teams (4-way / 3-way), not a 2×2 block */
+              gridTemplateColumns: useTagGrid2x2 ? 'repeat(4, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))',
+              gap: 12,
+              width: '100%',
+              maxWidth: 1280,
+              margin: '0 auto',
+              alignItems: 'stretch',
+            }}
+          >
+            {sides.map((side, sideIdx) => (
+              <div
+                key={sideIdx}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                  gap: 8,
+                  minWidth: 0,
+                  padding: '12px 10px',
+                  borderRadius: 10,
+                  border: `2px solid ${winnerIndex === sideIdx ? gold : '#444'}`,
+                  background: winnerIndex === sideIdx ? '#2a2618' : '#1e1e1e',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {reserveTeamNameSlotMulti ? (
+                  <div
+                    style={{
+                      ...teamNameSlotMultiStyle,
+                      color: winnerIndex === sideIdx ? gold : '#fff',
+                    }}
+                  >
+                    {side.teamName || '\u00a0'}
+                  </div>
+                ) : side.teamName ? (
+                  <div style={{ fontWeight: 800, color: winnerIndex === sideIdx ? gold : '#fff', fontSize: 15, textAlign: 'center' }}>{side.teamName}</div>
+                ) : null}
+                <TeammateRow
+                  slugs={side.slugs}
+                  winnerIndex={winnerIndex}
+                  sideIdx={sideIdx}
+                  wrestlerMap={wrestlerMap}
+                  events={events}
+                  match={match}
+                  event={event}
+                  wrestlerTo={wrestlerTo}
+                  matchIndex={matchIndex}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
         <div
           style={{
             display: 'flex',
@@ -416,6 +517,7 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
             </React.Fragment>
           ))}
         </div>
+        )
       ) : (
         <div
           style={{

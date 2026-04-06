@@ -8,7 +8,11 @@ import MatchPageHero from './MatchPageHero';
 import MatchCardTabsSection from './MatchCardTabsSection';
 import { getRoyalRumbleHighlights } from '../utils/royalRumbleStats';
 import { getEventSlug } from '../utils/eventSlug';
-import { buildMatchPageHeadline, shouldUseEnhancedMatchPage } from '../utils/matchPageLayout';
+import {
+  buildMatchPageHeadline,
+  shouldUseEnhancedMatchPage,
+  getSidesFromMatchParticipants,
+} from '../utils/matchPageLayout';
 
 // Short date for title/meta (e.g. "Feb 16, 2026")
 function formatDateShort(dateStr) {
@@ -66,18 +70,17 @@ function getParticipantsDisplay(participants, wrestlerMap, stipulation, matchTyp
       });
       return parts.join(matchType === '2 out of 3 Falls' ? ' → ' : gauntletSeparator);
     }
-    // Split by vs, then by &
-    return participants.split(' vs ').map(side => {
-      // Handle team name with slugs in parentheses
+    const synthetic = match || { participants, matchType, stipulation };
+    const sideStrings = getSidesFromMatchParticipants({ ...synthetic, participants, matchType });
+    return sideStrings.map((side) => {
       const teamMatch = side.match(/^([^(]+)\s*\(([^)]+)\)$/);
       if (teamMatch) {
         const teamName = teamMatch[1].trim();
-        const slugs = teamMatch[2].split('&').map(s => s.trim());
-        const names = slugs.map(slug => wrestlerMap[slug]?.name || slug).join(' & ');
+        const slugs = teamMatch[2].split('&').map((s) => s.trim());
+        const names = slugs.map((slug) => wrestlerMap[slug]?.name || slug).join(' & ');
         return `${teamName} (${names})`;
       }
-      // Otherwise, just slugs
-      return side.split('&').map(slug => {
+      return side.split('&').map((slug) => {
         const s = slug.trim();
         return wrestlerMap[s]?.name || s;
       }).join(' & ');

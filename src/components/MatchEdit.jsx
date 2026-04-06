@@ -1105,6 +1105,14 @@ export default function MatchEdit({
           { type: 'individual', participants: [''] },
           { type: 'individual', participants: [''] }
         ];
+      case '5-way Match':
+        return [
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] },
+          { type: 'individual', participants: [''] }
+        ];
       case 'Triple Threat match':
         return [
           { type: 'individual', participants: [''] },
@@ -2376,6 +2384,7 @@ export default function MatchEdit({
               ) : (
                 <VisualMatchBuilder
                   wrestlers={safeWrestlers}
+                  matchType={match.matchType}
                   value={match.participants}
                   onChange={(value, matchType) => {
                     console.log('VisualMatchBuilder onChange called with value:', value, 'matchType:', matchType);
