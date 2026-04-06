@@ -33,6 +33,7 @@ export const STIPULATION_OPTIONS = [
   "King of the Ring Semi-Final",
   "Last Man Standing",
   "Last Woman Standing",
+  "Ladder Match",
   "Men's Elimination Chamber qualifier",
   "Men's Money in the Bank qualifier",
   "Men's Survivor Series Qualifier",

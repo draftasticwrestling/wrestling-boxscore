@@ -272,6 +272,7 @@ const EVENT_LOGO_MAP = {
   'night of champions': 'night_of_champions.png',
   'survivor series': 'survivor_series.png',
   'saturday night\'s main event': 'saturday_nights_main_event.png',
+  'clash in italy': 'clash-in-italy.png',
   // add more special cases as needed
 };
 
@@ -1383,6 +1384,7 @@ function AddEvent({ addEvent, wrestlers }) {
     "Backlash",
     "Bad Blood",
     "Clash in Paris",
+    "Clash in Italy",
     "Crown Jewel",
     "Elimination Chamber",
     "Evolution",
