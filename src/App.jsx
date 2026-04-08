@@ -3882,10 +3882,13 @@ function AddEvent({ addEvent, wrestlers }) {
                       wrestlers={wrestlers}
                       matchType={match.matchType}
                       value={match.participants}
-                      onChange={value => {
+                      onChange={(value, matchType) => {
                         console.log('VisualMatchBuilder onChange called with value:', value);
                         console.log('Current match state:', match);
                         const newMatch = { ...match, participants: value };
+                        if (matchType) {
+                          newMatch.matchType = matchType;
+                        }
                         console.log('New match state will be:', newMatch);
                         setMatch(newMatch);
                       }}
@@ -5906,10 +5909,13 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                         wrestlers={wrestlers}
                         matchType={match.matchType}
                         value={match.participants}
-                        onChange={value => {
+                        onChange={(value, matchType) => {
                           console.log('VisualMatchBuilder onChange called with value:', value);
                           console.log('Current match state:', match);
                           const newMatch = { ...match, participants: value };
+                          if (matchType) {
+                            newMatch.matchType = matchType;
+                          }
                           console.log('New match state will be:', newMatch);
                           setMatch(newMatch);
                         }}
@@ -7418,6 +7424,13 @@ function MatchPageNewWrapper({ events, onEditMatch, onRealTimeCommentaryUpdate, 
 
 // Function to get match structure based on match type
 const getMatchStructureFromMatchType = (matchType) => {
+  const nWayMatch = typeof matchType === 'string' ? matchType.match(/^(\d+)-way Match$/i) : null;
+  if (nWayMatch) {
+    const sideCount = Number(nWayMatch[1]);
+    if (Number.isFinite(sideCount) && sideCount >= 3 && sideCount <= 12) {
+      return Array.from({ length: sideCount }, () => ({ type: 'individual', participants: [''] }));
+    }
+  }
   switch (matchType) {
     case 'Singles Match':
       return [

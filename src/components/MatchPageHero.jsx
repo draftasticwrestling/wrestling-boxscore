@@ -293,6 +293,7 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
     match.matchType === 'Triple Threat match' ||
     match.matchType === 'Fatal Four-way match' ||
     match.matchType === '5-way Match' ||
+    (typeof match.matchType === 'string' && /^\d+-way Match$/i.test(match.matchType)) ||
     match.matchType === '3-way Tag Team' ||
     match.matchType === '4-way Tag Team' ||
     displayStipulation === '3-way Tag Team' ||

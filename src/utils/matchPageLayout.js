@@ -84,6 +84,7 @@ function shouldTreatArrowAsVersusForMultiWay(match) {
     t === 'Triple Threat match' ||
     t === 'Fatal Four-way match' ||
     t === '5-way Match' ||
+    (typeof t === 'string' && /^\d+-way Match$/i.test(t)) ||
     t === '3-way Tag Team' ||
     t === '4-way Tag Team'
   );
@@ -241,6 +242,9 @@ const ENHANCED_TYPES = new Set([
   '6-person Tag Team',
 ]);
 
+/** Beyond this many competitors, the full-image hero + per-wrestler stats are too heavy — use event-style MatchCard on the dedicated page. */
+const MAX_WRESTLERS_FOR_ENHANCED_MATCH_PAGE = 5;
+
 /**
  * Full-image hero for singles, tag, triple threat, fatal four-way, and 6-person tag (3 vs 3).
  * String participants only; validates slug counts per match type.
@@ -250,6 +254,8 @@ export function shouldUseEnhancedMatchPage(match, wrestlerMap = {}) {
   const teamStrings = getSidesFromMatchParticipants(match);
   if (!teamStrings || teamStrings.length < 2) return false;
   const sides = teamStrings.map((ts) => parseTeamStringForPage(ts, wrestlerMap));
+  const totalSlugs = sides.reduce((sum, s) => sum + (s.slugs?.length ?? 0), 0);
+  if (totalSlugs > MAX_WRESTLERS_FOR_ENHANCED_MATCH_PAGE) return false;
   const mt = match.matchType;
   if (mt === 'Singles Match') {
     return teamStrings.length === 2 && sides.every((s) => s.slugs.length === 1);

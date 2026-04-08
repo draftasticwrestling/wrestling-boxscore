@@ -1042,6 +1042,13 @@ export default function MatchEdit({
 
   // Function to get match structure from match type (copied from App.jsx)
   const getMatchStructureFromMatchType = (matchType) => {
+    const nWayMatch = typeof matchType === 'string' ? matchType.match(/^(\d+)-way Match$/i) : null;
+    if (nWayMatch) {
+      const sideCount = Number(nWayMatch[1]);
+      if (Number.isFinite(sideCount) && sideCount >= 3 && sideCount <= 12) {
+        return Array.from({ length: sideCount }, () => ({ type: 'individual', participants: [''] }));
+      }
+    }
     switch (matchType) {
       case 'Singles Match':
         return [
@@ -1183,8 +1190,13 @@ export default function MatchEdit({
         return null;
       }
 
-      // Check if it's a Gauntlet Match (contains arrows)
-      if (participants.includes(' → ')) {
+      const isExplicitGauntletType =
+        match.matchType === 'Gauntlet Match' ||
+        match.matchType === 'Tag Team Gauntlet Match' ||
+        match.matchType === '2 out of 3 Falls';
+
+      // Treat arrows as sequence only for explicit sequence-based match types.
+      if (participants.includes(' → ') && isExplicitGauntletType) {
         const participantList = participants.split(' → ').filter(s => s.trim()).map(s => s.trim());
         return participantList.map(participant => ({
           type: 'individual',
