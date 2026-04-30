@@ -859,6 +859,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
           hasCommentary={hasCommentary}
           cardView={cardView}
           setCardView={setCardView}
+          showCommentaryTab={false}
         />
       </div>
     );
@@ -2706,6 +2707,7 @@ export default function MatchCard({ match, event, wrestlerMap, isClickable = tru
         hasCommentary={hasCommentary}
         cardView={cardView}
         setCardView={setCardView}
+        showCommentaryTab={false}
       />
     </div>
   );

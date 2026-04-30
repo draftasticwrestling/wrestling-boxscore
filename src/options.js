@@ -80,17 +80,24 @@ export const TITLE_OPTIONS = [
   "None",
   "Undisputed WWE Championship",
   "World Heavyweight Championship",
+  "NXT Championship",
   "Men's IC Championship",
+  "NXT North American Championship",
   "Men's U.S. Championship",
   "Raw Tag Team Championship",
   "SmackDown Tag Team Championship",
   "Men's Speed Championship",
   "WWE Women's Championship",
+  "NXT Women's Championship",
   "Women's World Championship",
   "Women's IC Championship",
+  "NXT Women's North American Championship",
   "Women's U.S. Championship",
   "Women's Tag Team Championship",
-  "Women's Speed Championship"
+  "Women's Speed Championship",
+  "NXT Tag Team Championship",
+  "NXT Speed Championship",
+  "NXT Women's Speed Championship"
 ];
 
 export const SPECIAL_WINNER_OPTIONS = [

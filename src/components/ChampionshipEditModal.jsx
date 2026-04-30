@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { supabase } from '../supabaseClient';
+import { applyChampionshipUpdate } from '../utils/championshipWorkflow';
 
 export default function ChampionshipEditModal({ championship, wrestlers = [], tagTeams = [], tagTeamMembers = {}, onClose, onSave }) {
   const [selectedSlug, setSelectedSlug] = useState(championship.current_champion_slug || '');
   const [championName, setChampionName] = useState(championship.current_champion || '');
   const [brand, setBrand] = useState(championship.brand || '');
   const [dateWon, setDateWon] = useState(championship.date_won || '');
+  const [eventName, setEventName] = useState(championship.event_name || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -84,26 +85,14 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], ta
         }
       }
 
-      const updateData = {
-        current_champion: effectiveChampionName || null,
-        current_champion_slug: selectedSlug || null,
-        brand: brand || null,
-        date_won: dateWon || null,
-      };
-
-      const { data, error: updateError } = await supabase
-        .from('championships')
-        .update(updateData)
-        .eq('id', championship.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating championship:', updateError);
-        setError(updateError.message || 'Failed to update championship');
-        setSaving(false);
-        return;
-      }
+      const data = await applyChampionshipUpdate({
+        championshipId: championship.id,
+        selectedSlug,
+        championName: effectiveChampionName,
+        brand,
+        dateWon,
+        eventName,
+      });
 
       if (onSave) {
         onSave(data);
@@ -258,6 +247,26 @@ export default function ChampionshipEditModal({ championship, wrestlers = [], ta
                 color: '#fff',
               }}
               placeholder="e.g. 2025-06-01"
+            />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 4, color: '#fff', fontSize: 13 }}>
+              Event Won
+            </label>
+            <input
+              type="text"
+              value={eventName || ''}
+              onChange={(e) => setEventName(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 10px',
+                borderRadius: 6,
+                border: '1px solid #555',
+                background: '#111',
+                color: '#fff',
+              }}
+              placeholder="e.g. WrestleMania 41"
             />
           </div>
 

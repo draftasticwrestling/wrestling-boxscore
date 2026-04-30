@@ -38,6 +38,7 @@ export default function MatchCardTabsSection({
   statisticsExtraHint,
   cardView: cardViewControlled,
   setCardView: setCardViewControlled,
+  showCommentaryTab = true,
   /** When true (match page hero layout), no top border — tabs sit in their own card */
   standalone = false,
 }) {
@@ -63,9 +64,11 @@ export default function MatchCardTabsSection({
         </button>
         {match?.matchType !== 'Promo' && (
           <>
-            <button type="button" onClick={() => setCardView('commentary')} style={cardView === 'commentary' ? pillActive : pillBase}>
-              Commentary
-            </button>
+            {showCommentaryTab && (
+              <button type="button" onClick={() => setCardView('commentary')} style={cardView === 'commentary' ? pillActive : pillBase}>
+                Commentary
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setCardView('statistics')}

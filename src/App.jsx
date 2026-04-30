@@ -264,26 +264,51 @@ function useUnsavedChangesWarning(hasUnsavedChanges) {
 }
 
 const EVENT_LOGO_MAP = {
-  raw: 'raw_logo.png',
-  smackdown: 'smackdown_logo.png',
-  'wrestlemania night 1': 'wrestlemania_logo.png',
-  'wrestlemania night 2': 'wrestlemania_logo.png',
-  'summer slam night 1': 'summer_slam.png',
-  'summer slam night 2': 'summer_slam.png',
-  'night of champions': 'night_of_champions.png',
-  'survivor series': 'survivor_series.png',
-  'saturday night\'s main event': 'saturday_nights_main_event.png',
-  'clash in italy': 'clash-in-italy.png',
+  raw: 'Raw.png',
+  smackdown: 'Smackdown.png',
+  'wrestlemania night 1': 'WrestleMania.png',
+  'wrestlemania night 2': 'WrestleMania.png',
+  'summer slam night 1': 'Summer-Slam.png',
+  'summer slam night 2': 'Summer-Slam.png',
+  'night of champions': 'Night-Of-Champions.png',
+  'survivor series': 'Survivor-Series.png',
+  'saturday night\'s main event': 'Saturday-Nights-Main-Event.png',
+  'clash in italy': 'Clash-In-Italy.png',
+  'clash in paris': 'clash-in-paris.png',
+  backlash: 'Backlash.png',
+  'crown jewel': 'Crown-Jewel.png',
+  'elimination chamber': 'Elimination-Chamber.png',
+  evolution: 'Evolution.png',
+  'money in the bank': 'Money-In-The-Bank.png',
+  'royal rumble': 'Royal-Rumble.png',
+  wrestlepalooza: 'Wrestlepalooza.png',
+  // NXT shows / specials
+  'wwe nxt': 'nxt-main-logo.png',
+  nxt: 'NXT.png',
+  'nxt stand and deliver': 'nxt-stand-and-deliver.png',
+  'nxt deadline': 'nxt-deadline.png',
+  'nxt battleground': 'nxt-battleground.png',
+  'nxt the great american bash': 'nxt-great-american-bash.png',
+  'nxt no mercy': 'nxt-no-mercy.png',
+  'nxt halloween havoc': 'nxt-halloween-havoc.png',
+  'nxt heatwave': 'nxt-heatwave.png',
+  'nxt vengeance day': 'nxt-vengeance-day.png',
+  'nxt new year\'s evil': 'nxt-new-years-evil.png',
+  'nxt showdown': 'nxt-showdown.png',
+  'nxt gold rush': 'nxt-gold-rush.png',
+  'nxt roadblock': 'nxt-roadblock.png',
+  'nxt homecoming': 'nxt-homecoming.png',
+  'nxt revenge': 'nxt-revenge.png',
   // add more special cases as needed
 };
 
 function getEventLogo(name) {
   if (!name) return null;
   const key = name.trim().toLowerCase();
-  if (EVENT_LOGO_MAP[key]) return `/images/${EVENT_LOGO_MAP[key]}`;
+  if (EVENT_LOGO_MAP[key]) return `/images/event-logos/${EVENT_LOGO_MAP[key]}`;
   // fallback: auto-generate filename
-  let auto = key.replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '') + '.png';
-  return `/images/${auto}`;
+  const autoKebab = key.replace(/[^a-z0-9]+/g, '-').replace(/-+$/g, '') + '.png';
+  return `/images/event-logos/${autoKebab}`;
 }
 
 // Logo fallback component
@@ -299,11 +324,12 @@ function EventLogoOrText({ name, alt, style, textStyle }) {
   return <strong style={textStyle}>{name}</strong>;
 }
 
-// Classify event for show filter: raw | smackdown | ple (from name only; no DB field)
+// Classify event for show filter: raw | smackdown | nxt | ple (from name only; no DB field)
 function getEventShowType(event) {
   const name = (event?.name || '').toLowerCase().trim();
   if (name.includes('raw') && !name.includes('tag team')) return 'raw';
   if (name.includes('smackdown') || name.includes('smack down')) return 'smackdown';
+  if (name.includes('nxt')) return 'nxt';
   return 'ple';
 }
 
@@ -311,6 +337,7 @@ const SHOW_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
   { value: 'raw', label: 'Raw' },
   { value: 'smackdown', label: 'SmackDown' },
+  { value: 'nxt', label: 'NXT' },
   { value: 'ple', label: 'PLEs' },
 ];
 
@@ -319,7 +346,7 @@ function EventList({ events, showFilterFromRoute }) {
   const navigate = useNavigate();
   const [visibleCount, setVisibleCount] = useState(30);
   const [activeTab, setActiveTab] = useState('completed'); // 'completed' | 'upcoming'
-  const [showFilter, setShowFilterState] = useState(showFilterFromRoute || 'all'); // 'all' | 'raw' | 'smackdown' | 'ple'
+  const [showFilter, setShowFilterState] = useState(showFilterFromRoute || 'all'); // 'all' | 'raw' | 'smackdown' | 'nxt' | 'ple'
 
   // Sync state with route when navigating to a show-specific URL
   React.useEffect(() => {
@@ -386,6 +413,7 @@ function EventList({ events, showFilterFromRoute }) {
   const showTitles = {
     raw: { title: 'Raw Results', name: 'Raw', description: 'WWE Raw results from last night and recent shows. Full match cards, winners, and championship updates for Monday Night Raw.' },
     smackdown: { title: 'SmackDown Results', name: 'SmackDown', description: 'WWE SmackDown results from last night and recent shows. Full match cards, winners, and championship updates for Friday Night SmackDown.' },
+    nxt: { title: 'NXT Results', name: 'NXT', description: 'WWE NXT results from weekly NXT episodes and NXT specials. Full match cards, winners, and championship updates.' },
     ple: { title: 'PLE Results', name: 'Premium Live Events', description: 'WWE Premium Live Event results — WrestleMania, SummerSlam, Royal Rumble, and more. Full match cards and championship updates.' },
   };
   const showMeta = showFilterFromRoute ? showTitles[showFilterFromRoute] : null;
@@ -454,6 +482,16 @@ function EventList({ events, showFilterFromRoute }) {
             </p>
           </>
         )}
+        {showFilterFromRoute === 'nxt' && (
+          <>
+            <p style={{ color: '#ddd', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
+              WWE NXT results from weekly episodes and specials including Stand & Deliver, Deadline, Battleground, No Mercy, Halloween Havoc, and more. See full cards, winners, and title changes at a glance.
+            </p>
+            <p style={{ color: '#bbb', fontSize: 15, lineHeight: 1.5, marginBottom: 0 }}>
+              Browse completed and upcoming NXT events below. Open each event for match-by-match details, stipulations, and championship implications.
+            </p>
+          </>
+        )}
         {showFilterFromRoute === 'ple' && (
           <>
             <p style={{ color: '#ddd', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
@@ -477,64 +515,13 @@ function EventList({ events, showFilterFromRoute }) {
               {' · '}
               <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
               {' · '}
+              <Link to="/nxt" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>NXT results</Link>
+              {' · '}
               <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
             </p>
           </>
         )}
       </div>
-
-      {/* Latest WWE results */}
-      {completedEvents.length > 0 && (
-        <section style={{
-          marginBottom: 28,
-          padding: '20px 24px',
-          background: 'rgba(34,34,34,0.98)',
-          borderRadius: 12,
-          border: '1px solid #333',
-        }}>
-          <h2 style={{ color: gold, fontSize: 20, fontWeight: 700, margin: '0 0 6px' }}>
-            Latest WWE results
-          </h2>
-          <p style={{ color: '#aaa', fontSize: 14, margin: '0 0 16px' }}>
-            Results from last night and recent shows — full match cards and winners.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {completedEvents.slice(0, 3).map(event => (
-              <Link
-                to={`/events/${getEventSlug(event)}`}
-                key={event.id}
-                onClick={saveListScroll}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  background: '#222',
-                  borderRadius: 8,
-                  border: '1px solid #444',
-                  textDecoration: 'none',
-                  color: '#fff',
-                  transition: 'background 0.2s',
-                }}
-                onMouseOver={e => {
-                  e.currentTarget.style.background = '#2a2a2a';
-                  e.currentTarget.style.borderColor = gold;
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.background = '#222';
-                  e.currentTarget.style.borderColor = '#444';
-                }}
-              >
-                <span style={{ fontWeight: 600, fontSize: 16 }}>{event.name}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 12, color: gold, fontSize: 14 }}>
-                  {formatDate(event.date)}{event.location ? ` · ${event.location}` : ''}
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>View results →</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Completed / Upcoming toggle */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 8 }}>
@@ -1004,7 +991,14 @@ function EventBoxScore({ events, onDelete, onEditMatch, onRealTimeCommentaryUpda
   const formattedDateShort = formatDateShort(event.date);
   const recency = getEventDateRecency(event);
   const showType = getEventShowType(event);
-  const showLabel = showType === 'raw' ? 'Raw' : showType === 'smackdown' ? 'SmackDown' : null;
+  const showLabel =
+    showType === 'raw'
+      ? 'Raw'
+      : showType === 'smackdown'
+        ? 'SmackDown'
+        : showType === 'nxt'
+          ? 'NXT'
+          : null;
   const brandPrefix = showLabel || (event.name || '').split(' ')[0] || 'WWE';
 
   const titleShow = showLabel ? `WWE ${showLabel}` : `WWE ${event.name}`;
@@ -1388,6 +1382,21 @@ function AddEvent({ addEvent, wrestlers }) {
   const EVENT_TYPES = [
     "RAW",
     "SmackDown",
+    "WWE NXT",
+    "NXT Stand and Deliver",
+    "NXT Deadline",
+    "NXT Battleground",
+    "NXT The Great American Bash",
+    "NXT No Mercy",
+    "NXT Halloween Havoc",
+    "NXT Heatwave",
+    "NXT Vengeance Day",
+    "NXT New Year's Evil",
+    "NXT Showdown",
+    "NXT Gold Rush",
+    "NXT Roadblock",
+    "NXT Homecoming",
+    "NXT Revenge",
     "Backlash",
     "Bad Blood",
     "Clash in Paris",
@@ -2057,7 +2066,7 @@ function AddEvent({ addEvent, wrestlers }) {
   };
 
   // Save the event
-  const handleSaveEvent = (e, navigateBack = false) => {
+  const handleSaveEvent = async (e, navigateBack = false) => {
     if (e && typeof e.preventDefault === 'function') {
       e.preventDefault();
     }
@@ -2109,8 +2118,14 @@ function AddEvent({ addEvent, wrestlers }) {
         name: specialWinnerName
       };
     }
-    addEvent(eventData);
-    navigate(`/events/${getEventSlug({ name: eventType, date })}`);
+    const savedEvent = await addEvent(eventData);
+    if (savedEvent?.id) {
+      // Route by ID for immediate reliability; EventBoxScore resolves both ID and slug.
+      navigate(`/events/${savedEvent.id}`);
+    } else {
+      // Conservative fallback if persistence failed.
+      navigate('/');
+    }
   };
 
   return (
@@ -3970,34 +3985,22 @@ function AddEvent({ addEvent, wrestlers }) {
                   <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
                 </label>
               </div>
-              <div>
-                <label>
-                  Notes (optional):<br />
-                  <textarea 
-                    value={match.notes || ''} 
-                    onChange={e => setMatch({ ...match, notes: e.target.value })} 
-                    style={{ width: '100%', minHeight: '60px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
-                    placeholder="Enter any additional notes about the match..."
-                  />
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>
+                  Title Outcome:
                 </label>
+                <select
+                  value={match.titleOutcome || ""}
+                  onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
+                  style={inputStyle}
+                >
+                  {TITLE_OUTCOME_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
             </>
           )}
-          {/* Title outcome should appear above special match winner on add-event form */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>
-              Title Outcome:
-            </label>
-            <select
-              value={match.titleOutcome || ""}
-              onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
-              style={inputStyle}
-            >
-              {TITLE_OUTCOME_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>
               Special Match Winner:
@@ -5997,34 +6000,22 @@ function EditEvent({ events, updateEvent, wrestlers }) {
                     <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
                   </label>
                 </div>
-                <div>
-                  <label>
-                    Notes (optional):<br />
-                    <textarea 
-                      value={match.notes || ''} 
-                      onChange={e => setMatch({ ...match, notes: e.target.value })} 
-                      style={{ width: '100%', minHeight: '60px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
-                      placeholder="Enter any additional notes about the match..."
-                    />
+                <div style={{ marginBottom: 16 }}>
+                  <label style={labelStyle}>
+                    Title Outcome:
                   </label>
+                  <select
+                    value={match.titleOutcome || ""}
+                    onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
+                    style={inputStyle}
+                  >
+                    {TITLE_OUTCOME_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
               </>
             )}
-            {/* Title outcome should appear above special match winner on edit-event match form */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>
-                Title Outcome:
-              </label>
-              <select
-                value={match.titleOutcome || ""}
-                onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
-                style={inputStyle}
-              >
-                {TITLE_OUTCOME_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>
                 Special Match Winner:
@@ -6545,12 +6536,14 @@ function App() {
 
       console.log('Successfully added event');
       // Update local state with the full event data (always include promos in local state)
-      setEvents([event, ...events]);
+      setEvents(prev => [event, ...prev]);
+      return event;
     } catch (error) {
       console.error('Error adding event:', error);
       alert(`Failed to add event: ${error.message || 'Please try again.'}`);
       // Fallback to local state update if Supabase fails
-      setEvents([event, ...events]);
+      setEvents(prev => [event, ...prev]);
+      return event;
     }
   };
 
@@ -6709,16 +6702,23 @@ function App() {
       'Undisputed WWE Championship': 'wwe-championship',
       'World Heavyweight Championship': 'world-heavyweight-championship',
       "Men's IC Championship": 'mens-ic-championship',
+      'NXT Championship': 'nxt-championship',
+      'NXT North American Championship': 'nxt-north-american-championship',
       "Men's U.S. Championship": 'mens-us-championship',
       'Raw Tag Team Championship': 'raw-tag-team-championship',
       'SmackDown Tag Team Championship': 'smackdown-tag-team-championship',
       "Men's Speed Championship": 'mens-speed-championship',
+      'NXT Tag Team Championship': 'nxt-tag-team-championship',
+      'NXT Speed Championship': 'nxt-speed-championship',
       "WWE Women's Championship": 'wwe-womens-championship',
+      "NXT Women's Championship": 'nxt-womens-championship',
       "Women's World Championship": 'womens-world-championship',
       "Women's IC Championship": 'womens-ic-championship',
+      "NXT Women's North American Championship": 'nxt-north-american-womens-championship',
       "Women's U.S. Championship": 'womens-us-championship',
       "Women's Tag Team Championship": 'womens-tag-team-championship',
-      "Women's Speed Championship": 'womens-speed-championship'
+      "Women's Speed Championship": 'womens-speed-championship',
+      "NXT Women's Speed Championship": 'nxt-womens-speed-championship'
     };
     return mapping[titleName] || null;
   };
@@ -7184,6 +7184,7 @@ function App() {
             <Route path="/" element={<EventList events={events} />} />
             <Route path="/raw" element={<EventList events={events} showFilterFromRoute="raw" />} />
             <Route path="/smackdown" element={<EventList events={events} showFilterFromRoute="smackdown" />} />
+            <Route path="/nxt" element={<EventList events={events} showFilterFromRoute="nxt" />} />
             <Route path="/ple" element={<EventList events={events} showFilterFromRoute="ple" />} />
             <Route path="/event/:eventId" element={<EventIdRedirect events={events} />} />
             <Route

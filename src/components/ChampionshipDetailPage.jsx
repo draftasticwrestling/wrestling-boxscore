@@ -7,30 +7,40 @@ import { useUser } from '../hooks/useUser';
 const gold = '#C6A04F';
 
 const BELT_IMAGE_MAP = {
-  'wwe-championship': 'mens-wwe-champion.png',
-  'world-heavyweight-championship': 'mens-world-heavyweight.png',
-  'mens-ic-championship': 'mens-intercontinental.png',
-  'mens-us-championship': 'mens-united-states.png',
-  'raw-tag-team-championship': 'mens-world-tag.png',
-  'smackdown-tag-team-championship': 'mens-wwe-tag.png',
-  'wwe-womens-championship': 'womens-wwe-champion.png',
-  'womens-world-championship': 'womens-world-champion.png',
-  'womens-ic-championship': 'womens-intercontinental.png',
-  'womens-us-championship': 'womens-united-states.png',
-  'womens-tag-team-championship': 'womens-tag.png',
+  'wwe-championship': 'undisputed-wwe-championship.png',
+  'world-heavyweight-championship': 'world-heavyweight-championship.png',
+  'mens-ic-championship': 'mens-intercontinental-championship.png',
+  'mens-us-championship': 'mens-united-states-championship.png',
+  'raw-tag-team-championship': 'raw-tag-team-championship.png',
+  'smackdown-tag-team-championship': 'smackdown-tag-team-championship.png',
+  'wwe-womens-championship': 'womens-wwe-championship.png',
+  'womens-world-championship': 'womens-world-championship.png',
+  'womens-ic-championship': 'womens-intercontinental-championship.png',
+  'womens-us-championship': 'womens-united-states-championship.png',
+  'womens-tag-team-championship': 'womens-tag-team-championship.png',
+  'mens-speed-championship': 'nxt-speed-championship.png',
+  'womens-speed-championship': 'nxt-womens-speed-championship.png',
+  // NXT belts
+  'nxt-championship': 'nxt-championship.png',
+  'nxt-womens-championship': 'nxt-womens-championship.png',
+  'nxt-north-american-championship': 'nxt-north-american-championship.png',
+  'nxt-north-american-womens-championship': 'nxt-north-american-womens-championship.png',
+  'nxt-tag-team-championship': 'nxt-tag-team-championship.png',
+  'nxt-speed-championship': 'nxt-speed-championship.png',
+  'nxt-womens-speed-championship': 'nxt-womens-speed-championship.png',
 };
 
 const BRAND_COLORS = {
   RAW: '#e10600',
   SmackDown: '#0066a1',
-  NXT: '#ffc20e',
+  NXT: '#8A8F98',
   Unassigned: '#888',
 };
 
 function getBeltImageUrl(championshipId) {
   const filename = BELT_IMAGE_MAP[championshipId];
   if (!filename) return null;
-  return `https://qvbqxietcmweltxoonvh.supabase.co/storage/v1/object/public/belts/${filename}`;
+  return `/images/belts/${filename}`;
 }
 
 // Parse as local date-only to avoid timezone shifting (e.g. 2025-04-01 showing as Mar 31)
@@ -224,6 +234,38 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
     await persistFactsList(next);
   };
 
+  const syncChampionshipFromHistory = async () => {
+    if (!id) return;
+    const { data: rows, error: historyError } = await supabase
+      .from('championship_history')
+      .select('*')
+      .eq('championship_id', id)
+      .order('date_won', { ascending: false });
+    if (historyError || !rows || rows.length === 0) return;
+    const latest = rows[0];
+    const prev = rows[1] || null;
+
+    const { error: champUpdateError } = await supabase
+      .from('championships')
+      .update({
+        current_champion: latest.champion || null,
+        current_champion_slug: latest.champion_slug || null,
+        previous_champion: latest.previous_champion || prev?.champion || null,
+        previous_champion_slug: latest.previous_champion_slug || prev?.champion_slug || null,
+        date_won: latest.date_won || null,
+        event_name: latest.event_name || null,
+      })
+      .eq('id', id);
+    if (champUpdateError) throw champUpdateError;
+
+    const { data: updatedChamp } = await supabase
+      .from('championships')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (updatedChamp) setChampionship(updatedChamp);
+  };
+
   const openAddReign = () => {
     setEditingRowId(null);
     setAddReignType(null);
@@ -320,7 +362,6 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
           .from('championship_history')
           .insert(payload);
         if (insertError) throw insertError;
-        // Title Change: update the previous reign (current champion) with date_lost and event_lost
         if (addReignType === 'title_change' && sortedHistory.length > 0) {
           const prevReign = sortedHistory[0];
           if (prevReign && (prevReign.date_lost == null || prevReign.date_lost === '')) {
@@ -336,6 +377,11 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
         }
       }
       await refetchHistory();
+      // Historical backfills should not change the current champion card.
+      // Only title changes (or direct edits) should sync current champion.
+      if (editingRowId || addReignType !== 'historical') {
+        await syncChampionshipFromHistory();
+      }
       cancelReignForm();
     } catch (err) {
       console.error(err);
@@ -354,6 +400,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
         .eq('id', rowId);
       if (error) throw error;
       await refetchHistory();
+      await syncChampionshipFromHistory();
     } catch (err) {
       console.error(err);
       setReignError(err.message || 'Failed to delete reign.');
@@ -406,6 +453,7 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
         <p style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', fontSize: 14, marginBottom: 24 }}>
           <Link to="/raw" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
           <Link to="/smackdown" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+          <Link to="/nxt" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>NXT results</Link>
           <Link to="/ple" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
           <Link to="/wrestlers" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Roster</Link>
           <Link to="/championships" style={{ color: gold, textDecoration: 'none', fontWeight: 600 }}>Championships</Link>
@@ -500,34 +548,10 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
               {reignError && <p style={{ color: '#e57373', fontSize: 13, marginBottom: 12 }}>{reignError}</p>}
               {!editingRowId && !addReignType && (
                 <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => startAddReignAs('historical')}
-                    style={{
-                      padding: '10px 18px',
-                      background: '#333',
-                      color: '#fff',
-                      border: `2px solid ${gold}`,
-                      borderRadius: 8,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
+                  <button type="button" onClick={() => startAddReignAs('historical')} style={{ padding: '10px 18px', background: '#333', color: '#fff', border: `2px solid ${gold}`, borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>
                     Historical Reign
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => startAddReignAs('title_change')}
-                    style={{
-                      padding: '10px 18px',
-                      background: '#333',
-                      color: '#fff',
-                      border: `2px solid ${gold}`,
-                      borderRadius: 8,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
+                  <button type="button" onClick={() => startAddReignAs('title_change')} style={{ padding: '10px 18px', background: '#333', color: '#fff', border: `2px solid ${gold}`, borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>
                     Title Change
                   </button>
                   <span style={{ color: '#888', fontSize: 13, alignSelf: 'center' }}>
@@ -536,100 +560,42 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                 </div>
               )}
               {(editingRowId || addReignType) && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Champion *</label>
-                  <input
-                    type="text"
-                    value={reignForm.champion}
-                    onChange={(e) => setReignForm((f) => ({ ...f, champion: e.target.value }))}
-                    placeholder="Name"
-                    style={inputStyle}
-                  />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Champion *</label>
+                    <input type="text" value={reignForm.champion} onChange={(e) => setReignForm((f) => ({ ...f, champion: e.target.value }))} placeholder="Name" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Defeated</label>
+                    <input type="text" value={reignForm.previous_champion} onChange={(e) => setReignForm((f) => ({ ...f, previous_champion: e.target.value }))} placeholder="Previous champion" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Date won *</label>
+                    <input type="date" value={reignForm.date_won} onChange={(e) => setReignForm((f) => ({ ...f, date_won: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Event won</label>
+                    <input type="text" value={reignForm.event_name} onChange={(e) => setReignForm((f) => ({ ...f, event_name: e.target.value }))} placeholder="e.g. WrestleMania 40" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Date lost</label>
+                    <input type="date" value={reignForm.date_lost} onChange={(e) => setReignForm((f) => ({ ...f, date_lost: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Event lost</label>
+                    <input type="text" value={reignForm.event_lost} onChange={(e) => setReignForm((f) => ({ ...f, event_lost: e.target.value }))} placeholder="e.g. SmackDown" style={inputStyle} />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Defeated</label>
-                  <input
-                    type="text"
-                    value={reignForm.previous_champion}
-                    onChange={(e) => setReignForm((f) => ({ ...f, previous_champion: e.target.value }))}
-                    placeholder="Previous champion"
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Date won *</label>
-                  <input
-                    type="date"
-                    value={reignForm.date_won}
-                    onChange={(e) => setReignForm((f) => ({ ...f, date_won: e.target.value }))}
-                    style={inputStyle}
-                  />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Event won</label>
-                  <input
-                    type="text"
-                    value={reignForm.event_name}
-                    onChange={(e) => setReignForm((f) => ({ ...f, event_name: e.target.value }))}
-                    placeholder="e.g. WrestleMania 40"
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Date lost</label>
-                  <input
-                    type="date"
-                    value={reignForm.date_lost}
-                    onChange={(e) => setReignForm((f) => ({ ...f, date_lost: e.target.value }))}
-                    style={inputStyle}
-                  />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Event lost</label>
-                  <input
-                    type="text"
-                    value={reignForm.event_lost}
-                    onChange={(e) => setReignForm((f) => ({ ...f, event_lost: e.target.value }))}
-                    placeholder="e.g. SmackDown"
-                    style={inputStyle}
-                  />
-                </div>
-              </div>
               )}
               {(editingRowId || addReignType) && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={handleSaveReign}
-                  disabled={savingReign}
-                  style={{
-                    padding: '8px 16px',
-                    background: gold,
-                    color: '#232323',
-                    border: 'none',
-                    borderRadius: 6,
-                    fontWeight: 600,
-                    cursor: savingReign ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {savingReign ? 'Saving...' : editingRowId ? 'Update' : 'Add'}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelReignForm}
-                  style={{
-                    padding: '8px 16px',
-                    background: 'transparent',
-                    color: '#ccc',
-                    border: '1px solid #555',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button type="button" onClick={handleSaveReign} disabled={savingReign} style={{ padding: '8px 16px', background: gold, color: '#232323', border: 'none', borderRadius: 6, fontWeight: 600, cursor: savingReign ? 'not-allowed' : 'pointer' }}>
+                    {savingReign ? 'Saving...' : editingRowId ? 'Update' : 'Add'}
+                  </button>
+                  <button type="button" onClick={cancelReignForm} style={{ padding: '8px 16px', background: 'transparent', color: '#ccc', border: '1px solid #555', borderRadius: 6, cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -682,35 +648,10 @@ export default function ChampionshipDetailPage({ wrestlers = [] }) {
                       <td style={{ padding: '10px 12px', textAlign: 'right' }}>{row.days_held != null ? row.days_held : '—'}</td>
                       {isAuthorized && (
                         <td style={{ padding: '10px 12px' }}>
-                          <button
-                            type="button"
-                            onClick={() => openEditReign(row)}
-                            style={{
-                              marginRight: 8,
-                              padding: '4px 8px',
-                              fontSize: 12,
-                              background: 'transparent',
-                              color: gold,
-                              border: `1px solid ${gold}`,
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                            }}
-                          >
+                          <button type="button" onClick={() => openEditReign(row)} style={{ marginRight: 8, padding: '4px 8px', fontSize: 12, background: 'transparent', color: gold, border: `1px solid ${gold}`, borderRadius: 4, cursor: 'pointer' }}>
                             Edit
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteReign(row.id)}
-                            style={{
-                              padding: '4px 8px',
-                              fontSize: 12,
-                              background: 'transparent',
-                              color: '#e57373',
-                              border: '1px solid #e57373',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                            }}
-                          >
+                          <button type="button" onClick={() => handleDeleteReign(row.id)} style={{ padding: '4px 8px', fontSize: 12, background: 'transparent', color: '#e57373', border: '1px solid #e57373', borderRadius: 4, cursor: 'pointer' }}>
                             Delete
                           </button>
                         </td>

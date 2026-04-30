@@ -2486,53 +2486,28 @@ export default function MatchEdit({
               <input value={match.time} onChange={e => setMatch({ ...match, time: e.target.value })} style={{ width: '100%' }} />
             </label>
           </div>
-          <div>
-            <label>
-              Notes (optional):<br />
-              <textarea 
-                value={match.notes || ''} 
-                onChange={e => setMatch({ ...match, notes: e.target.value })} 
-                style={{ width: '100%', minHeight: '60px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
-                placeholder="Enter any additional notes about the match..."
-              />
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>
+              Title Outcome:
             </label>
+            <select
+              value={match.titleOutcome || ""}
+              onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
+              style={inputStyle}
+            >
+              {TITLE_OUTCOME_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {match.title && match.title !== 'None' && (
+              <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
+                <strong>Guidance:</strong> Use "Champion Retains" when the champion keeps the title (wins OR loses by DQ/Count Out). 
+                Use "New Champion" only when the title actually changes hands.
+              </div>
+            )}
           </div>
         </>
       )}
-      {status === 'completed' && (
-        <div>
-          <label>
-            Match Summary (optional):<br />
-            <textarea
-              value={match.summary || ''}
-              onChange={e => setMatch({ ...match, summary: e.target.value })}
-              style={{ width: '100%', minHeight: '72px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
-              placeholder="Brief recap of the match for the Summary view on the match card..."
-            />
-          </label>
-        </div>
-      )}
-      {/* Title outcome should appear above special match winner in the form */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>
-          Title Outcome:
-        </label>
-        <select
-          value={match.titleOutcome || ""}
-          onChange={e => setMatch({ ...match, titleOutcome: e.target.value })}
-          style={inputStyle}
-        >
-          {TITLE_OUTCOME_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-        {match.title && match.title !== 'None' && (
-          <div style={{ fontSize: 12, color: '#bbb', marginTop: 4 }}>
-            <strong>Guidance:</strong> Use "Champion Retains" when the champion keeps the title (wins OR loses by DQ/Count Out). 
-            Use "New Champion" only when the title actually changes hands.
-          </div>
-        )}
-      </div>
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>
           Special Match Winner:
@@ -2547,6 +2522,19 @@ export default function MatchEdit({
           ))}
         </select>
       </div>
+      {status === 'completed' && (
+        <div>
+          <label>
+            Match Summary (optional):<br />
+            <textarea
+              value={match.summary || ''}
+              onChange={e => setMatch({ ...match, summary: e.target.value })}
+              style={{ width: '100%', minHeight: '72px', padding: '8px', backgroundColor: '#232323', color: 'white', border: '1px solid #888' }}
+              placeholder="Brief recap of the match for the Summary view on the match card..."
+            />
+          </label>
+        </div>
+      )}
       {match.title && match.title !== 'None' && match.stipulation !== 'No. 1 Contender Match' && !useVisualBuilder && (
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>

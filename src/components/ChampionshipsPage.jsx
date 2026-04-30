@@ -3,29 +3,56 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../hooks/useUser';
-import ChampionshipEditModal from './ChampionshipEditModal';
 
-const BRAND_ORDER = ['RAW', 'SmackDown', 'Unassigned'];
+const BRAND_ORDER = ['RAW', 'SmackDown', 'NXT', 'Unassigned'];
 
 // Custom championship display order
 const CHAMPIONSHIP_ORDER = [
   'Undisputed WWE Championship',
   'World Heavyweight Championship',
+  'NXT Championship',
   'WWE Women\'s Championship',
   'Women\'s World Championship',
+  'NXT Women\'s Championship',
   'Men\'s IC Championship',
+  'NXT North American Championship',
   'Women\'s IC Championship',
   'Men\'s U.S. Championship',
+  'NXT Women\'s North American Championship',
   'Women\'s U.S. Championship',
   'Raw Tag Team Championship',
   'SmackDown Tag Team Championship',
-  'Women\'s Tag Team Championship'
+  'NXT Tag Team Championship',
+  'Women\'s Tag Team Championship',
+  'NXT Speed Championship',
+  'NXT Women\'s Speed Championship',
 ];
 
 // Helper function to get championship display order
 function getChampionshipOrder(titleName) {
   const index = CHAMPIONSHIP_ORDER.indexOf(titleName);
   return index === -1 ? 999 : index; // Put unknown championships at the end
+}
+
+function splitTeamMemberTokens(raw) {
+  return String(raw || '')
+    .split(/\s*(?:&|(?:\band\b)|,|\/)\s*/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function slugifyToken(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function getSupabaseWrestlerImageFromSlug(slug) {
+  const s = slugifyToken(slug);
+  if (!s) return null;
+  return `https://qvbqxietcmweltxoonvh.supabase.co/storage/v1/object/public/wrestler-images/${s}.png`;
 }
 
 export default function ChampionshipsPage({ wrestlers = [] }) {
@@ -35,10 +62,8 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
   const [error, setError] = useState(null);
   const [tagTeams, setTagTeams] = useState([]);
   const [tagTeamMembers, setTagTeamMembers] = useState({});
-  const [editingChampionship, setEditingChampionship] = useState(null);
 
-  const user = useUser();
-  const isAuthorized = !!user;
+  useUser(); // retain auth subscription for page consistency
 
   useEffect(() => {
     fetchChampions();
@@ -106,6 +131,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         return {
           ...champ,
           title_name: champ.title_name ?? 'Unknown Title',
+          type: champ.type || ((champ.title_name || '').toLowerCase().includes('tag team') ? 'Tag Team' : champ.type),
           brand: champ.brand ?? 'Unassigned',
           event: champ.event_name || champ.event || 'Unknown Event',
           wonFromVacant: wonFromVacant
@@ -128,11 +154,6 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleChampionUpdated = async () => {
-    setEditingChampionship(null);
-    await fetchChampions();
   };
 
   const filteredChampions = champions.filter(champ => {
@@ -168,7 +189,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     switch (brand) {
       case 'RAW': return '#D32F2F';
       case 'SmackDown': return '#1976D2';
-      case 'NXT': return '#FF6F00';
+      case 'NXT': return '#8A8F98';
       case 'Unassigned': return '#C6A04F';
       default: return '#666';
     }
@@ -214,7 +235,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         const teamMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/);
         if (teamMatch) {
           const teamName = teamMatch[1].trim();
-          const slugs = teamMatch[2].split('&').map(s => s.trim());
+          const slugs = splitTeamMemberTokens(teamMatch[2]);
           // Format individual names in parentheses
           const names = slugs.map(slug => {
             const wrestler = wrestlers.find(w => w.id === slug);
@@ -224,7 +245,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         }
         
         // Otherwise, just slugs separated by " & "
-        const slugs = name.split(' & ').map(s => s.trim());
+        const slugs = splitTeamMemberTokens(name);
         // Try to find a tag team that contains these members
         for (const team of tagTeams) {
           const teamId = team.id;
@@ -322,32 +343,47 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
       return false;
     });
     
-    if (tagTeam) {
-      // Prefer the two names/slugs in parentheses (actual title holders for stables)
-      const parenMatch = name.match(/\(([^)]+)\)/);
-      if (parenMatch) {
-        const segments = parenMatch[1].split('&').map((s) => s.trim()).filter(Boolean);
-        const norm = (s) => (s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
-        // Only treat as the title-holding pair when exactly two names are listed (stables list all members otherwise).
-        if (segments.length === 2) {
-          const fromParen = segments.map((segment) => {
-            const bySlug = wrestlers.find((w) => w.id === segment);
-            if (bySlug?.image_url) return bySlug.image_url;
-            const segNorm = norm(segment);
-            const byName = wrestlers.find((w) => norm(w.name) === segNorm);
-            return byName?.image_url;
-          }).filter(Boolean);
-          if (fromParen.length >= 2) {
-            return fromParen;
-          }
+    // Prefer the two names/slugs in parentheses (actual title holders for stables),
+    // even when tag_teams lookup fails.
+    const parenMatch = name.match(/\(([^)]+)\)/);
+    if (parenMatch) {
+      const segments = splitTeamMemberTokens(parenMatch[1]);
+      const norm = (s) => (s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+      // Only treat as the title-holding pair when exactly two names are listed.
+      if (segments.length === 2) {
+        const fromParen = segments.map((segment) => {
+          const bySlug = wrestlers.find((w) => w.id === segment);
+          if (bySlug?.image_url) return bySlug.image_url;
+          const segNorm = norm(segment);
+          const byName = wrestlers.find((w) => norm(w.name) === segNorm);
+          if (byName?.image_url) return byName.image_url;
+          // Fallback for slight naming/slug differences (e.g. punctuation/suffix variants)
+          const byLoose = wrestlers.find(
+            (w) =>
+              norm(w.id) === segNorm ||
+              norm(w.id).includes(segNorm) ||
+              segNorm.includes(norm(w.id)) ||
+              norm(w.name).includes(segNorm) ||
+              segNorm.includes(norm(w.name))
+          );
+          if (byLoose?.image_url) return byLoose.image_url;
+          // Last-resort fallback: direct Supabase public URL by slug token.
+          return getSupabaseWrestlerImageFromSlug(segment);
+        }).filter(Boolean);
+        if (fromParen.length >= 2) {
+          return fromParen;
         }
       }
+    }
+
+    if (tagTeam) {
       // Default: first two members in DB order (classic two-person teams)
       const teamId = tagTeam.id;
       const memberSlugs = tagTeamMembers[teamId] || [];
       const images = memberSlugs.slice(0, 2).map((slug) => {
         const wrestler = wrestlers.find((w) => w.id === slug);
-        return wrestler?.image_url;
+        if (wrestler?.image_url) return wrestler.image_url;
+        return getSupabaseWrestlerImageFromSlug(slug);
       }).filter(Boolean);
       if (images.length > 0) {
         return images;
@@ -370,40 +406,49 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
     }
     
     // Fallback: try to find individual wrestlers by name
-    const names = name.split('&').map(n => n.trim());
+    const names = splitTeamMemberTokens(name);
     const images = names.map(name => {
       const wrestler = wrestlers.find(w => 
         w.name?.toLowerCase().includes(name.toLowerCase()) ||
         w.id?.toLowerCase().includes(name.toLowerCase().replace(/\s+/g, '-'))
       );
-      return wrestler?.image_url;
+      if (wrestler?.image_url) return wrestler.image_url;
+      return getSupabaseWrestlerImageFromSlug(name);
     }).filter(Boolean);
     
     return images;
   };
 
-  // Helper function to get belt image URL from Supabase storage
+  // Helper function to get belt image URL from local public/images/belts folder
   const getBeltImageUrl = (championshipId) => {
-    // Map championship IDs to belt image filenames
     const beltImageMap = {
-      'wwe-championship': 'mens-wwe-champion.png',
-      'world-heavyweight-championship': 'mens-world-heavyweight.png',
-      'mens-ic-championship': 'mens-intercontinental.png',
-      'mens-us-championship': 'mens-united-states.png',
-      'raw-tag-team-championship': 'mens-world-tag.png',
-      'smackdown-tag-team-championship': 'mens-wwe-tag.png',
-      'wwe-womens-championship': 'womens-wwe-champion.png',
-      'womens-world-championship': 'womens-world-champion.png',
-      'womens-ic-championship': 'womens-intercontinental.png',
-      'womens-us-championship': 'womens-united-states.png',
-      'womens-tag-team-championship': 'womens-tag.png',
+      'wwe-championship': 'undisputed-wwe-championship.png',
+      'world-heavyweight-championship': 'world-heavyweight-championship.png',
+      'mens-ic-championship': 'mens-intercontinental-championship.png',
+      'mens-us-championship': 'mens-united-states-championship.png',
+      'raw-tag-team-championship': 'raw-tag-team-championship.png',
+      'smackdown-tag-team-championship': 'smackdown-tag-team-championship.png',
+      'wwe-womens-championship': 'womens-wwe-championship.png',
+      'womens-world-championship': 'womens-world-championship.png',
+      'womens-ic-championship': 'womens-intercontinental-championship.png',
+      'womens-us-championship': 'womens-united-states-championship.png',
+      'womens-tag-team-championship': 'womens-tag-team-championship.png',
+      'mens-speed-championship': 'nxt-speed-championship.png',
+      'womens-speed-championship': 'nxt-womens-speed-championship.png',
+      // NXT belts
+      'nxt-championship': 'nxt-championship.png',
+      'nxt-womens-championship': 'nxt-womens-championship.png',
+      'nxt-north-american-championship': 'nxt-north-american-championship.png',
+      'nxt-north-american-womens-championship': 'nxt-north-american-womens-championship.png',
+      'nxt-tag-team-championship': 'nxt-tag-team-championship.png',
+      'nxt-speed-championship': 'nxt-speed-championship.png',
+      'nxt-womens-speed-championship': 'nxt-womens-speed-championship.png',
     };
     
     const filename = beltImageMap[championshipId];
     if (!filename) return null;
     
-    // Return Supabase storage URL with your actual project reference
-    return `https://qvbqxietcmweltxoonvh.supabase.co/storage/v1/object/public/belts/${filename}`;
+    return `/images/belts/${filename}`;
   };
 
   return (
@@ -425,6 +470,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         <p style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 16px', fontSize: 14, marginBottom: 32 }}>
           <Link to="/raw" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>Raw results</Link>
           <Link to="/smackdown" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>SmackDown results</Link>
+          <Link to="/nxt" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>NXT results</Link>
           <Link to="/ple" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>PLE results</Link>
           <Link to="/wrestlers" style={{ color: '#C6A04F', textDecoration: 'none', fontWeight: 600 }}>Roster</Link>
         </p>
@@ -497,6 +543,14 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
         {/* Champions Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24 }}>
           {filteredChampions.map(champ => (
+            (() => {
+              const isTagTeamTitle =
+                champ.type === 'Tag Team' ||
+                (champ.title_name || '').toLowerCase().includes('tag team');
+              const tagTeamImages = isTagTeamTitle
+                ? getTagTeamImages(champ.current_champion, champ.current_champion_slug).slice(0, 2)
+                : [];
+              return (
             <div key={champ.id} style={{ 
               background: '#181818', 
               padding: 24, 
@@ -507,31 +561,6 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               overflow: 'hidden'
             }}>
 
-              {isAuthorized && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setEditingChampionship(champ);
-                  }}
-                  style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    padding: '4px 10px',
-                    fontSize: 11,
-                    borderRadius: 999,
-                    border: '1px solid #C6A04F',
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: '#C6A04F',
-                    cursor: 'pointer',
-                    zIndex: 5,
-                  }}
-                >
-                  Edit
-                </button>
-              )}
               <Link
                 to={`/championship/${champ.id}`}
                 style={{ textDecoration: 'none', color: 'inherit', display: 'block', cursor: 'pointer' }}
@@ -561,7 +590,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               {/* Belt Image */}
               {getBeltImageUrl(champ.id) && (
                 <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                  {champ.type === 'Tag Team' ? (
+                  {isTagTeamTitle ? (
                     // Tag Team: Show two belts side by side
                     <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
                       <img 
@@ -601,11 +630,11 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               {/* Champion Info */}
               <div style={{ textAlign: 'center', marginBottom: 16 }}>
                 {/* Wrestler Images */}
-                {champ.type === 'Tag Team' ? (
+                {isTagTeamTitle ? (
                   // Tag Team Images
-                  getTagTeamImages(champ.current_champion, champ.current_champion_slug).length > 0 && (
+                  tagTeamImages.length === 2 && (
                     <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', gap: 8 }}>
-                      {getTagTeamImages(champ.current_champion, champ.current_champion_slug).map((imageUrl, index) => (
+                      {tagTeamImages.map((imageUrl, index) => (
                         <img 
                           key={index}
                           src={imageUrl} 
@@ -657,7 +686,7 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
                 )}
                 
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-                  {champ.type !== 'Tag Team' && champ.current_champion_slug && champ.current_champion_slug !== 'vacant' ? (
+                  {!isTagTeamTitle && champ.current_champion_slug && champ.current_champion_slug !== 'vacant' ? (
                     <Link to={`/wrestler/${champ.current_champion_slug}`} onClick={e => e.stopPropagation()} style={{ color: '#fff', textDecoration: 'none' }}>
                       {formatChampionName(champ.current_champion, champ.current_champion_slug, champ.type)}
                     </Link>
@@ -686,6 +715,8 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
               </div>
               </Link>
             </div>
+              );
+            })()
           ))}
         </div>
         
@@ -717,16 +748,6 @@ export default function ChampionshipsPage({ wrestlers = [] }) {
           </>
         )}
       </div>
-      {isAuthorized && editingChampionship && (
-        <ChampionshipEditModal
-          championship={editingChampionship}
-          wrestlers={wrestlers}
-          tagTeams={tagTeams}
-          tagTeamMembers={tagTeamMembers}
-          onClose={() => setEditingChampionship(null)}
-          onSave={handleChampionUpdated}
-        />
-      )}
     </>
   );
 }
