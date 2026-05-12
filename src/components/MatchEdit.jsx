@@ -1060,6 +1060,17 @@ export default function MatchEdit({
           { type: 'team', participants: ['', ''], name: '' },
           { type: 'team', participants: ['', ''], name: '' }
         ];
+      case 'Handicap Match (singles)':
+        return [
+          { type: 'individual', participants: [''] },
+          { type: 'team', participants: ['', ''], name: '' }
+        ];
+      case 'Handicap Match (Tag)':
+        return [
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' },
+          { type: 'team', participants: ['', ''], name: '' }
+        ];
       case '3-way Tag Team':
         return [
           { type: 'team', participants: ['', ''], name: '' },
@@ -1220,18 +1231,26 @@ export default function MatchEdit({
           // Individual wrestlers - check if this should be a team based on match type
           const wrestlerSlugs = side.split('&').filter(s => s.trim()).map(s => s.trim());
           const isTagTeamMatch = match.matchType && (
-            match.matchType.includes('Tag Team') || 
-            match.matchType.includes('6-Man') || 
-            match.matchType.includes('8-Man') || 
-            (match.matchType.includes('10-Man') || match.matchType.includes('10-man')) || 
+            match.matchType.includes('Tag Team') ||
+            match.matchType.includes('6-Man') ||
+            match.matchType.includes('8-Man') ||
+            (match.matchType.includes('10-Man') || match.matchType.includes('10-man')) ||
             match.matchType.includes('12-Man') ||
             match.matchType.includes('WarGames') ||
             match.matchType.includes('Survivor Series')
           );
-          
+          const isHandicapSinglesTwoOnOneSide =
+            match.matchType === 'Handicap Match (singles)' && wrestlerSlugs.length > 1;
+          const isHandicapTagPairSide =
+            match.matchType === 'Handicap Match (Tag)' && wrestlerSlugs.length > 1;
+
           console.log('Side wrestlers:', wrestlerSlugs, 'isTagTeamMatch:', isTagTeamMatch);
-          
-          if (isTagTeamMatch && wrestlerSlugs.length > 1) {
+
+          if (
+            (isTagTeamMatch && wrestlerSlugs.length > 1) ||
+            isHandicapSinglesTwoOnOneSide ||
+            isHandicapTagPairSide
+          ) {
             // Convert to team structure but without a name (user can add one)
             console.log('Converting to team structure without name');
             return { type: 'team', name: '', participants: wrestlerSlugs };

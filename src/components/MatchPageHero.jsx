@@ -296,6 +296,7 @@ export default function MatchPageHero({ match, event, wrestlerMap, events, match
     (typeof match.matchType === 'string' && /^\d+-way Match$/i.test(match.matchType)) ||
     match.matchType === '3-way Tag Team' ||
     match.matchType === '4-way Tag Team' ||
+    match.matchType === 'Handicap Match (Tag)' ||
     displayStipulation === '3-way Tag Team' ||
     displayStipulation === '4-way Tag Team' ||
     useTagGrid2x2 ||

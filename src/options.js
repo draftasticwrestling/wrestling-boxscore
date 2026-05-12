@@ -1,6 +1,8 @@
 export const MATCH_TYPE_OPTIONS = [
   "Singles Match",
   "Tag Team",
+  "Handicap Match (singles)",
+  "Handicap Match (Tag)",
   "3-way Tag Team",
   "4-way Tag Team",
   "5-team Tag Team",

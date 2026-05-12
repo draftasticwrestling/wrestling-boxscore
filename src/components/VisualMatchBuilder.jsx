@@ -456,6 +456,18 @@ export default function VisualMatchBuilder({
               const foundByName = safeWrestlers.find(w => w.name === potentialSlug);
               return foundByName ? foundByName.id : potentialSlug;
             });
+            if (
+              selectedMatchType === 'Handicap Match (Tag)' &&
+              wrestlerSlugs.length === 2
+            ) {
+              return { type: 'team', name: '', participants: wrestlerSlugs };
+            }
+            if (
+              selectedMatchType === 'Handicap Match (singles)' &&
+              wrestlerSlugs.length > 1
+            ) {
+              return { type: 'team', name: '', participants: wrestlerSlugs };
+            }
             return { type: 'individual', participants: wrestlerSlugs };
           }
         });
@@ -654,9 +666,17 @@ export default function VisualMatchBuilder({
     } else if (isGauntletMatch) {
       matchType = 'Gauntlet Match';
     } else if (numSides === 3) {
-      // Check if it's 3-way tag team or triple threat
       const hasTeams = structure.some(side => side.type === 'team');
-      matchType = hasTeams ? '3-way Tag Team' : 'Triple Threat match';
+      const allTwoMemberTeams =
+        structure.every((side) => side.type === 'team') &&
+        structure.every((side) => Array.isArray(side.participants) && side.participants.length === 2);
+      if (selectedMatchType === 'Handicap Match (Tag)' && allTwoMemberTeams) {
+        matchType = 'Handicap Match (Tag)';
+      } else if (hasTeams) {
+        matchType = '3-way Tag Team';
+      } else {
+        matchType = 'Triple Threat match';
+      }
     } else if (numSides === 4) {
       // Check if it's 4-way tag team or fatal four-way
       const hasTeams = structure.some(side => side.type === 'team');
@@ -684,10 +704,22 @@ export default function VisualMatchBuilder({
         matchType = `${numSides}-way Match`;
       }
     } else if (numSides === 2) {
-      // Check if it's tag team or singles
       const hasTeams = structure.some(side => side.type === 'team');
       const participantsPerSide = structure[0]?.participants?.length || 1;
-      if (hasTeams) {
+      if (selectedMatchType === 'Handicap Match (singles)') {
+        const hasInd = structure.some((s) => s.type === 'individual');
+        const hasTm = structure.some((s) => s.type === 'team');
+        if (hasInd && hasTm) {
+          matchType = 'Handicap Match (singles)';
+        } else if (hasTeams) {
+          if (participantsPerSide === 3) matchType = '6-person Tag Team';
+          else if (participantsPerSide === 4) matchType = '8-person Tag Team';
+          else if (participantsPerSide === 5) matchType = '10-man Tag Team';
+          else matchType = 'Tag Team';
+        } else {
+          matchType = 'Singles Match';
+        }
+      } else if (hasTeams) {
         if (participantsPerSide === 3) matchType = '6-person Tag Team';
         else if (participantsPerSide === 4) matchType = '8-person Tag Team';
         else if (participantsPerSide === 5) matchType = '10-man Tag Team';

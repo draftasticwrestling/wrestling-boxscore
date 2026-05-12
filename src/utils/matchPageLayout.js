@@ -161,7 +161,7 @@ export function getSidesFromMatchParticipants(match) {
 /** Dedicated multi-team tag grid (compact card) — includes mis-tagged Fatal Four-way when all sides are tag pairs. */
 export function shouldUseDedicatedMultiTeamTagCard(match, sideStrings, wrestlerMap = {}) {
   const t = match?.matchType;
-  if (['6-team Tag Team', '5-team Tag Team', '4-way Tag Team', '3-way Tag Team'].includes(t)) {
+  if (['6-team Tag Team', '5-team Tag Team', '4-way Tag Team', '3-way Tag Team', 'Handicap Match (Tag)'].includes(t)) {
     return Array.isArray(sideStrings) && sideStrings.length > 0;
   }
   if (!sideStrings || sideStrings.length < 3) return false;
@@ -205,6 +205,10 @@ export function shouldUseTagTeamMultiGrid(match, teamStrings, sides) {
     match?.matchType === '4-way Tag Team' || stip === '4-way Tag Team';
   const threeLabel =
     match?.matchType === '3-way Tag Team' || stip === '3-way Tag Team';
+  const handicapTagLabel = match?.matchType === 'Handicap Match (Tag)';
+  if (handicapTagLabel && Array.isArray(teamStrings) && teamStrings.length === 3) {
+    if (sides && sides.length === 3 && sides.every((s) => (s?.slugs?.length ?? 0) === 2)) return '1x3';
+  }
   if (fourLabel && Array.isArray(teamStrings) && teamStrings.length === 4) return '2x2';
   if (threeLabel && Array.isArray(teamStrings) && teamStrings.length === 3) return '1x3';
   if (isFourWayTagTeamGrid(sides)) return '2x2';
@@ -234,6 +238,8 @@ export function getWinnerSideIndex(teamStrings, match, wrestlerMap) {
 const ENHANCED_TYPES = new Set([
   'Singles Match',
   'Tag Team',
+  'Handicap Match (singles)',
+  'Handicap Match (Tag)',
   'Triple Threat match',
   'Fatal Four-way match',
   '5-way Match',
@@ -255,8 +261,10 @@ export function shouldUseEnhancedMatchPage(match, wrestlerMap = {}) {
   if (!teamStrings || teamStrings.length < 2) return false;
   const sides = teamStrings.map((ts) => parseTeamStringForPage(ts, wrestlerMap));
   const totalSlugs = sides.reduce((sum, s) => sum + (s.slugs?.length ?? 0), 0);
-  if (totalSlugs > MAX_WRESTLERS_FOR_ENHANCED_MATCH_PAGE) return false;
   const mt = match.matchType;
+  const maxSlugsForEnhanced =
+    mt === 'Handicap Match (Tag)' ? 6 : MAX_WRESTLERS_FOR_ENHANCED_MATCH_PAGE;
+  if (totalSlugs > maxSlugsForEnhanced) return false;
   if (mt === 'Singles Match') {
     return teamStrings.length === 2 && sides.every((s) => s.slugs.length === 1);
   }
@@ -282,6 +290,16 @@ export function shouldUseEnhancedMatchPage(match, wrestlerMap = {}) {
   }
   if (mt === '6-person Tag Team') {
     return teamStrings.length === 2 && sides.every((s) => s.slugs.length === 3);
+  }
+  if (mt === 'Handicap Match (singles)') {
+    return (
+      teamStrings.length === 2 &&
+      sides.some((s) => s.slugs.length === 1) &&
+      sides.some((s) => s.slugs.length === 2)
+    );
+  }
+  if (mt === 'Handicap Match (Tag)') {
+    return teamStrings.length === 3 && sides.every((s) => s.slugs.length === 2);
   }
   return false;
 }

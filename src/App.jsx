@@ -7443,6 +7443,17 @@ const getMatchStructureFromMatchType = (matchType) => {
         { type: 'team', participants: ['', ''], name: '' },
         { type: 'team', participants: ['', ''], name: '' }
       ];
+    case 'Handicap Match (singles)':
+      return [
+        { type: 'individual', participants: [''] },
+        { type: 'team', participants: ['', ''], name: '' }
+      ];
+    case 'Handicap Match (Tag)':
+      return [
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' },
+        { type: 'team', participants: ['', ''], name: '' }
+      ];
     case '3-way Tag Team':
       return [
         { type: 'team', participants: ['', ''], name: '' },
